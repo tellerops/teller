@@ -1,0 +1,31 @@
+
+project: teller
+
+# Set this if you want to carry over parent process' environment variables
+# carry_env: true 
+
+
+#
+# Variables
+#
+# Feel free to add options here to be used as a variable throughout
+# paths.
+#
+opts:
+  region: env:AWS_REGION    # you can get env variables with the 'env:' prefix
+  stage: development
+
+
+#
+# Providers
+#
+providers:
+  # Configure via environment:
+  # CONSUL_HTTP_ADDR
+  consul:
+    env_sync:
+      path: redis/config
+    env:
+      ETC_DSN:
+        path: redis/config/foobar
+

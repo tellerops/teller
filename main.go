@@ -42,6 +42,19 @@ var (
 
 func main() {
 	ctx := kong.Parse(&CLI)
+
+	// below commands don't require a tellerfile
+	//nolint
+	switch ctx.Command() {
+	case "version":
+		fmt.Printf("Teller %v\n", version)
+		fmt.Printf("Revision %v, date: %v\n", commit, date)
+		os.Exit(0)
+	}
+
+	//
+	// load or create new file
+	//
 	telleryml := ".teller.yml"
 	if CLI.Config != "" {
 		telleryml = CLI.Config
@@ -72,10 +85,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err != nil {
-		fmt.Println(err)
-	}
-
+	// all of the below require a tellerfile
 	switch ctx.Command() {
 	case "run <cmd>":
 		if len(CLI.Run.Cmd) < 1 {
@@ -99,10 +109,6 @@ func main() {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
 		}
-
-	case "version":
-		fmt.Printf("Teller %v\n", version)
-		fmt.Printf("Revision %v, date: %v\n", commit, date)
 
 	default:
 		teller.PrintEnvKeys()
