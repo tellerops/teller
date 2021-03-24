@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "teller",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "readme": "doctoc --maxlevel 2 README.md"
+  },
+  "devDependencies": {
+    "doctoc": "^2.0.0"
+  }
+}
