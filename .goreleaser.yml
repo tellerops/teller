@@ -28,9 +28,8 @@ brews:
     homepage:  https://github.com/spectralops/teller
     license: "Apache 2.0"
     install: |
-      ln_s libexec/"teller", libexec/"tlr"
       bin.install "teller"
-      bin.install_symlink "tlr"
+      ln_s bin/"teller", bin/"tlr"
 
 checksum:
   name_template: 'checksums.txt'
