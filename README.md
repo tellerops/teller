@@ -10,6 +10,7 @@ Instead of custom scripts, tokens in your `.zshrc` files, visible `EXPORT`s in y
 
 You can use Teller to tidy your own environment or for your team as a process and best practice.
 
+![](media/providers.png)
 
 
 
