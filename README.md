@@ -426,7 +426,7 @@ In addition, we don't offer any way to specify connection details to these syste
 
 That allows us to keep two important points:
 
-1. Don't undermine the user's security model and threat modeling for the sake of productivity (security AND productivitiy CAN be attained)
+1. Don't undermine the user's security model and threat modeling for the sake of productivity (security AND productivity CAN be attained)
 2. Don't encourage the user to do what we're here for -- save secrets and sensitive details from being forgotten in various places.
 
 
