@@ -39,6 +39,15 @@ github.com/Azure/go-autorest/autorest/validation
 github.com/Azure/go-autorest/logger
 # github.com/Azure/go-autorest/tracing v0.6.0
 github.com/Azure/go-autorest/tracing
+# github.com/DopplerHQ/cli v0.0.0-20210309042056-414bede8a50e
+## explicit
+github.com/DopplerHQ/cli/pkg/configuration
+github.com/DopplerHQ/cli/pkg/controllers
+github.com/DopplerHQ/cli/pkg/crypto
+github.com/DopplerHQ/cli/pkg/http
+github.com/DopplerHQ/cli/pkg/models
+github.com/DopplerHQ/cli/pkg/utils
+github.com/DopplerHQ/cli/pkg/version
 # github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 ## explicit
 github.com/alecthomas/assert
@@ -56,6 +65,8 @@ github.com/alecthomas/repr
 github.com/alexsasharegan/dotenv
 # github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da
 github.com/armon/go-metrics
+# github.com/atotto/clipboard v0.1.2
+github.com/atotto/clipboard
 # github.com/aws/aws-sdk-go-v2 v1.2.0
 github.com/aws/aws-sdk-go-v2/aws
 github.com/aws/aws-sdk-go-v2/aws/middleware
@@ -129,6 +140,8 @@ github.com/cenkalti/backoff
 github.com/coreos/go-semver/semver
 # github.com/coreos/go-systemd/v22 v22.1.0
 github.com/coreos/go-systemd/v22/journal
+# github.com/danieljoos/wincred v1.1.0
+github.com/danieljoos/wincred
 # github.com/dghubble/sling v1.3.0
 ## explicit
 github.com/dghubble/sling
@@ -139,6 +152,8 @@ github.com/dimchansky/utfbom
 github.com/fatih/color
 # github.com/form3tech-oss/jwt-go v3.2.2+incompatible
 github.com/form3tech-oss/jwt-go
+# github.com/godbus/dbus/v5 v5.0.3
+github.com/godbus/dbus/v5
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
@@ -216,6 +231,8 @@ github.com/hashicorp/vault/sdk/helper/strutil
 # github.com/heroku/heroku-go/v5 v5.2.1
 ## explicit
 github.com/heroku/heroku-go/v5
+# github.com/inconshreveable/mousetrap v1.0.0
+github.com/inconshreveable/mousetrap
 # github.com/jftuga/ellipsis v1.0.0
 ## explicit
 github.com/jftuga/ellipsis
@@ -249,11 +266,18 @@ github.com/ryanuber/go-glob
 # github.com/sergi/go-diff v1.1.0
 ## explicit
 github.com/sergi/go-diff/diffmatchpatch
+# github.com/spf13/cobra v0.0.5
+github.com/spf13/cobra
+# github.com/spf13/pflag v1.0.5
+github.com/spf13/pflag
 # github.com/stretchr/testify v1.6.1
 ## explicit
 # github.com/thoas/go-funk v0.7.0
 ## explicit
 github.com/thoas/go-funk
+# github.com/zalando/go-keyring v0.1.1-0.20210112083600-4d37811583ad
+github.com/zalando/go-keyring
+github.com/zalando/go-keyring/secret_service
 # go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
 ## explicit
 go.etcd.io/etcd/api/v3/authpb
@@ -464,6 +488,8 @@ google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/emptypb
 google.golang.org/protobuf/types/known/fieldmaskpb
 google.golang.org/protobuf/types/known/timestamppb
+# gopkg.in/gookit/color.v1 v1.1.6
+gopkg.in/gookit/color.v1
 # gopkg.in/square/go-jose.v2 v2.3.1
 gopkg.in/square/go-jose.v2
 gopkg.in/square/go-jose.v2/cipher
@@ -472,3 +498,5 @@ gopkg.in/square/go-jose.v2/jwt
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit
 gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3

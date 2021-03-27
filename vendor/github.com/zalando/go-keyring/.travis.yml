@@ -1,0 +1,25 @@
+sudo: required
+dist: trusty
+
+os:
+  - osx
+  - linux
+
+language: go
+
+addons:
+  apt:
+    packages:
+      - python-gnomekeyring
+      - gnome-keyring
+
+go:
+  - 1.x
+  - tip
+
+before_script:
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      dbus-launch /usr/bin/python -c \
+        "import gnomekeyring;gnomekeyring.create_sync('login', '');"
+    fi

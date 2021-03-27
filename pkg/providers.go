@@ -27,6 +27,7 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		".env":                     "dotenv",
 		"Vercel":                   "vercel",
 		"Azure Key Vault":          "azure_keyvault",
+		"Doppler":                  "doppler",
 	}
 }
 
@@ -52,6 +53,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 		return providers.NewVercel()
 	case "azure_keyvault":
 		return providers.NewAzureKeyVault()
+	case "doppler":
+		return providers.NewDoppler()
 	default:
 		return nil, fmt.Errorf("provider %s does not exist", name)
 	}
