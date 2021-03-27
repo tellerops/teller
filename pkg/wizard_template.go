@@ -140,4 +140,14 @@ providers:
       FOO_BAR:
         path: foobar
 {{end}}
+
+{{- if index .ProviderKeys "doppler" }}
+  # set your doppler project with "doppler configure set project <my-project>"
+  doppler:
+    env_sync:
+      path: prd
+    env:
+      FOO_BAR:
+        path: prd
+{{end}}
 `
