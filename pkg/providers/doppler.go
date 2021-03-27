@@ -17,7 +17,7 @@ type DopplerClient interface {
 
 type dopplerClient struct{}
 
-func (dopplerClient) GetSecrets(host string, verifyTLS bool, apiKey string, project string, config string) ([]byte, http.Error) {
+func (dopplerClient) GetSecrets(host string, verifyTLS bool, apiKey, project, config string) ([]byte, http.Error) {
 	return http.GetSecrets(host, verifyTLS, apiKey, project, config)
 }
 
