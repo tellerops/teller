@@ -6,6 +6,7 @@ mocks:
 	mockgen -source pkg/providers/aws_ssm.go -destination pkg/providers/mock_providers/aws_ssm_mock.go
 	mockgen -source pkg/providers/consul.go -destination pkg/providers/mock_providers/consul_mock.go
 	mockgen -source pkg/providers/dotenv.go -destination pkg/providers/mock_providers/dotenv_mock.go
+	mockgen -source pkg/providers/doppler.go -destination pkg/providers/mock_providers/doppler_mock.go
 	mockgen -source pkg/providers/etcd.go -destination pkg/providers/mock_providers/etcd_mock.go
 	mockgen -source pkg/providers/google_secretmanager.go -destination pkg/providers/mock_providers/google_secretmanager_mock.go
 	mockgen -source pkg/providers/hashicorp_vault.go -destination pkg/providers/mock_providers/hashicorp_vault_mock.go
