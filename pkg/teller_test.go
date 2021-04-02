@@ -31,8 +31,9 @@ func (im *InMemProvider) Name() string {
 func NewInMemProvider(alwaysError bool) (Providers, error) {
 	return &InMemProvider{
 		inmem: map[string]string{
-			"prod/billing/FOO":    "foo_shazam",
-			"prod/billing/MG_KEY": "mg_shazam",
+			"prod/billing/FOO":          "foo_shazam",
+			"prod/billing/MG_KEY":       "mg_shazam",
+			"prod/billing/BEFORE_REMAP": "test_env_remap",
 		},
 		alwaysError: alwaysError,
 	}, nil
@@ -144,6 +145,9 @@ func TestTellerCollectWithSync(t *testing.T) {
 				"inmem": {
 					EnvMapping: &core.KeyPath{
 						Path: "{{stage}}/billing",
+						Remap: map[string]string{
+							"prod/billing/BEFORE_REMAP": "prod/billing/REMAPED",
+						},
 					},
 				},
 			},
@@ -151,16 +155,21 @@ func TestTellerCollectWithSync(t *testing.T) {
 	}
 	err := tl.Collect()
 	assert.Nil(t, err)
-	assert.Equal(t, len(tl.Entries), 2)
-	assert.Equal(t, tl.Entries[0].Key, "prod/billing/MG_KEY")
-	assert.Equal(t, tl.Entries[0].Value, "mg_shazam")
+	assert.Equal(t, len(tl.Entries), 3)
+	assert.Equal(t, tl.Entries[0].Key, "prod/billing/REMAPED")
+	assert.Equal(t, tl.Entries[0].Value, "test_env_remap")
 	assert.Equal(t, tl.Entries[0].ResolvedPath, "prod/billing")
 	assert.Equal(t, tl.Entries[0].Provider, "inmem")
 
-	assert.Equal(t, tl.Entries[1].Key, "prod/billing/FOO")
-	assert.Equal(t, tl.Entries[1].Value, "foo_shazam")
+	assert.Equal(t, tl.Entries[1].Key, "prod/billing/MG_KEY")
+	assert.Equal(t, tl.Entries[1].Value, "mg_shazam")
 	assert.Equal(t, tl.Entries[1].ResolvedPath, "prod/billing")
 	assert.Equal(t, tl.Entries[1].Provider, "inmem")
+
+	assert.Equal(t, tl.Entries[2].Key, "prod/billing/FOO")
+	assert.Equal(t, tl.Entries[2].Value, "foo_shazam")
+	assert.Equal(t, tl.Entries[2].ResolvedPath, "prod/billing")
+	assert.Equal(t, tl.Entries[2].Provider, "inmem")
 }
 func TestTellerCollectWithErrors(t *testing.T) {
 	var b bytes.Buffer

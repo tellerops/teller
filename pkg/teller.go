@@ -164,6 +164,14 @@ func (tl *Teller) Collect() error {
 			if err != nil {
 				return err
 			}
+
+			// optionally remap environment variables synced from the provider
+			for k, v := range es {
+				if val, ok := conf.EnvMapping.Remap[v.Key]; ok {
+					es[k].Key = val
+				}
+			}
+
 			entries = append(entries, es...)
 		}
 		if conf.Env != nil {

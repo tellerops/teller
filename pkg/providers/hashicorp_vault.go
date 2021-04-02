@@ -41,7 +41,13 @@ func (h *HashicorpVault) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 		return nil, err
 	}
 
-	k := secret.Data["data"].(map[string]interface{})
+	// vault returns a secret kv struct as either data{} or data.data{} depending on engine
+	var k map[string]interface{}
+	if val, ok := secret.Data["data"]; ok {
+		k = val.(map[string]interface{})
+	} else {
+		k = secret.Data
+	}
 
 	entries := []core.EnvEntry{}
 	for k, v := range k {
@@ -57,7 +63,14 @@ func (h *HashicorpVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 		return nil, err
 	}
 
-	data := secret.Data["data"].(map[string]interface{})
+	// vault returns a secret kv struct as either data{} or data.data{} depending on engine
+	var data map[string]interface{}
+	if val, ok := secret.Data["data"]; ok {
+		data = val.(map[string]interface{})
+	} else {
+		data = secret.Data
+	}
+
 	k := data[p.Env]
 	if p.Field != "" {
 		k = data[p.Field]
@@ -81,7 +94,7 @@ func (h *HashicorpVault) getSecret(kp core.KeyPath) (*api.Secret, error) {
 		return nil, err
 	}
 
-	if secret == nil || secret.Data["data"] == nil {
+	if secret == nil || len(secret.Data) == 0 {
 		return nil, fmt.Errorf("data not found at '%s'", kp.Path)
 	}
 
