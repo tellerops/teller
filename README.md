@@ -130,7 +130,7 @@ You can use `teller` to inject variables into your own templates (based on [go t
 With this template:
 
 ```go
-Hello, {{.Teller.EnvByKey "FOO_BAR" }}!
+Hello, {{.Teller.EnvByKey "FOO_BAR" "default-value" }}!
 ```
 
 Run:
