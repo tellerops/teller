@@ -85,7 +85,7 @@ Got bitten by using `.env.production` and exposing it in the local project itsel
 Using `teller` and a `.teller.yml` file that exposes nothing to the prying eyes, you can work fluently and seamlessly with zero risk, also no need for quotes:
 
 ```
-$ teller run your-process arg1 arg2... --switch1 ...
+$ teller run -- your-process arg1 arg2... --switch1 ...
 ```
 
 ## Inspecting variables
