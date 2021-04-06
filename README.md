@@ -181,6 +181,8 @@ We use the following general structure to specify sync mapping for all providers
 # you can use either `env_sync` or `env` or both
 env_sync:
   path: ... # path to mapping
+  remap:
+    PROVIDER_VAR1: VAR3 # Maps PROVIDER_VAR1 to local env var VAR3
 env:
   VAR1:
     path: ... # path to value or mapping
@@ -190,6 +192,19 @@ env:
     path: ...
 ```
 
+### Remapping Provider Variables
+
+Providers which support syncing a list of keys and values can be remapped to different environment variable keys. Typically, when teller syncs paths from `env_sync`, the key returned from the provider is directly mapped to the environment variable key. In some cases it might be necessary to have the provider key mapped to a different variable without changing the provider settings. This can be useful when using `env_sync` for [Hashicorp Vault Dynamic Database credentials](https://www.vaultproject.io/docs/secrets/databases):
+
+```yaml
+env_sync:
+  path: database/roles/my-role
+  remap:
+    username: PGUSER
+    password: PGPASSWORD
+```
+
+After remapping, the local environment variable `PGUSER` will contain the provider value for `username` and `PGPASSWORD` will contain the provider value for `password`.
 
 ## Hashicorp Vault
 

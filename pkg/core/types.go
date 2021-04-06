@@ -1,11 +1,12 @@
 package core
 
 type KeyPath struct {
-	Env      string `yaml:"env,omitempty"`
-	Path     string `yaml:"path"`
-	Field    string `yaml:"field,omitempty"`
-	Decrypt  bool   `yaml:"decrypt,omitempty"`
-	Optional bool   `yaml:"optional,omitempty"`
+	Env      string            `yaml:"env,omitempty"`
+	Path     string            `yaml:"path"`
+	Field    string            `yaml:"field,omitempty"`
+	Remap    map[string]string `yaml:"remap,omitempty"`
+	Decrypt  bool              `yaml:"decrypt,omitempty"`
+	Optional bool              `yaml:"optional,omitempty"`
 }
 type WizardAnswers struct {
 	Project      string

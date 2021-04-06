@@ -19,20 +19,40 @@ func TestHashicorpVault(t *testing.T) {
 	client := mock_providers.NewMockHashicorpClient(ctrl)
 	path := "settings/prod/billing-svc"
 	pathmap := "settings/prod/billing-svc/all"
-	out := api.Secret{
-		Data: map[string]interface{}{
-			"data": map[string]interface{}{
-				"MG_KEY":    "shazam",
-				"SMTP_PASS": "mailman",
+
+	tests := map[string]struct {
+		out api.Secret
+	}{
+		"data.data": {
+			out: api.Secret{
+				Data: map[string]interface{}{
+					"data": map[string]interface{}{
+						"MG_KEY":    "shazam",
+						"SMTP_PASS": "mailman",
+					},
+				},
+			},
+		},
+		"data": {
+			out: api.Secret{
+				Data: map[string]interface{}{
+					"MG_KEY":    "shazam",
+					"SMTP_PASS": "mailman",
+				},
 			},
 		},
 	}
-	client.EXPECT().Read(gomock.Eq(path)).Return(&out, nil).AnyTimes()
-	client.EXPECT().Read(gomock.Eq(pathmap)).Return(&out, nil).AnyTimes()
-	s := HashicorpVault{
-		client: client,
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			client.EXPECT().Read(gomock.Eq(path)).Return(&tc.out, nil).AnyTimes()
+			client.EXPECT().Read(gomock.Eq(pathmap)).Return(&tc.out, nil).AnyTimes()
+			s := HashicorpVault{
+				client: client,
+			}
+			AssertProvider(t, &s, true)
+		})
 	}
-	AssertProvider(t, &s, true)
 }
 
 func TestHashicorpVaultFailures(t *testing.T) {
