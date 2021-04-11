@@ -22,10 +22,8 @@ opts:
 providers:
   # Configure via environment:
   # CONSUL_HTTP_ADDR
-  consul:
-    env_sync:
-      path: redis/config
+  dotenv:
     env:
-      ETC_DSN:
-        path: redis/config/foobar
+      FOO:
+        path: ~/my-dot-env.env
 

@@ -119,6 +119,35 @@ Use this one liner from now on:
 $ docker run --rm -it --env-file <(teller env) alpine sh
 ```
 
+## Scan for hardcoded secrets
+
+Look for your vault-kept secrets in your code by running:
+
+```
+$ teller scan
+```
+
+You can run it as a linter in your CI like so:
+
+```
+run: teller scan --silent
+```
+
+It will break your build if it finds something (returns exit code `1`).
+
+
+Use Teller for productively and securely running process and you get this for free -- nothing to configure. If you have data that you're bringing that you're sure isn't sensitive, flag it in your `teller.yml`:
+
+```
+dotenv:
+  env:
+    FOO:
+      path: ~/my-dot-env.env
+      not_sensitive: true
+```
+
+By default we treat all entries as sensitive.
+
 ## Populate templates
 
 Have a kickstarter project you want to populate quickly with some variables (not secrets though!)?

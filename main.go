@@ -32,6 +32,11 @@ var CLI struct {
 		TemplateFile string `arg name:"template_file" help:"Input template file (Go template format)"`
 		OutFile      string `arg name:"out_file" help:"Output file"`
 	} `cmd help:"Inject vars into a template file"`
+
+	Scan struct {
+		Path   string `arg optional name:"path" help:"Scan root, default: '.'"`
+		Silent bool   `optional name:"silent" help:"No text, just exit code"`
+	} `cmd help:"Scans your codebase for sensitive keys"`
 }
 
 var (
@@ -102,6 +107,18 @@ func main() {
 
 	case "show":
 		teller.PrintEnvKeys()
+
+	case "scan":
+		findings, err := teller.Scan(CLI.Scan.Path, CLI.Scan.Silent)
+
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		num := len(findings)
+		if num > 0 {
+			os.Exit(1)
+		}
 
 	case "template <template_file> <out_file>":
 		err := teller.TemplateFile(CLI.Template.TemplateFile, CLI.Template.OutFile)

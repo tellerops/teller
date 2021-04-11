@@ -28,6 +28,7 @@ require (
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/heroku/heroku-go/v5 v5.2.1
 	github.com/jftuga/ellipsis v1.0.0
+	github.com/karrick/godirwalk v1.16.1
 	github.com/miekg/dns v1.1.35 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1 // indirect

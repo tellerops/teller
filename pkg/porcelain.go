@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"time"
 
 	survey "github.com/AlecAivazis/survey/v2"
 	"github.com/thoas/go-funk"
@@ -109,11 +110,43 @@ func (p *Porcelain) PrintEntries(entries []core.EnvEntry) {
 		if v.Value == "" {
 			fmt.Fprintf(&buf, "[%s %s %s] %s\n", yellow(v.Provider), gray(ep), red("missing"), green(v.Key))
 		} else {
-			fmt.Fprintf(&buf, "[%s %s] %s %s %s*****\n", yellow(v.Provider), gray(ep), green(v.Key), gray("="), v.Value[:int(math.Min(float64(len(v.Value)), 2))])
+			fmt.Fprintf(&buf, "[%s %s] %s %s %s\n", yellow(v.Provider), gray(ep), green(v.Key), gray("="), maskedValue(v.Value))
 		}
 	}
 
 	out := buf.String()
 
 	fmt.Fprint(p.Out, out)
+}
+func maskedValue(v string) string {
+	return fmt.Sprintf("%s*****", v[:int(math.Min(float64(len(v)), 2))])
+}
+
+func (p *Porcelain) PrintMatches(matches []core.Match) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	gray := color.New(color.FgHiBlack).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	white := color.New(color.FgWhite).SprintFunc()
+	red := color.New(color.FgRed).SprintFunc()
+	//nolint
+	for _, m := range matches {
+		sevcolor := white
+		if m.Entry.Severity == core.High {
+			sevcolor = red
+		}
+		if m.Entry.Severity == core.Medium {
+			sevcolor = yellow
+		}
+		fmt.Printf("[%s] %s (%s,%s): found match for %s/%s (%s)\n", sevcolor(m.Entry.Severity), green(m.Path), yellow(m.LineNumber), yellow(m.MatchIndex), gray(m.Entry.Provider), red(m.Entry.Key), gray(maskedValue(m.Entry.Value)))
+	}
+}
+
+func (p *Porcelain) PrintMatchSummary(findings []core.Match, entries []core.EnvEntry, elapsed time.Duration) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	goodbad := color.New(color.FgGreen).SprintFunc()
+	if len(findings) > 0 {
+		goodbad = color.New(color.FgRed).SprintFunc()
+	}
+
+	fmt.Printf("Scanning for %v entries: found %v matches in %v\n", yellow(len(entries)), goodbad(len(findings)), goodbad(elapsed))
 }

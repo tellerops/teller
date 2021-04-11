@@ -1,5 +1,14 @@
 package core
 
+type Severity string
+
+const (
+	High   Severity = "high"
+	Medium Severity = "medium"
+	Low    Severity = "low"
+	None   Severity = "none"
+)
+
 type KeyPath struct {
 	Env      string            `yaml:"env,omitempty"`
 	Path     string            `yaml:"path"`
@@ -7,6 +16,7 @@ type KeyPath struct {
 	Remap    map[string]string `yaml:"remap,omitempty"`
 	Decrypt  bool              `yaml:"decrypt,omitempty"`
 	Optional bool              `yaml:"optional,omitempty"`
+	Severity Severity          `yaml:"severity,omitempty" default:"high"`
 }
 type WizardAnswers struct {
 	Project      string
@@ -45,6 +55,7 @@ type EnvEntry struct {
 	Value        string
 	Provider     string
 	ResolvedPath string
+	Severity     Severity
 }
 type EnvEntryLookup struct {
 	Entries []EnvEntry
@@ -86,4 +97,12 @@ type Provider interface {
 
 	// in this case env is filled
 	Get(p KeyPath) (*EnvEntry, error)
+}
+
+type Match struct {
+	Path       string
+	Line       string
+	LineNumber int
+	MatchIndex int
+	Entry      EnvEntry
 }
