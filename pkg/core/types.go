@@ -10,13 +10,14 @@ const (
 )
 
 type KeyPath struct {
-	Env      string            `yaml:"env,omitempty"`
-	Path     string            `yaml:"path"`
-	Field    string            `yaml:"field,omitempty"`
-	Remap    map[string]string `yaml:"remap,omitempty"`
-	Decrypt  bool              `yaml:"decrypt,omitempty"`
-	Optional bool              `yaml:"optional,omitempty"`
-	Severity Severity          `yaml:"severity,omitempty" default:"high"`
+	Env        string            `yaml:"env,omitempty"`
+	Path       string            `yaml:"path"`
+	Field      string            `yaml:"field,omitempty"`
+	Remap      map[string]string `yaml:"remap,omitempty"`
+	Decrypt    bool              `yaml:"decrypt,omitempty"`
+	Optional   bool              `yaml:"optional,omitempty"`
+	Severity   Severity          `yaml:"severity,omitempty" default:"high"`
+	RedactWith string            `yaml:"redact_with,omitempty" default:"**REDACTED**"`
 }
 type WizardAnswers struct {
 	Project      string
@@ -50,12 +51,19 @@ func (a EntriesByKey) Len() int           { return len(a) }
 func (a EntriesByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a EntriesByKey) Less(i, j int) bool { return a[i].Key > a[j].Key }
 
+type EntriesByValueSize []EnvEntry
+
+func (a EntriesByValueSize) Len() int           { return len(a) }
+func (a EntriesByValueSize) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a EntriesByValueSize) Less(i, j int) bool { return len(a[i].Value) > len(a[j].Value) }
+
 type EnvEntry struct {
 	Key          string
 	Value        string
 	Provider     string
 	ResolvedPath string
 	Severity     Severity
+	RedactWith   string
 }
 type EnvEntryLookup struct {
 	Entries []EnvEntry

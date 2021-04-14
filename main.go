@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/alecthomas/kong"
@@ -10,12 +11,15 @@ import (
 
 var CLI struct {
 	Config string `short:"c" help:"Path to teller.yml"`
-	Run    struct {
-		Cmd []string `arg name:"cmd" help:"Command to execute"`
+
+	Run struct {
+		Redact bool     `optional name:"redact" help:"Redact output of the child process"`
+		Cmd    []string `arg name:"cmd" help:"Command to execute"`
 	} `cmd help:"Run a command"`
 
 	Version struct {
 	} `cmd short:"v" help:"Teller version"`
+
 	New struct {
 	} `cmd help:"Create a new teller configuration file"`
 
@@ -33,6 +37,11 @@ var CLI struct {
 		OutFile      string `arg name:"out_file" help:"Output file"`
 	} `cmd help:"Inject vars into a template file"`
 
+	Redact struct {
+		In  string `optional name:"in" help:"Input file"`
+		Out string `optional name:"out" help:"Output file"`
+	} `cmd help:"Scans your codebase for sensitive keys"`
+
 	Scan struct {
 		Path   string `arg optional name:"path" help:"Scan root, default: '.'"`
 		Silent bool   `optional name:"silent" help:"No text, just exit code"`
@@ -45,6 +54,7 @@ var (
 	date    = "unknown"
 )
 
+//nolint
 func main() {
 	ctx := kong.Parse(&CLI)
 
@@ -83,7 +93,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	teller := pkg.NewTeller(tlrfile, CLI.Run.Cmd)
+	teller := pkg.NewTeller(tlrfile, CLI.Run.Cmd, CLI.Run.Redact)
 	err = teller.Collect()
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -98,6 +108,37 @@ func main() {
 			os.Exit(1)
 		}
 		teller.Exec()
+
+	case "redact":
+		// redact (stdin)
+		// redact --in FILE --out FOUT
+		// redact --in FILE (stdout)
+		var fin io.Reader = os.Stdin
+		var fout io.Writer = os.Stdout
+
+		if CLI.Redact.In != "" {
+			f, err := os.Open(CLI.Redact.In)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+			fin = f
+		}
+
+		if CLI.Redact.Out != "" {
+			f, err := os.Create(CLI.Redact.Out)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+
+			fout = f
+		}
+
+		if err := teller.RedactLines(fin, fout); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
 
 	case "sh":
 		fmt.Print(teller.ExportEnv())

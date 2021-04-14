@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -24,6 +25,7 @@ import (
 // Entries - when loaded, these contains the mapped entries. Load them with Collect()
 // Templating - Teller's templating options.
 type Teller struct {
+	Redact     bool
 	Cmd        []string
 	Config     *TellerFile
 	Porcelain  *Porcelain
@@ -31,17 +33,20 @@ type Teller struct {
 	Providers  Providers
 	Entries    []core.EnvEntry
 	Templating *Templating
+	Redactor   *Redactor
 }
 
 // Create a new Teller instance, using a tellerfile, and a command to execute (if any)
-func NewTeller(tlrfile *TellerFile, cmd []string) *Teller {
+func NewTeller(tlrfile *TellerFile, cmd []string, redact bool) *Teller {
 	return &Teller{
+		Redact:     redact,
 		Config:     tlrfile,
 		Cmd:        cmd,
 		Providers:  &BuiltinProviders{},
 		Populate:   core.NewPopulate(tlrfile.Opts),
 		Porcelain:  &Porcelain{Out: os.Stdout},
 		Templating: &Templating{},
+		Redactor:   &Redactor{},
 	}
 }
 
@@ -52,7 +57,7 @@ func bail(e error) {
 }
 
 // execute a command, and take care to sanitize the child process environment (conditionally)
-func (tl *Teller) execCmd(cmd string, cmdArgs []string) error {
+func (tl *Teller) execCmd(cmd string, cmdArgs []string, withRedaction bool) error {
 	command := exec.Command(cmd, cmdArgs...)
 	if !tl.Config.CarryEnv {
 		command.Env = funk.Map(tl.Entries, func(ent interface{}) string {
@@ -66,6 +71,13 @@ func (tl *Teller) execCmd(cmd string, cmdArgs []string) error {
 			os.Setenv(b.Key, b.Value)
 		}
 	}
+	if withRedaction {
+		out, err := command.CombinedOutput()
+		redacted := tl.Redactor.Redact(string(out))
+		os.Stdout.Write([]byte(redacted))
+		return err
+	}
+
 	command.Stdin = os.Stdin
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
@@ -131,6 +143,27 @@ func (tl *Teller) SetupNewProject(fname string) error {
 }
 
 // Execute a command with teller. This requires all entries to be loaded beforehand with Collect()
+func (tl *Teller) RedactLines(r io.Reader, w io.Writer) error {
+	scanner := bufio.NewScanner(r)
+	//nolint
+	buf := make([]byte, 0, 64*1024)
+	//nolint
+	scanner.Buffer(buf, 10*1024*1024) // 10MB lines correlating to 10MB files max (bundles?)
+
+	for scanner.Scan() {
+		if _, err := fmt.Fprintln(w, tl.Redactor.Redact(string(scanner.Bytes()))); err != nil {
+			return err
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Execute a command with teller. This requires all entries to be loaded beforehand with Collect()
 func (tl *Teller) Exec() {
 	tl.Porcelain.PrintContext(tl.Config.Project, tl.Config.LoadedFrom)
 	if tl.Config.Confirm != "" {
@@ -142,7 +175,7 @@ func (tl *Teller) Exec() {
 		}
 	}
 
-	err := tl.execCmd(tl.Cmd[0], tl.Cmd[1:])
+	err := tl.execCmd(tl.Cmd[0], tl.Cmd[1:], tl.Redact)
 	if err != nil {
 		bail(err)
 	}
@@ -270,6 +303,12 @@ func updateParams(ent *core.EnvEntry, from *core.KeyPath) {
 	} else {
 		ent.Severity = from.Severity
 	}
+
+	if from.RedactWith == "" {
+		ent.RedactWith = "**REDACTED**"
+	} else {
+		ent.RedactWith = from.RedactWith
+	}
 }
 
 // The main "load all variables from all providers" logic. Walks over all definitions in the tellerfile
@@ -321,5 +360,6 @@ func (tl *Teller) Collect() error {
 
 	sort.Sort(core.EntriesByKey(entries))
 	tl.Entries = entries
+	tl.Redactor = NewRedactor(entries)
 	return nil
 }

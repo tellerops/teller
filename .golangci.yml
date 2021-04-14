@@ -20,6 +20,7 @@ linters-settings:
       - octalLiteral
       - whyNoLint
       - wrapperFunc
+      - hugeParam
   gocyclo:
     min-complexity: 20
   golint:

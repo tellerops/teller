@@ -16,6 +16,7 @@ providers:
     env:
       FOO_BAR:
         path: ~/my-dot-env.env
+        redact_with: "**FOOBAR**" # optional
 
   # # requires an API key in: HEROKU_API_KEY (you can fetch from ~/.netrc)
   # heroku:
