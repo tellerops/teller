@@ -1,7 +1,27 @@
-![](media/cover.png)
+<p align="center">
+<br/>
+<br/>
+<br/>
+   <img src="media/teller-logo.png" width="288"/>
+<br/>
+<br/>
+</p>
+<p align="center">
+<b>:computer: Never leave your terminal for secrets</b>
+<br/>
+<b>:pager: Create easy and clean workflows for working with cloud environments</b>
+<br/>
+<b>:mag_right: Scan for secrets and fight secret sprawl</b>
+<br/>
+<hr/>
+</p>
+
+<p align="center">
+<img src="https://github.com/spectralops/teller/actions/workflows/ci.yml/badge.svg"/>
+
+</p>
 
 # Teller - the open-source universal secret manager for developers
-![ci](https://github.com/spectralops/teller/actions/workflows/ci.yml/badge.svg)
 
 
 Never leave your terminal to use secrets while developing, testing, and building your apps.
