@@ -18,6 +18,8 @@ type KeyPath struct {
 	Optional   bool              `yaml:"optional,omitempty"`
 	Severity   Severity          `yaml:"severity,omitempty" default:"high"`
 	RedactWith string            `yaml:"redact_with,omitempty" default:"**REDACTED**"`
+	Source     string            `yaml:"source,omitempty"`
+	Sink       string            `yaml:"sink,omitempty"`
 }
 type WizardAnswers struct {
 	Project      string
@@ -33,6 +35,8 @@ func (k *KeyPath) WithEnv(env string) KeyPath {
 		Field:    k.Field,
 		Decrypt:  k.Decrypt,
 		Optional: k.Optional,
+		Source:   k.Source,
+		Sink:     k.Sink,
 	}
 }
 func (k *KeyPath) SwitchPath(path string) KeyPath {
@@ -42,8 +46,16 @@ func (k *KeyPath) SwitchPath(path string) KeyPath {
 		Env:      k.Env,
 		Decrypt:  k.Decrypt,
 		Optional: k.Optional,
+		Source:   k.Source,
+		Sink:     k.Sink,
 	}
 }
+
+type DriftedEntriesBySource []DriftedEntry
+
+func (a DriftedEntriesBySource) Len() int           { return len(a) }
+func (a DriftedEntriesBySource) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a DriftedEntriesBySource) Less(i, j int) bool { return a[i].Source.Source < a[j].Source.Source }
 
 type EntriesByKey []EnvEntry
 
@@ -60,26 +72,35 @@ func (a EntriesByValueSize) Less(i, j int) bool { return len(a[i].Value) > len(a
 type EnvEntry struct {
 	Key          string
 	Value        string
+	ProviderName string
 	Provider     string
 	ResolvedPath string
 	Severity     Severity
 	RedactWith   string
+	Source       string
+	Sink         string
+}
+type DriftedEntry struct {
+	Diff   string
+	Source EnvEntry
+	Target EnvEntry
 }
 type EnvEntryLookup struct {
 	Entries []EnvEntry
 }
 
-func (e *EnvEntryLookup) EnvBy(key, provider, path, dflt string) string {
-	for _, e := range e.Entries {
-		if e.Key == key && e.Provider == provider && e.ResolvedPath == path {
+func (ee *EnvEntryLookup) EnvBy(key, provider, path, dflt string) string {
+	for i := range ee.Entries {
+		e := ee.Entries[i]
+		if e.Key == key && e.ProviderName == provider && e.ResolvedPath == path {
 			return e.Value
 		}
-
 	}
 	return dflt
 }
-func (e *EnvEntryLookup) EnvByKey(key, dflt string) string {
-	for _, e := range e.Entries {
+func (ee *EnvEntryLookup) EnvByKey(key, dflt string) string {
+	for i := range ee.Entries {
+		e := ee.Entries[i]
 		if e.Key == key {
 			return e.Value
 		}
@@ -88,9 +109,10 @@ func (e *EnvEntryLookup) EnvByKey(key, dflt string) string {
 	return dflt
 }
 
-func (e *EnvEntryLookup) EnvByKeyAndProvider(key, provider, dflt string) string {
-	for _, e := range e.Entries {
-		if e.Key == key && e.Provider == provider {
+func (ee *EnvEntryLookup) EnvByKeyAndProvider(key, provider, dflt string) string {
+	for i := range ee.Entries {
+		e := ee.Entries[i]
+		if e.Key == key && e.ProviderName == provider {
 			return e.Value
 		}
 

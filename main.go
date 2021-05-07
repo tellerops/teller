@@ -46,6 +46,10 @@ var CLI struct {
 		Path   string `arg optional name:"path" help:"Scan root, default: '.'"`
 		Silent bool   `optional name:"silent" help:"No text, just exit code"`
 	} `cmd help:"Scans your codebase for sensitive keys"`
+
+	Drift struct {
+		Providers []string `arg optional name:"providers" help:"A list of providers to check for drift"`
+	} `cmd help:"Detect secret and value drift between providers"`
 }
 
 var (
@@ -108,6 +112,15 @@ func main() {
 			os.Exit(1)
 		}
 		teller.Exec()
+
+	case "drift <providers>":
+		fallthrough
+	case "drift":
+		drifts := teller.Drift(CLI.Drift.Providers)
+		if len(drifts) > 0 {
+			teller.Porcelain.PrintDrift(drifts)
+			os.Exit(1)
+		}
 
 	case "redact":
 		// redact (stdin)

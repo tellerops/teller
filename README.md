@@ -95,7 +95,7 @@ Behind the scenes: `teller` fetched the correct variables, placed those (and _ju
 
 # Features
 
-## Running subprocesses
+## :running: Running subprocesses
 
 Manually exporting and setting up environment variables for running a process with demo-like / production-like set up?
 
@@ -108,7 +108,7 @@ Using `teller` and a `.teller.yml` file that exposes nothing to the prying eyes,
 $ teller run -- your-process arg1 arg2... --switch1 ...
 ```
 
-## Inspecting variables
+## :mag_right: Inspecting variables
 
 This will output the current variables `teller` picks up. Only first 2 letters will be shown from each, of course.
 
@@ -117,7 +117,7 @@ This will output the current variables `teller` picks up. Only first 2 letters w
 $ teller show
 ```
 
-## Local shell population
+## :tv: Local shell population
 
 Hardcoding secrets into your shell scripts and dotfiles?
 
@@ -129,7 +129,7 @@ In this case, this is what you should add:
 eval "$(teller sh)"
 ```
 
-## Easy Docker environment
+## :whale: Easy Docker environment
 
 Tired of grabbing all kinds of variables, setting those up, and worried about these appearing in your shell history as well?
 
@@ -139,7 +139,7 @@ Use this one liner from now on:
 $ docker run --rm -it --env-file <(teller env) alpine sh
 ```
 
-## Scan for secrets
+## :warning:  Scan for secrets
 
 Teller can help you fight secret sprawl and hard coded secrets, as well as be the best productivity tool for working with your vault.
 
@@ -173,7 +173,7 @@ dotenv:
 By default we treat all entries as sensitive, with value `high`.
 
 
-## Redact secrets from process outputs, logs, and files
+## :recycle: Redact secrets from process outputs, logs, and files
 
 You can use `teller` as a redaction tool across your infrastructure, and run processes while redacting their output as well as clean up logs and live tails of logs.
 
@@ -204,8 +204,36 @@ $ teller --in dirty.csv --out clean.csv
 
 If you omit `--in` Teller will take `stdin`, and if you omit `--out` Teller will output to `stdout`.
 
+## :beetle: Detect secrets and value drift
 
-## Populate templates
+You can detect _secret drift_ by comparing values from different providers against each other. It might be that you want to pin a set of keys in different providers to always be the same value; when they aren't -- that means you have a drift.
+
+For this, you first need to label values as `source` and couple with the appropriate sink as `sink` (use same label for both to couple them). Then, source keys will be compared against other keys in your configuration:
+
+```yaml
+providers:
+  dotenv:
+    env_sync:
+      path: ~/my-dot-env.env
+      source: s1
+  dotenv2:
+    kind: dotenv
+    env_sync:
+      path: ~/other-dot-env.env
+      sink: s1
+```
+
+And run
+
+```
+$ teller drift dotenv dotenv2 -c your-config.yml
+```
+
+![](https://user-images.githubusercontent.com/83390/117453797-07512380-af4e-11eb-949e-cc875e854fad.png)
+
+
+
+## :scroll: Populate templates
 
 Have a kickstarter project you want to populate quickly with some variables (not secrets though!)?
 
@@ -231,7 +259,7 @@ Will get you, assuming `FOO_BAR=Spock`:
 Hello, Spock!
 ```
 
-## Prompts and options
+## :white_check_mark: Prompts and options
 
 There are a few options that you can use:
 

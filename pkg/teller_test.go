@@ -52,6 +52,7 @@ func (im *InMemProvider) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 			Value:        v,
 			ResolvedPath: p.Path,
 			Provider:     im.Name(),
+			ProviderName: im.Name(),
 		})
 	}
 	sort.Sort(core.EntriesByKey(entries))
@@ -67,6 +68,7 @@ func (im *InMemProvider) Get(p core.KeyPath) (*core.EnvEntry, error) {
 		Value:        s,
 		ResolvedPath: p.Path,
 		Provider:     im.Name(),
+		ProviderName: im.Name(),
 	}, nil
 }
 
@@ -81,7 +83,7 @@ func TestTellerExports(t *testing.T) {
 
 	tl = Teller{
 		Entries: []core.EnvEntry{
-			{Key: "k", Value: "v", Provider: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "k", Value: "v", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 		},
 	}
 
@@ -216,10 +218,32 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 	b.Reset()
 
 	tl.Entries = append(tl.Entries, core.EnvEntry{
-		Key: "k", Value: "v", Provider: "test-provider", ResolvedPath: "path/kv",
+		Key: "k", Value: "v", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
 	})
 
 	tl.PrintEnvKeys()
 	assert.Equal(t, b.String(), "-*- teller: loaded variables for test-project using nowhere -*-\n\n[test-provider path/kv] k = v*****\n")
 
+}
+
+func TestTellerDrift(t *testing.T) {
+	tl := Teller{
+		Entries: []core.EnvEntry{
+			{Key: "k", Value: "v", Source: "s1", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "k", Value: "v", Sink: "s1", Provider: "test-provider", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
+			{Key: "kX", Value: "vx", Source: "s1", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "kX", Value: "CHANGED", Sink: "s1", Provider: "test-provider", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
+
+			// these do not have sink/source
+			{Key: "k--", Value: "00", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "k--", Value: "11", Provider: "test-provider", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
+		},
+	}
+
+	drifts := tl.Drift([]string{})
+
+	assert.Equal(t, len(drifts), 1)
+	d := drifts[0]
+	assert.Equal(t, d.Source.Value, "vx")
+	assert.Equal(t, d.Target.Value, "CHANGED")
 }

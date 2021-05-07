@@ -25,4 +25,8 @@ deps:
 release:
 	goreleaser --rm-dist
 
-.PHONY: deps setup-mac release readme lint mocks
+coverage:
+	go test ./pkg/... -coverprofile=coverage.out
+	go tool cover -func=coverage.out
+
+.PHONY: deps setup-mac release readme lint mocks coverage
