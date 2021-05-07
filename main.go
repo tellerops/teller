@@ -49,7 +49,7 @@ var CLI struct {
 
 	Drift struct {
 		Providers []string `arg optional name:"providers" help:"A list of providers to check for drift"`
-	} `cmd help:"Scans your codebase for sensitive keys"`
+	} `cmd help:"Detect secret and value drift between providers"`
 }
 
 var (

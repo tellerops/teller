@@ -228,11 +228,6 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 
 func TestTellerDrift(t *testing.T) {
 	tl := Teller{
-		Entries:   []core.EnvEntry{},
-		Providers: &BuiltinProviders{},
-	}
-
-	tl = Teller{
 		Entries: []core.EnvEntry{
 			{Key: "k", Value: "v", Source: "s1", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 			{Key: "k", Value: "v", Sink: "s1", Provider: "test-provider", ProviderName: "test-provider2", ResolvedPath: "path/kv"},

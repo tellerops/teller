@@ -92,7 +92,7 @@ type EnvEntryLookup struct {
 func (ee *EnvEntryLookup) EnvBy(key, provider, path, dflt string) string {
 	for i := range ee.Entries {
 		e := ee.Entries[i]
-		if e.Key == key && e.Provider == provider && e.ResolvedPath == path {
+		if e.Key == key && e.ProviderName == provider && e.ResolvedPath == path {
 			return e.Value
 		}
 	}
@@ -112,7 +112,7 @@ func (ee *EnvEntryLookup) EnvByKey(key, dflt string) string {
 func (ee *EnvEntryLookup) EnvByKeyAndProvider(key, provider, dflt string) string {
 	for i := range ee.Entries {
 		e := ee.Entries[i]
-		if e.Key == key && e.Provider == provider {
+		if e.Key == key && e.ProviderName == provider {
 			return e.Value
 		}
 
