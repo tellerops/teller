@@ -105,12 +105,13 @@ func (p *Porcelain) PrintEntries(entries []core.EnvEntry) {
 	green := color.New(color.FgGreen).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
 
-	for _, v := range entries {
+	for i := range entries {
+		v := entries[i]
 		ep := ellipsis.Shorten(v.ResolvedPath, 30)
 		if v.Value == "" {
-			fmt.Fprintf(&buf, "[%s %s %s] %s\n", yellow(v.Provider), gray(ep), red("missing"), green(v.Key))
+			fmt.Fprintf(&buf, "[%s %s %s] %s\n", yellow(v.ProviderName), gray(ep), red("missing"), green(v.Key))
 		} else {
-			fmt.Fprintf(&buf, "[%s %s] %s %s %s\n", yellow(v.Provider), gray(ep), green(v.Key), gray("="), maskedValue(v.Value))
+			fmt.Fprintf(&buf, "[%s %s] %s %s %s\n", yellow(v.ProviderName), gray(ep), green(v.Key), gray("="), maskedValue(v.Value))
 		}
 	}
 
@@ -137,7 +138,7 @@ func (p *Porcelain) PrintMatches(matches []core.Match) {
 		if m.Entry.Severity == core.Medium {
 			sevcolor = yellow
 		}
-		fmt.Printf("[%s] %s (%s,%s): found match for %s/%s (%s)\n", sevcolor(m.Entry.Severity), green(m.Path), yellow(m.LineNumber), yellow(m.MatchIndex), gray(m.Entry.Provider), red(m.Entry.Key), gray(maskedValue(m.Entry.Value)))
+		fmt.Printf("[%s] %s (%s,%s): found match for %s/%s (%s)\n", sevcolor(m.Entry.Severity), green(m.Path), yellow(m.LineNumber), yellow(m.MatchIndex), gray(m.Entry.ProviderName), red(m.Entry.Key), gray(maskedValue(m.Entry.Value)))
 	}
 }
 
@@ -149,4 +150,24 @@ func (p *Porcelain) PrintMatchSummary(findings []core.Match, entries []core.EnvE
 	}
 
 	fmt.Printf("Scanning for %v entries: found %v matches in %v\n", yellow(len(entries)), goodbad(len(findings)), goodbad(elapsed))
+}
+
+func (p *Porcelain) PrintDrift(drifts []core.DriftedEntry) {
+	green := color.New(color.FgGreen).SprintFunc()
+	gray := color.New(color.FgHiBlack).SprintFunc()
+	red := color.New(color.FgRed).SprintFunc()
+
+	if len(drifts) > 0 {
+		fmt.Fprintf(p.Out, "Drifts detected: %v\n\n", len(drifts))
+
+		for i := range drifts {
+			d := drifts[i]
+			if d.Diff == "changed" {
+				fmt.Fprintf(p.Out, "%v [%v] %v %v %v != %v %v %v\n", d.Diff, d.Source.Source, green(d.Source.ProviderName), green(d.Source.Key), gray(maskedValue(d.Source.Value)), red(d.Target.ProviderName), red(d.Target.Key), gray(maskedValue(d.Target.Value)))
+			} else {
+				fmt.Fprintf(p.Out, "%v [%v] %v %v %v ??\n", d.Diff, d.Source.Source, green(d.Source.ProviderName), green(d.Source.Key), gray(maskedValue(d.Source.Value)))
+			}
+		}
+	}
+
 }

@@ -9,16 +9,16 @@ import (
 
 type ProvidersMap map[string]MappingConfig
 type TellerFile struct {
-	Opts         map[string]string       `yaml:"opts,omitempty"`
-	Confirm      string                  `yaml:"confirm,omitempty"`
-	Project      string                  `yaml:"project,omitempty"`
-	CarryEnv     bool                    `yaml:"carry_env,omitempty"`
-	Providers    ProvidersMap            `yaml:"providers,omitempty"`
-	Environments map[string]ProvidersMap `yaml:"providers,omitempty"`
-	LoadedFrom   string
+	Opts       map[string]string `yaml:"opts,omitempty"`
+	Confirm    string            `yaml:"confirm,omitempty"`
+	Project    string            `yaml:"project,omitempty"`
+	CarryEnv   bool              `yaml:"carry_env,omitempty"`
+	Providers  ProvidersMap      `yaml:"providers,omitempty"`
+	LoadedFrom string
 }
 
 type MappingConfig struct {
+	Kind       string                   `yaml:"kind,omitempty"`
 	EnvMapping *core.KeyPath            `yaml:"env_sync,omitempty"`
 	Env        *map[string]core.KeyPath `yaml:"env,omitempty"`
 }

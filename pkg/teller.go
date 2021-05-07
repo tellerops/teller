@@ -67,7 +67,8 @@ func (tl *Teller) execCmd(cmd string, cmdArgs []string, withRedaction bool) erro
 		command.Env = append(command.Env, funk.Map([]string{"USER", "HOME", "PATH"}, func(k string) string { return fmt.Sprintf("%s=%s", k, os.Getenv(k)) }).([]string)...)
 
 	} else {
-		for _, b := range tl.Entries {
+		for i := range tl.Entries {
+			b := tl.Entries[i]
 			os.Setenv(b.Key, b.Value)
 		}
 	}
@@ -95,7 +96,8 @@ func (tl *Teller) ExportEnv() string {
 	var b bytes.Buffer
 
 	fmt.Fprintf(&b, "#!/bin/sh\n")
-	for _, v := range tl.Entries {
+	for i := range tl.Entries {
+		v := tl.Entries[i]
 		fmt.Fprintf(&b, "export %s=%s\n", v.Key, v.Value)
 	}
 	return b.String()
@@ -105,7 +107,8 @@ func (tl *Teller) ExportEnv() string {
 func (tl *Teller) ExportDotenv() string {
 	var b bytes.Buffer
 
-	for _, v := range tl.Entries {
+	for i := range tl.Entries {
+		v := tl.Entries[i]
 		fmt.Fprintf(&b, "%s=%s\n", v.Key, v.Value)
 	}
 	return b.String()
@@ -214,7 +217,8 @@ func checkForMatches(path string, entries []core.EnvEntry) ([]core.Match, error)
 		}
 
 		linestr := string(line)
-		for _, ent := range entries {
+		for i := range entries {
+			ent := entries[i]
 			if ent.Value == "" || ent.Severity == core.None {
 				continue
 			}
@@ -297,7 +301,11 @@ func (tl *Teller) TemplateFile(from, to string) error {
 	return nil
 }
 
-func updateParams(ent *core.EnvEntry, from *core.KeyPath) {
+func updateParams(ent *core.EnvEntry, from *core.KeyPath, pname string) {
+	ent.ProviderName = pname
+	ent.Source = from.Source
+	ent.Sink = from.Sink
+
 	if from.Severity == "" {
 		ent.Severity = core.High
 	} else {
@@ -316,6 +324,12 @@ func (tl *Teller) CollectFromProviderMap(ps *ProvidersMap) ([]core.EnvEntry, err
 	for pname, conf := range *ps {
 		p, err := tl.Providers.GetProvider(pname)
 		if err != nil {
+			// ok, maybe same provider, with 'kind'?
+			p, err = tl.Providers.GetProvider(conf.Kind)
+		}
+
+		// still no provider? bail.
+		if err != nil {
 			return nil, err
 		}
 
@@ -325,18 +339,20 @@ func (tl *Teller) CollectFromProviderMap(ps *ProvidersMap) ([]core.EnvEntry, err
 				return nil, err
 			}
 
-			// optionally remap environment variables synced from the provider
+			//nolint
 			for k, v := range es {
+				// optionally remap environment variables synced from the provider
 				if val, ok := conf.EnvMapping.Remap[v.Key]; ok {
 					es[k].Key = val
-					updateParams(&es[k], conf.EnvMapping)
 				}
+				updateParams(&es[k], conf.EnvMapping, pname)
 			}
 
 			entries = append(entries, es...)
 		}
 
 		if conf.Env != nil {
+			//nolint
 			for k, v := range *conf.Env {
 				ent, err := p.Get(tl.Populate.KeyPath(v.WithEnv(k)))
 				if err != nil {
@@ -347,7 +363,7 @@ func (tl *Teller) CollectFromProviderMap(ps *ProvidersMap) ([]core.EnvEntry, err
 					}
 				} else {
 					//nolint
-					updateParams(ent, &v)
+					updateParams(ent, &v, pname)
 					entries = append(entries, *ent)
 				}
 			}
@@ -371,4 +387,46 @@ func (tl *Teller) Collect() error {
 	tl.Entries = entries
 	tl.Redactor = NewRedactor(entries)
 	return nil
+}
+
+func (tl *Teller) Drift(providerNames []string) []core.DriftedEntry {
+	sources := map[string]core.EnvEntry{}
+	targets := map[string][]core.EnvEntry{}
+	filtering := len(providerNames) > 0
+	for i := range tl.Entries {
+		ent := tl.Entries[i]
+		if filtering && !funk.ContainsString(providerNames, ent.ProviderName) {
+			continue
+		}
+		if ent.Source != "" {
+			sources[ent.Source+":"+ent.Key] = ent
+		} else if ent.Sink != "" {
+			k := ent.Sink + ":" + ent.Key
+			ents := targets[k]
+			if ents == nil {
+				targets[k] = []core.EnvEntry{ent}
+			} else {
+				targets[k] = append(ents, ent)
+			}
+		}
+	}
+
+	drifts := []core.DriftedEntry{}
+
+	//nolint
+	for sk, source := range sources {
+		ents := targets[sk]
+		if ents == nil {
+			drifts = append(drifts, core.DriftedEntry{Diff: "missing", Source: source})
+		}
+
+		for _, e := range ents {
+			if e.Value != source.Value {
+				drifts = append(drifts, core.DriftedEntry{Diff: "changed", Source: source, Target: e})
+			}
+		}
+	}
+
+	sort.Sort(core.DriftedEntriesBySource(drifts))
+	return drifts
 }

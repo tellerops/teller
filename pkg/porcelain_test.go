@@ -22,8 +22,44 @@ func TestPorcelainNonInteractive(t *testing.T) {
 	b.Reset()
 
 	p.PrintEntries([]core.EnvEntry{
-		{Key: "k", Value: "v", Provider: "test-provider", ResolvedPath: "path/kv"},
+		{Key: "k", Value: "v", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 	})
 	assert.Equal(t, b.String(), "[test-provider path/kv] k = v*****\n")
 	b.Reset()
+}
+
+func TestPorcelainPrintDrift(t *testing.T) {
+	var b bytes.Buffer
+	p := Porcelain{
+		Out: &b,
+	}
+	p.PrintDrift([]core.DriftedEntry{
+		{
+			Diff: "changed",
+			Source: core.EnvEntry{
+
+				Source: "s1", Key: "k", Value: "v", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+			},
+
+			Target: core.EnvEntry{
+
+				Sink: "s1", Key: "k", Value: "x", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+			},
+		},
+		{
+			Diff: "changed",
+			Source: core.EnvEntry{
+				Source: "s2", Key: "k2", Value: "1", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+			},
+
+			Target: core.EnvEntry{
+				Sink: "s2", Key: "k2", Value: "2", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+			},
+		},
+	})
+	assert.Equal(t, b.String(), `Drifts detected: 2
+
+changed [s1] test-provider k v***** != test-provider k x*****
+changed [s2] test-provider k2 1***** != test-provider k2 2*****
+`)
 }

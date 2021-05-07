@@ -22,7 +22,8 @@ func (r *Redactor) Redact(s string) string {
 	entries := append([]core.EnvEntry(nil), r.Entries...)
 
 	sort.Sort(core.EntriesByValueSize(entries))
-	for _, ent := range entries {
+	for i := range entries {
+		ent := entries[i]
 		redacted = strings.ReplaceAll(redacted, ent.Value, ent.RedactWith)
 	}
 
