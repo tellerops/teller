@@ -21,6 +21,7 @@ func NewHeroku() (core.Provider, error) {
 	heroku.DefaultTransport.BearerToken = os.Getenv("HEROKU_API_KEY")
 
 	svc := heroku.NewService(heroku.DefaultClient)
+	//svc.ConfigVarUpdate()
 	return &Heroku{client: svc}, nil
 }
 
@@ -77,3 +78,9 @@ func (h *Heroku) Get(p core.KeyPath) (*core.EnvEntry, error) {
 func (h *Heroku) getSecret(kp core.KeyPath) (heroku.ConfigVarInfoForAppResult, error) {
 	return h.client.ConfigVarInfoForApp(context.TODO(), kp.Path)
 }
+
+/*
+func (h *Heroku) setSecret(kp core.KeyPath) (heroku.ConfigVarInfoForAppResult, error) {
+	h.client.
+}
+*/

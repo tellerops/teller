@@ -18,6 +18,8 @@ type KeyPath struct {
 	Optional   bool              `yaml:"optional,omitempty"`
 	Severity   Severity          `yaml:"severity,omitempty" default:"high"`
 	RedactWith string            `yaml:"redact_with,omitempty" default:"**REDACTED**"`
+	IsSource   bool              `yaml:"source,omitempty"`
+	Handle     string            `yaml:"handle,omitempty"`
 }
 type WizardAnswers struct {
 	Project      string
@@ -33,6 +35,8 @@ func (k *KeyPath) WithEnv(env string) KeyPath {
 		Field:    k.Field,
 		Decrypt:  k.Decrypt,
 		Optional: k.Optional,
+		IsSource: k.IsSource,
+		Handle:   k.Handle,
 	}
 }
 func (k *KeyPath) SwitchPath(path string) KeyPath {
@@ -42,6 +46,8 @@ func (k *KeyPath) SwitchPath(path string) KeyPath {
 		Env:      k.Env,
 		Decrypt:  k.Decrypt,
 		Optional: k.Optional,
+		IsSource: k.IsSource,
+		Handle:   k.Handle,
 	}
 }
 
@@ -64,6 +70,7 @@ type EnvEntry struct {
 	ResolvedPath string
 	Severity     Severity
 	RedactWith   string
+	Handle       string
 }
 type EnvEntryLookup struct {
 	Entries []EnvEntry

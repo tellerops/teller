@@ -311,22 +311,18 @@ func updateParams(ent *core.EnvEntry, from *core.KeyPath) {
 	}
 }
 
-// The main "load all variables from all providers" logic. Walks over all definitions in the tellerfile
-// and then: fetches, converts, creates a new EnvEntry. We're also mapping the sensitivity aspects of it.
-// Note that for a similarly named entry - last one wins.
-func (tl *Teller) Collect() error {
-	t := tl.Config
+func (tl *Teller) CollectFromProviderMap(ps *ProvidersMap) ([]core.EnvEntry, error) {
 	entries := []core.EnvEntry{}
-	for pname, conf := range t.Providers {
+	for pname, conf := range *ps {
 		p, err := tl.Providers.GetProvider(pname)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if conf.EnvMapping != nil {
 			es, err := p.GetMapping(tl.Populate.KeyPath(*conf.EnvMapping))
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			// optionally remap environment variables synced from the provider
@@ -347,7 +343,7 @@ func (tl *Teller) Collect() error {
 					if v.Optional {
 						continue
 					} else {
-						return err
+						return nil, err
 					}
 				} else {
 					//nolint
@@ -359,6 +355,19 @@ func (tl *Teller) Collect() error {
 	}
 
 	sort.Sort(core.EntriesByKey(entries))
+	return entries, nil
+}
+
+// The main "load all variables from all providers" logic. Walks over all definitions in the tellerfile
+// and then: fetches, converts, creates a new EnvEntry. We're also mapping the sensitivity aspects of it.
+// Note that for a similarly named entry - last one wins.
+func (tl *Teller) Collect() error {
+	t := tl.Config
+	entries, err := tl.CollectFromProviderMap(&t.Providers)
+	if err != nil {
+		return err
+	}
+
 	tl.Entries = entries
 	tl.Redactor = NewRedactor(entries)
 	return nil
