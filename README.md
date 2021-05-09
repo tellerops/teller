@@ -199,7 +199,7 @@ $ tail -f /var/log/apache.log | teller redact
 Finally, if you've got some files you want to redact, you can do that too:
 
 ```
-$ teller --in dirty.csv --out clean.csv
+$ teller redact --in dirty.csv --out clean.csv
 ```
 
 If you omit `--in` Teller will take `stdin`, and if you omit `--out` Teller will output to `stdout`.
