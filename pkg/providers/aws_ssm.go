@@ -31,6 +31,10 @@ func (a *AWSSSM) Name() string {
 	return "aws_ssm"
 }
 
+func (a *AWSSSM) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
+
 func (a *AWSSSM) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 	return nil, fmt.Errorf("does not support full env sync (path: %s)", kp.Path)
 }

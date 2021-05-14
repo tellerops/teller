@@ -28,6 +28,10 @@ func (h *Heroku) Name() string {
 	return "heroku"
 }
 
+func (h *Heroku) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", h.Name())
+}
+
 // LINTFIX: Extract this commonly somewhere
 // nolint: dupl
 func (h *Heroku) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

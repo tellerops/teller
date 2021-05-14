@@ -56,6 +56,10 @@ func (a *AWSSecretsManager) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) 
 	return entries, nil
 }
 
+func (a *AWSSecretsManager) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
+
 func (a *AWSSecretsManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	secret, err := a.getSecret(p)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 
 type HashicorpClient interface {
 	Read(path string) (*api.Secret, error)
+	Write(path string, data map[string]interface{}) (*api.Secret, error)
 }
 type HashicorpVault struct {
 	client HashicorpClient
@@ -86,6 +87,16 @@ func (h *HashicorpVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 		ResolvedPath: p.Path,
 		Provider:     h.Name(),
 	}, nil
+}
+
+func (h *HashicorpVault) Put(p core.KeyPath, val string) error {
+	k := p.Env
+	if p.Field != "" {
+		k = p.Field
+	}
+	m := map[string]string{k: val}
+	_, err := h.client.Write(p.Path, map[string]interface{}{"data": m})
+	return err
 }
 
 func (h *HashicorpVault) getSecret(kp core.KeyPath) (*api.Secret, error) {

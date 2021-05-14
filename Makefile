@@ -19,6 +19,9 @@ lint:
 test:
 	go test -v ./pkg/... -cover
 
+integration:
+	go test -v ./pkg/integration_test -cover
+
 deps:
 	go mod tidy && go mod vendor
 

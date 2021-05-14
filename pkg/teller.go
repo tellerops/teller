@@ -430,3 +430,45 @@ func (tl *Teller) Drift(providerNames []string) []core.DriftedEntry {
 	sort.Sort(core.DriftedEntriesBySource(drifts))
 	return drifts
 }
+
+func (tl *Teller) Write(kvmap map[string]string, providerNames []string) []core.DriftedEntry {
+	sources := map[string]core.EnvEntry{}
+	targets := map[string][]core.EnvEntry{}
+	filtering := len(providerNames) > 0
+	for i := range tl.Entries {
+		ent := tl.Entries[i]
+		if filtering && !funk.ContainsString(providerNames, ent.ProviderName) {
+			continue
+		}
+		if ent.Source != "" {
+			sources[ent.Source+":"+ent.Key] = ent
+		} else if ent.Sink != "" {
+			k := ent.Sink + ":" + ent.Key
+			ents := targets[k]
+			if ents == nil {
+				targets[k] = []core.EnvEntry{ent}
+			} else {
+				targets[k] = append(ents, ent)
+			}
+		}
+	}
+
+	drifts := []core.DriftedEntry{}
+
+	//nolint
+	for sk, source := range sources {
+		ents := targets[sk]
+		if ents == nil {
+			drifts = append(drifts, core.DriftedEntry{Diff: "missing", Source: source})
+		}
+
+		for _, e := range ents {
+			if e.Value != source.Value {
+				drifts = append(drifts, core.DriftedEntry{Diff: "changed", Source: source, Target: e})
+			}
+		}
+	}
+
+	sort.Sort(core.DriftedEntriesBySource(drifts))
+	return drifts
+}

@@ -44,6 +44,10 @@ func (a *Etcd) Name() string {
 	return "etcd"
 }
 
+func (a *Etcd) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
+
 func (a *Etcd) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	kvs, err := a.getSecret(p, clientv3.WithPrefix())
 	if err != nil {

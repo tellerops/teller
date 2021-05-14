@@ -3,6 +3,7 @@ package pkg
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"sort"
 	"testing"
 
@@ -16,6 +17,9 @@ type InMemProvider struct {
 	alwaysError bool
 }
 
+func (im *InMemProvider) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", im.Name())
+}
 func (im *InMemProvider) GetProvider(name string) (core.Provider, error) {
 	return im, nil //hardcode to return self
 }

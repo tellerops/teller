@@ -37,7 +37,9 @@ func NewAzureKeyVault() (core.Provider, error) {
 func (a *AzureKeyVault) Name() string {
 	return "azure_keyvault"
 }
-
+func (a *AzureKeyVault) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
 func (a *AzureKeyVault) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 	r := []core.EnvEntry{}
 	ctx := context.Background()

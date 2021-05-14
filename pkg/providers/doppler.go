@@ -40,6 +40,10 @@ func (h *Doppler) Name() string {
 	return "doppler"
 }
 
+func (h *Doppler) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", h.Name())
+}
+
 func (h *Doppler) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	s, err := h.getConfig(p.Path)
 	if err != nil {

@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/hashicorp/consul/api"
@@ -29,6 +30,10 @@ func NewConsul() (core.Provider, error) {
 
 func (a *Consul) Name() string {
 	return "consul"
+}
+
+func (a *Consul) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
 }
 
 func (a *Consul) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

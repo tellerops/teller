@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/alexsasharegan/dotenv"
@@ -30,6 +31,10 @@ func NewDotenv() (core.Provider, error) {
 
 func (a *Dotenv) Name() string {
 	return "dotenv"
+}
+
+func (a *Dotenv) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
 }
 
 func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

@@ -127,6 +127,8 @@ type Provider interface {
 
 	// in this case env is filled
 	Get(p KeyPath) (*EnvEntry, error)
+
+	Put(p KeyPath, val string) error
 }
 
 type Match struct {

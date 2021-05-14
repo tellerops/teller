@@ -30,6 +30,10 @@ func (a *GoogleSecretManager) Name() string {
 	return "google_secretmanager"
 }
 
+func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
+
 func (a *GoogleSecretManager) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 	return nil, fmt.Errorf("does not support full env sync (path: %s)", kp.Path)
 }
