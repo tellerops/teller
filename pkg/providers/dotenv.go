@@ -48,10 +48,7 @@ func (a *Dotenv) Name() string {
 }
 
 func (a *Dotenv) Put(p core.KeyPath, val string) error {
-	k := p.Env
-	if p.Field != "" {
-		k = p.Field
-	}
+	k := p.EffectiveKey()
 	return a.PutMapping(p, map[string]string{k: val})
 }
 
@@ -88,10 +85,9 @@ func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	val, ok := kvs[p.Field]
-	if val == "" {
-		val, ok = kvs[p.Env]
-	}
+
+	k := p.EffectiveKey()
+	val, ok := kvs[k]
 
 	if !ok {
 		ent := p.Missing()

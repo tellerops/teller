@@ -21,6 +21,7 @@ import (
 
 type EtcdClient interface {
 	Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error)
+	Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error)
 }
 type Etcd struct {
 	client EtcdClient
@@ -45,10 +46,18 @@ func (a *Etcd) Name() string {
 }
 
 func (a *Etcd) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	_, err := a.client.Put(context.TODO(), p.Path, val)
+	return err
 }
 func (a *Etcd) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	for k, v := range m {
+		ap := p.SwitchPath(fmt.Sprintf("%v/%v", p.Path, k))
+		err := a.Put(ap, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *Etcd) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

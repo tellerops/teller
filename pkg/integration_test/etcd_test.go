@@ -7,28 +7,31 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/consul/api"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-type ConsulData = map[string]interface{}
-
-func TestGetConsul(t *testing.T) {
+func TestGetEtcd(t *testing.T) {
 	ctx := context.Background()
 	const testToken = "vault-token"
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			AlwaysPullImage: false,
-			Image:           "consul:1.9.5",
-			ExposedPorts:    []string{"8500/tcp"},
-			Env:             map[string]string{},
-			WaitingFor:      wait.ForLog("Started gRPC server").WithStartupTimeout(20 * time.Second)},
-
+			Image:           "gcr.io/etcd-development/etcd:v3.3",
+			ExposedPorts:    []string{"2379/tcp"},
+			Cmd: []string{
+				"etcd",
+				"--name", "etcd0",
+				"--advertise-client-urls", "http://0.0.0.0:2379",
+				"--listen-client-urls", "http://0.0.0.0:2379",
+			},
+			Env:        map[string]string{},
+			WaitingFor: wait.ForLog("ready to serve client requests").WithStartupTimeout(20 * time.Second)},
 		Started: true,
 	}
 
@@ -38,24 +41,25 @@ func TestGetConsul(t *testing.T) {
 
 	ip, err := vaultContainer.Host(ctx)
 	assert.NoError(t, err)
-	port, err := vaultContainer.MappedPort(ctx, "8500")
+	port, err := vaultContainer.MappedPort(ctx, "2379/tcp")
 	assert.NoError(t, err)
 	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
 
 	//
 	// pre-insert data w/API
 	//
-	config := &api.Config{Address: host}
-	client, err := api.NewClient(config)
+	cfg := clientv3.Config{
+		Endpoints: []string{host},
+	}
+	client, err := clientv3.New(cfg)
 	assert.NoError(t, err)
-	_, err = client.KV().Put(&api.KVPair{Key: "path/to/svc/MG_KEY", Value: []byte("value1")}, &api.WriteOptions{})
+	_, err = client.Put(context.TODO(), "path/to/svc/MG_KEY", "value1")
 	assert.NoError(t, err)
-
 	//
 	// use provider to read data
 	//
-	os.Setenv("CONSUL_HTTP_ADDR", host)
-	p, err := providers.NewConsul()
+	os.Setenv("ETCDCTL_ENDPOINTS", host)
+	p, err := providers.NewEtcd()
 	assert.NoError(t, err)
 	kvp := core.KeyPath{Env: "MG_KEY", Path: "path/to/svc/MG_KEY"}
 	res, err := p.Get(kvp)

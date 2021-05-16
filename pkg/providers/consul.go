@@ -96,5 +96,4 @@ func (a *Consul) getSecret(kp core.KeyPath) (*api.KVPair, error) {
 		return nil, err
 	}
 	return kv, nil
-
 }

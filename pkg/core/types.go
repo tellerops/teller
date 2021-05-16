@@ -28,6 +28,14 @@ type WizardAnswers struct {
 	Confirm      bool
 }
 
+func (k *KeyPath) EffectiveKey() string {
+	key := k.Env
+	if k.Field != "" {
+		key = k.Field
+	}
+	return key
+}
+
 func (k *KeyPath) Missing() EnvEntry {
 	return EnvEntry{
 		IsFound:      false,

@@ -571,6 +571,11 @@ doppler:
 
 # Semantics
 
+## Addressing
+
+* Stores that support key-value interfaces: `path` is the direct location of the value, no need for the `env` key or `field`.
+* Stores that support key-valuemap interfaces: `path` is the location of the map, while the `env` key or `field` (if exists) will be used to do the additional final addressing.
+* For env-sync (fetching value map out of a store), path will be a direct pointer at the key-valuemap
 ## Errors
 
 * **Principle of non-recovery**: where possible an error is return when it is not recoverable (nothing to do), but when it is -- providers should attempt recovery (e.g. retry API call)

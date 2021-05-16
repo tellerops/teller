@@ -18,7 +18,6 @@ import (
 type SecretData = map[string]interface{}
 
 func TestGetVaultSecret(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	const testToken = "vault-token"
 
