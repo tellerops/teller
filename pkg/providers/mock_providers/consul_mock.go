@@ -65,3 +65,18 @@ func (mr *MockConsulClientMockRecorder) List(prefix, q interface{}) *gomock.Call
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockConsulClient)(nil).List), prefix, q)
 }
+
+// Put mocks base method.
+func (m *MockConsulClient) Put(p *api.KVPair, q *api.WriteOptions) (*api.WriteMeta, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Put", p, q)
+	ret0, _ := ret[0].(*api.WriteMeta)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Put indicates an expected call of Put.
+func (mr *MockConsulClientMockRecorder) Put(p, q interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockConsulClient)(nil).Put), p, q)
+}

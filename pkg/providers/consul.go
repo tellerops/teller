@@ -13,7 +13,9 @@ import (
 type ConsulClient interface {
 	Get(key string, q *api.QueryOptions) (*api.KVPair, *api.QueryMeta, error)
 	List(prefix string, q *api.QueryOptions) (api.KVPairs, *api.QueryMeta, error)
+	Put(p *api.KVPair, q *api.WriteOptions) (*api.WriteMeta, error)
 }
+
 type Consul struct {
 	client ConsulClient
 }
@@ -33,11 +35,23 @@ func (a *Consul) Name() string {
 }
 
 func (a *Consul) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	_, err := a.client.Put(&api.KVPair{
+		Key:   p.Path,
+		Value: []byte(val),
+	}, &api.WriteOptions{})
+
+	return err
 }
 
 func (a *Consul) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	for k, v := range m {
+		ap := p.SwitchPath(fmt.Sprintf("%v/%v", p.Path, k))
+		err := a.Put(ap, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *Consul) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
