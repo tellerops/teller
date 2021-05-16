@@ -15,7 +15,6 @@ require (
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/kong v0.2.15
 	github.com/alecthomas/repr v0.0.0-20201120212035-bb82daffcca2 // indirect
-	github.com/alexsasharegan/dotenv v0.0.0-20171113213728-090a4d1b5d42
 	github.com/aws/aws-sdk-go-v2/config v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.1.1
@@ -28,6 +27,7 @@ require (
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/heroku/heroku-go/v5 v5.2.1
 	github.com/jftuga/ellipsis v1.0.0
+	github.com/joho/godotenv v1.3.0
 	github.com/karrick/godirwalk v1.16.1
 	github.com/miekg/dns v1.1.35 // indirect
 	github.com/mitchellh/go-homedir v1.1.0

@@ -1,22 +1,36 @@
 package providers
 
 import (
-	"fmt"
+	"io/ioutil"
 	"sort"
 
-	"github.com/alexsasharegan/dotenv"
+	"github.com/joho/godotenv"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/utils"
 )
 
 type DotEnvClient interface {
 	Read(p string) (map[string]string, error)
+	Write(p string, kvs map[string]string) error
 }
 type DotEnvReader struct {
 }
 
 func (d *DotEnvReader) Read(p string) (map[string]string, error) {
-	return dotenv.ReadFile(p)
+	content, err := ioutil.ReadFile(p)
+	if err != nil {
+		return nil, err
+	}
+	return godotenv.Unmarshal(string(content))
+}
+
+func (d *DotEnvReader) Write(p string, kvs map[string]string) error {
+	content, err := godotenv.Marshal(kvs)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(p, []byte(content), 0644) //nolint
 }
 
 type Dotenv struct {
@@ -34,11 +48,26 @@ func (a *Dotenv) Name() string {
 }
 
 func (a *Dotenv) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	k := p.Env
+	if p.Field != "" {
+		k = p.Field
+	}
+	return a.PutMapping(p, map[string]string{k: val})
 }
 
-func (a *Dotenv) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+func (a *Dotenv) PutMapping(kp core.KeyPath, m map[string]string) error {
+	p, err := homedir.Expand(kp.Path)
+	if err != nil {
+		return err
+	}
+
+	// get a fresh copy of a hash
+	into, err := a.client.Read(p)
+	if err != nil {
+		return err
+	}
+	utils.Merge(m, into)
+	return a.client.Write(p, into)
 }
 
 func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

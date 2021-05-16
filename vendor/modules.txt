@@ -86,9 +86,6 @@ github.com/alecthomas/kong
 # github.com/alecthomas/repr v0.0.0-20201120212035-bb82daffcca2
 ## explicit
 github.com/alecthomas/repr
-# github.com/alexsasharegan/dotenv v0.0.0-20171113213728-090a4d1b5d42
-## explicit
-github.com/alexsasharegan/dotenv
 # github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da
 github.com/armon/go-metrics
 # github.com/atotto/clipboard v0.1.2
@@ -312,6 +309,9 @@ github.com/inconshreveable/mousetrap
 github.com/jftuga/ellipsis
 # github.com/jmespath/go-jmespath v0.4.0
 github.com/jmespath/go-jmespath
+# github.com/joho/godotenv v1.3.0
+## explicit
+github.com/joho/godotenv
 # github.com/karrick/godirwalk v1.16.1
 ## explicit
 github.com/karrick/godirwalk

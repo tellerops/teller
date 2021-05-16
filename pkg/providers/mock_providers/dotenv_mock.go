@@ -47,3 +47,17 @@ func (mr *MockDotEnvClientMockRecorder) Read(p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockDotEnvClient)(nil).Read), p)
 }
+
+// Write mocks base method.
+func (m *MockDotEnvClient) Write(p string, kvs map[string]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Write", p, kvs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Write indicates an expected call of Write.
+func (mr *MockDotEnvClientMockRecorder) Write(p, kvs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockDotEnvClient)(nil).Write), p, kvs)
+}
