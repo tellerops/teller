@@ -569,6 +569,13 @@ doppler:
 
 [dopplercli]: https://docs.doppler.com/docs/cli
 
+# Semantics
+
+## Errors
+
+* **Principle of non-recovery**: where possible an error is return when it is not recoverable (nothing to do), but when it is -- providers should attempt recovery (e.g. retry API call)
+* **Missing key/value**: it's possible that when trying to fetch value in a provider - it's missing. This is not an error, rather an indication of a missing entry is returned (`EnvEntry#IsFound`)
+
 # Security Model
 
 ## Project Practices

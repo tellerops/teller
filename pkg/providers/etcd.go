@@ -47,6 +47,9 @@ func (a *Etcd) Name() string {
 func (a *Etcd) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("%v does not implement write yet", a.Name())
 }
+func (a *Etcd) PutMapping(p core.KeyPath, m map[string]string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
 
 func (a *Etcd) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	kvs, err := a.getSecret(p, clientv3.WithPrefix())
@@ -58,19 +61,13 @@ func (a *Etcd) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 		k := string(kv.Key)
 		v := string(kv.Value)
 		seg := utils.LastSegment(k)
-		entries = append(entries, core.EnvEntry{
-			Key:          seg,
-			Value:        v,
-			ResolvedPath: p.Path,
-			Provider:     a.Name(),
-		})
+		entries = append(entries, p.FoundWithKey(seg, v))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
 }
 
 func (a *Etcd) Get(p core.KeyPath) (*core.EnvEntry, error) {
-
 	kvs, err := a.getSecret(p)
 	if err != nil {
 		return nil, err
@@ -79,16 +76,13 @@ func (a *Etcd) Get(p core.KeyPath) (*core.EnvEntry, error) {
 		k := string(kv.Key)
 		v := string(kv.Value)
 		if k == p.Path {
-			return &core.EnvEntry{
-				Key:          p.Env,
-				Value:        v,
-				ResolvedPath: p.Path,
-				Provider:     a.Name(),
-			}, nil
+			ent := p.Found(v)
+			return &ent, nil
 		}
 	}
 
-	return nil, fmt.Errorf("key %s not found", p.Path)
+	ent := p.Missing()
+	return &ent, nil
 }
 
 func (a *Etcd) getSecret(kp core.KeyPath, opts ...clientv3.OpOption) ([]*spb.KeyValue, error) {

@@ -219,7 +219,7 @@ func checkForMatches(path string, entries []core.EnvEntry) ([]core.Match, error)
 		linestr := string(line)
 		for i := range entries {
 			ent := entries[i]
-			if ent.Value == "" || ent.Severity == core.None {
+			if !ent.IsFound || ent.Value == "" || ent.Severity == core.None {
 				continue
 			}
 			if matchIndex := strings.Index(linestr, ent.Value); matchIndex != -1 {
@@ -431,44 +431,66 @@ func (tl *Teller) Drift(providerNames []string) []core.DriftedEntry {
 	return drifts
 }
 
-func (tl *Teller) Write(kvmap map[string]string, providerNames []string) []core.DriftedEntry {
-	sources := map[string]core.EnvEntry{}
-	targets := map[string][]core.EnvEntry{}
-	filtering := len(providerNames) > 0
-	for i := range tl.Entries {
-		ent := tl.Entries[i]
-		if filtering && !funk.ContainsString(providerNames, ent.ProviderName) {
-			continue
+func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool, directPath string) error {
+	for _, pname := range providerNames {
+		pcfg, ok := tl.Config.Providers[pname]
+		if !ok {
+			return fmt.Errorf("provider %v not found", pname)
 		}
-		if ent.Source != "" {
-			sources[ent.Source+":"+ent.Key] = ent
-		} else if ent.Sink != "" {
-			k := ent.Sink + ":" + ent.Key
-			ents := targets[k]
-			if ents == nil {
-				targets[k] = []core.EnvEntry{ent}
+		p := pname
+		if pcfg.Kind != "" {
+			p = pcfg.Kind
+		}
+		provider, err := tl.Providers.GetProvider(p)
+		if err != nil {
+			return fmt.Errorf("cannot create provider %v", p)
+		}
+
+		useDirectPath := directPath != ""
+
+		// XXXWIP design - decide porcelain or not, errors?
+		if sync {
+			var kvp core.KeyPath
+			if useDirectPath {
+				kvp = core.KeyPath{Path: directPath}
 			} else {
-				targets[k] = append(ents, ent)
+				if pcfg.EnvMapping == nil {
+					return fmt.Errorf("there is no env sync mapping for provider '%v'", p)
+				}
+				kvp = *pcfg.EnvMapping
+			}
+			kvpResolved := tl.Populate.KeyPath(kvp)
+			err := provider.PutMapping(kvpResolved, kvmap)
+			if err != nil {
+				return fmt.Errorf("cannot put (sync) %v in provider %v: %v", kvpResolved.Path, p, err)
+			}
+			tl.Porcelain.DidPutKVP(kvpResolved, pname, true)
+		} else {
+			for k, v := range kvmap {
+				// get the kvp for specific mapping
+				ok := false
+				var kvp core.KeyPath
+
+				if useDirectPath {
+					kvp = core.KeyPath{Path: directPath}
+					ok = true
+				} else {
+					kvp, ok = (*pcfg.Env)[k]
+				}
+
+				if ok {
+					kvpResolved := tl.Populate.KeyPath(kvp.WithEnv(k))
+					err := provider.Put(kvpResolved, v)
+					if err != nil {
+						return fmt.Errorf("cannot put %v in provider %v: %v", k, p, err)
+					}
+					tl.Porcelain.DidPutKVP(kvpResolved, pname, false)
+				} else {
+					tl.Porcelain.NoPutKVP(k, pname)
+				}
 			}
 		}
 	}
 
-	drifts := []core.DriftedEntry{}
-
-	//nolint
-	for sk, source := range sources {
-		ents := targets[sk]
-		if ents == nil {
-			drifts = append(drifts, core.DriftedEntry{Diff: "missing", Source: source})
-		}
-
-		for _, e := range ents {
-			if e.Value != source.Value {
-				drifts = append(drifts, core.DriftedEntry{Diff: "changed", Source: source, Target: e})
-			}
-		}
-	}
-
-	sort.Sort(core.DriftedEntriesBySource(drifts))
-	return drifts
+	return nil
 }

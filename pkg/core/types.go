@@ -28,6 +28,33 @@ type WizardAnswers struct {
 	Confirm      bool
 }
 
+func (k *KeyPath) Missing() EnvEntry {
+	return EnvEntry{
+		IsFound:      false,
+		Key:          k.Env,
+		ResolvedPath: k.Path,
+	}
+}
+
+func (k *KeyPath) Found(v string) EnvEntry {
+	return EnvEntry{
+		IsFound:      true,
+		Key:          k.Env,
+		Value:        v,
+		ResolvedPath: k.Path,
+	}
+}
+
+// NOTE: consider doing what 'updateParams' does in these builders
+func (k *KeyPath) FoundWithKey(key, v string) EnvEntry {
+	return EnvEntry{
+		IsFound:      true,
+		Key:          key,
+		Value:        v,
+		ResolvedPath: k.Path,
+	}
+}
+
 func (k *KeyPath) WithEnv(env string) KeyPath {
 	return KeyPath{
 		Env:      env,
@@ -73,13 +100,14 @@ type EnvEntry struct {
 	Key          string
 	Value        string
 	ProviderName string
-	Provider     string
 	ResolvedPath string
 	Severity     Severity
 	RedactWith   string
 	Source       string
 	Sink         string
+	IsFound      bool
 }
+
 type DriftedEntry struct {
 	Diff   string
 	Source EnvEntry
@@ -129,6 +157,7 @@ type Provider interface {
 	Get(p KeyPath) (*EnvEntry, error)
 
 	Put(p KeyPath, val string) error
+	PutMapping(p KeyPath, m map[string]string) error
 }
 
 type Match struct {

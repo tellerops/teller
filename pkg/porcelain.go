@@ -108,7 +108,7 @@ func (p *Porcelain) PrintEntries(entries []core.EnvEntry) {
 	for i := range entries {
 		v := entries[i]
 		ep := ellipsis.Shorten(v.ResolvedPath, 30)
-		if v.Value == "" {
+		if !v.IsFound {
 			fmt.Fprintf(&buf, "[%s %s %s] %s\n", yellow(v.ProviderName), gray(ep), red("missing"), green(v.Key))
 		} else {
 			fmt.Fprintf(&buf, "[%s %s] %s %s %s\n", yellow(v.ProviderName), gray(ep), green(v.Key), gray("="), maskedValue(v.Value))
@@ -170,4 +170,21 @@ func (p *Porcelain) PrintDrift(drifts []core.DriftedEntry) {
 		}
 	}
 
+}
+
+func (p *Porcelain) DidPutKVP(kvp core.KeyPath, pname string, sync bool) {
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	gray := color.New(color.FgHiBlack).SprintFunc()
+	if sync {
+		fmt.Fprintf(p.Out, "Synced %v (%v): OK.\n", green(pname), gray(kvp.Path))
+	} else {
+		fmt.Fprintf(p.Out, "Put %v (%v) in %v: OK.\n", yellow(kvp.Env), gray(kvp.Path), green(pname))
+	}
+}
+
+func (p *Porcelain) NoPutKVP(k, pname string) {
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	fmt.Fprintf(p.Out, "Put %v in %v: no such key '%v' in mapping\n", yellow(k), green(pname), yellow(k))
 }

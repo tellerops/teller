@@ -24,7 +24,7 @@ func TestGetVaultSecret(t *testing.T) {
 
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			AlwaysPullImage: true,
+			AlwaysPullImage: false,
 			Image:           "vault:1.6.3",
 			ExposedPorts:    []string{"8200/tcp"},
 			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
@@ -35,7 +35,7 @@ func TestGetVaultSecret(t *testing.T) {
 
 	vaultContainer, err := testcontainers.GenericContainer(ctx, req)
 	assert.NoError(t, err)
-	defer vaultContainer.Terminate(ctx)
+	defer vaultContainer.Terminate(ctx) //nolint
 
 	ip, err := vaultContainer.Host(ctx)
 	assert.NoError(t, err)

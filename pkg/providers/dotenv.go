@@ -37,6 +37,10 @@ func (a *Dotenv) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("%v does not implement write yet", a.Name())
 }
 
+func (a *Dotenv) PutMapping(p core.KeyPath, m map[string]string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
+
 func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	kvs, err := a.getSecrets(p)
 	if err != nil {
@@ -44,12 +48,7 @@ func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	}
 	entries := []core.EnvEntry{}
 	for k, v := range kvs {
-		entries = append(entries, core.EnvEntry{
-			Key:          k,
-			Value:        v,
-			ResolvedPath: p.Path,
-			Provider:     a.Name(),
-		})
+		entries = append(entries, p.FoundWithKey(k, v))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
@@ -60,17 +59,18 @@ func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	val := kvs[p.Field]
+	val, ok := kvs[p.Field]
 	if val == "" {
-		val = kvs[p.Env]
+		val, ok = kvs[p.Env]
 	}
 
-	return &core.EnvEntry{
-		Key:          p.Env,
-		Value:        val,
-		ResolvedPath: p.Path,
-		Provider:     a.Name(),
-	}, nil
+	if !ok {
+		ent := p.Missing()
+		return &ent, nil
+	}
+
+	ent := p.Found(val)
+	return &ent, nil
 }
 
 func (a *Dotenv) getSecrets(kp core.KeyPath) (map[string]string, error) {

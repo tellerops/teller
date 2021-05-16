@@ -52,7 +52,7 @@ func (h *HashicorpVault) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 
 	entries := []core.EnvEntry{}
 	for k, v := range k {
-		entries = append(entries, core.EnvEntry{Key: k, Value: v.(string), Provider: h.Name(), ResolvedPath: p.Path})
+		entries = append(entries, p.FoundWithKey(k, v.(string)))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
@@ -62,6 +62,11 @@ func (h *HashicorpVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	secret, err := h.getSecret(p)
 	if err != nil {
 		return nil, err
+	}
+
+	if secret == nil {
+		ent := p.Missing()
+		return &ent, nil
 	}
 
 	// vault returns a secret kv struct as either data{} or data.data{} depending on engine
@@ -78,15 +83,12 @@ func (h *HashicorpVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	if k == nil {
-		return nil, fmt.Errorf("field at '%s' does not exist", p.Path)
+		ent := p.Missing()
+		return &ent, nil
 	}
 
-	return &core.EnvEntry{
-		Key:          p.Env,
-		Value:        k.(string),
-		ResolvedPath: p.Path,
-		Provider:     h.Name(),
-	}, nil
+	ent := p.Found(k.(string))
+	return &ent, nil
 }
 
 func (h *HashicorpVault) Put(p core.KeyPath, val string) error {
@@ -98,6 +100,10 @@ func (h *HashicorpVault) Put(p core.KeyPath, val string) error {
 	_, err := h.client.Write(p.Path, map[string]interface{}{"data": m})
 	return err
 }
+func (h *HashicorpVault) PutMapping(p core.KeyPath, m map[string]string) error {
+	_, err := h.client.Write(p.Path, map[string]interface{}{"data": m})
+	return err
+}
 
 func (h *HashicorpVault) getSecret(kp core.KeyPath) (*api.Secret, error) {
 	secret, err := h.client.Read(kp.Path)
@@ -106,7 +112,7 @@ func (h *HashicorpVault) getSecret(kp core.KeyPath) (*api.Secret, error) {
 	}
 
 	if secret == nil || len(secret.Data) == 0 {
-		return nil, fmt.Errorf("data not found at '%s'", kp.Path)
+		return nil, nil
 	}
 
 	if len(secret.Warnings) > 0 {

@@ -50,6 +50,13 @@ var CLI struct {
 	Drift struct {
 		Providers []string `arg optional name:"providers" help:"A list of providers to check for drift"`
 	} `cmd help:"Detect secret and value drift between providers"`
+
+	Put struct {
+		Kvs       map[string]string `arg name:"kvs" help:"A list of key/value pairs, where key is from your tellerfile mapping"`
+		Providers []string          `name:"providers" help:"A list of providers to put the new value into"`
+		Sync      bool              `optional name:"sync" help:"Sync all given k/vs to the env_sync key"`
+		Path      string            `optional name:"path" help:"Take literal path and not from config"`
+	} `cmd help:"Put a new value"`
 }
 
 var (
@@ -98,6 +105,21 @@ func main() {
 	}
 
 	teller := pkg.NewTeller(tlrfile, CLI.Run.Cmd, CLI.Run.Redact)
+
+	// below commands don't require collecting
+	//nolint
+	switch ctx.Command() {
+	case "put <kvs>":
+		err := teller.Put(CLI.Put.Kvs, CLI.Put.Providers, CLI.Put.Sync, CLI.Put.Path)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	// collecting
+
 	err = teller.Collect()
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -182,7 +204,7 @@ func main() {
 		}
 
 	default:
+		println(ctx.Command())
 		teller.PrintEnvKeys()
-
 	}
 }

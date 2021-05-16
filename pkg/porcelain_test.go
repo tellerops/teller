@@ -22,7 +22,7 @@ func TestPorcelainNonInteractive(t *testing.T) {
 	b.Reset()
 
 	p.PrintEntries([]core.EnvEntry{
-		{Key: "k", Value: "v", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+		{IsFound: true, Key: "k", Value: "v", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 	})
 	assert.Equal(t, b.String(), "[test-provider path/kv] k = v*****\n")
 	b.Reset()
@@ -38,22 +38,22 @@ func TestPorcelainPrintDrift(t *testing.T) {
 			Diff: "changed",
 			Source: core.EnvEntry{
 
-				Source: "s1", Key: "k", Value: "v", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+				Source: "s1", Key: "k", Value: "v", ProviderName: "test-provider", ResolvedPath: "path/kv",
 			},
 
 			Target: core.EnvEntry{
 
-				Sink: "s1", Key: "k", Value: "x", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+				Sink: "s1", Key: "k", Value: "x", ProviderName: "test-provider", ResolvedPath: "path/kv",
 			},
 		},
 		{
 			Diff: "changed",
 			Source: core.EnvEntry{
-				Source: "s2", Key: "k2", Value: "1", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+				Source: "s2", Key: "k2", Value: "1", ProviderName: "test-provider", ResolvedPath: "path/kv",
 			},
 
 			Target: core.EnvEntry{
-				Sink: "s2", Key: "k2", Value: "2", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+				Sink: "s2", Key: "k2", Value: "2", ProviderName: "test-provider", ResolvedPath: "path/kv",
 			},
 		},
 	})

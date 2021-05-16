@@ -20,6 +20,9 @@ type InMemProvider struct {
 func (im *InMemProvider) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("%v does not implement write yet", im.Name())
 }
+func (im *InMemProvider) PutMapping(p core.KeyPath, m map[string]string) error {
+	return fmt.Errorf("%v does not implement write yet", im.Name())
+}
 func (im *InMemProvider) GetProvider(name string) (core.Provider, error) {
 	return im, nil //hardcode to return self
 }
@@ -55,7 +58,6 @@ func (im *InMemProvider) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 			Key:          k,
 			Value:        v,
 			ResolvedPath: p.Path,
-			Provider:     im.Name(),
 			ProviderName: im.Name(),
 		})
 	}
@@ -71,7 +73,6 @@ func (im *InMemProvider) Get(p core.KeyPath) (*core.EnvEntry, error) {
 		Key:          p.Env,
 		Value:        s,
 		ResolvedPath: p.Path,
-		Provider:     im.Name(),
 		ProviderName: im.Name(),
 	}, nil
 }
@@ -87,7 +88,7 @@ func TestTellerExports(t *testing.T) {
 
 	tl = Teller{
 		Entries: []core.EnvEntry{
-			{Key: "k", Value: "v", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "k", Value: "v", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 		},
 	}
 
@@ -127,12 +128,12 @@ func TestTellerCollect(t *testing.T) {
 	assert.Equal(t, tl.Entries[0].Key, "MG_KEY")
 	assert.Equal(t, tl.Entries[0].Value, "mg_shazam")
 	assert.Equal(t, tl.Entries[0].ResolvedPath, "prod/billing/MG_KEY")
-	assert.Equal(t, tl.Entries[0].Provider, "inmem")
+	assert.Equal(t, tl.Entries[0].ProviderName, "inmem")
 
 	assert.Equal(t, tl.Entries[1].Key, "FOO_BAR")
 	assert.Equal(t, tl.Entries[1].Value, "foo_shazam")
 	assert.Equal(t, tl.Entries[1].ResolvedPath, "prod/billing/FOO")
-	assert.Equal(t, tl.Entries[1].Provider, "inmem")
+	assert.Equal(t, tl.Entries[1].ProviderName, "inmem")
 }
 
 func TestTellerCollectWithSync(t *testing.T) {
@@ -165,17 +166,17 @@ func TestTellerCollectWithSync(t *testing.T) {
 	assert.Equal(t, tl.Entries[0].Key, "prod/billing/REMAPED")
 	assert.Equal(t, tl.Entries[0].Value, "test_env_remap")
 	assert.Equal(t, tl.Entries[0].ResolvedPath, "prod/billing")
-	assert.Equal(t, tl.Entries[0].Provider, "inmem")
+	assert.Equal(t, tl.Entries[0].ProviderName, "inmem")
 
 	assert.Equal(t, tl.Entries[1].Key, "prod/billing/MG_KEY")
 	assert.Equal(t, tl.Entries[1].Value, "mg_shazam")
 	assert.Equal(t, tl.Entries[1].ResolvedPath, "prod/billing")
-	assert.Equal(t, tl.Entries[1].Provider, "inmem")
+	assert.Equal(t, tl.Entries[1].ProviderName, "inmem")
 
 	assert.Equal(t, tl.Entries[2].Key, "prod/billing/FOO")
 	assert.Equal(t, tl.Entries[2].Value, "foo_shazam")
 	assert.Equal(t, tl.Entries[2].ResolvedPath, "prod/billing")
-	assert.Equal(t, tl.Entries[2].Provider, "inmem")
+	assert.Equal(t, tl.Entries[2].ProviderName, "inmem")
 }
 func TestTellerCollectWithErrors(t *testing.T) {
 	var b bytes.Buffer
@@ -222,7 +223,8 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 	b.Reset()
 
 	tl.Entries = append(tl.Entries, core.EnvEntry{
-		Key: "k", Value: "v", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv",
+		IsFound: true,
+		Key:     "k", Value: "v", ProviderName: "test-provider", ResolvedPath: "path/kv",
 	})
 
 	tl.PrintEnvKeys()
@@ -233,14 +235,14 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 func TestTellerDrift(t *testing.T) {
 	tl := Teller{
 		Entries: []core.EnvEntry{
-			{Key: "k", Value: "v", Source: "s1", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
-			{Key: "k", Value: "v", Sink: "s1", Provider: "test-provider", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
-			{Key: "kX", Value: "vx", Source: "s1", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
-			{Key: "kX", Value: "CHANGED", Sink: "s1", Provider: "test-provider", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
+			{Key: "k", Value: "v", Source: "s1", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "k", Value: "v", Sink: "s1", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
+			{Key: "kX", Value: "vx", Source: "s1", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "kX", Value: "CHANGED", Sink: "s1", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
 
 			// these do not have sink/source
-			{Key: "k--", Value: "00", Provider: "test-provider", ProviderName: "test-provider", ResolvedPath: "path/kv"},
-			{Key: "k--", Value: "11", Provider: "test-provider", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
+			{Key: "k--", Value: "00", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "k--", Value: "11", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
 		},
 	}
 

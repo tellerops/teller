@@ -43,6 +43,9 @@ func (h *Doppler) Name() string {
 func (h *Doppler) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("%v does not implement write yet", h.Name())
 }
+func (h *Doppler) PutMapping(p core.KeyPath, m map[string]string) error {
+	return fmt.Errorf("%v does not implement write yet", h.Name())
+}
 
 func (h *Doppler) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	s, err := h.getConfig(p.Path)
@@ -52,12 +55,7 @@ func (h *Doppler) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 
 	entries := []core.EnvEntry{}
 	for k, v := range s {
-		entries = append(entries, core.EnvEntry{
-			Key:          k,
-			Value:        v.ComputedValue,
-			Provider:     h.Name(),
-			ResolvedPath: p.Path,
-		})
+		entries = append(entries, p.FoundWithKey(k, v.ComputedValue))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
@@ -76,15 +74,13 @@ func (h *Doppler) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	v, ok := s[key]
 	if !ok {
-		return nil, fmt.Errorf("field at '%s' does not exist", p.Path)
+		ent := p.Missing()
+		return &ent, nil
 	}
 
-	return &core.EnvEntry{
-		Key:          p.Env,
-		Value:        v.ComputedValue,
-		ResolvedPath: p.Path,
-		Provider:     h.Name(),
-	}, nil
+	ent := p.Found(v.ComputedValue)
+
+	return &ent, nil
 }
 
 func (h *Doppler) getConfig(config string) (map[string]models.ComputedSecret, error) {
