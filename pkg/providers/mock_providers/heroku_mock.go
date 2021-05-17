@@ -49,3 +49,18 @@ func (mr *MockHerokuClientMockRecorder) ConfigVarInfoForApp(ctx, appIdentity int
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigVarInfoForApp", reflect.TypeOf((*MockHerokuClient)(nil).ConfigVarInfoForApp), ctx, appIdentity)
 }
+
+// ConfigVarUpdate mocks base method.
+func (m *MockHerokuClient) ConfigVarUpdate(ctx context.Context, appIdentity string, o map[string]*string) (v5.ConfigVarUpdateResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConfigVarUpdate", ctx, appIdentity, o)
+	ret0, _ := ret[0].(v5.ConfigVarUpdateResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConfigVarUpdate indicates an expected call of ConfigVarUpdate.
+func (mr *MockHerokuClientMockRecorder) ConfigVarUpdate(ctx, appIdentity, o interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigVarUpdate", reflect.TypeOf((*MockHerokuClient)(nil).ConfigVarUpdate), ctx, appIdentity, o)
+}

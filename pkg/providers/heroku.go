@@ -2,7 +2,6 @@ package providers
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"sort"
 
@@ -12,6 +11,7 @@ import (
 
 type HerokuClient interface {
 	ConfigVarInfoForApp(ctx context.Context, appIdentity string) (heroku.ConfigVarInfoForAppResult, error)
+	ConfigVarUpdate(ctx context.Context, appIdentity string, o map[string]*string) (heroku.ConfigVarUpdateResult, error)
 }
 type Heroku struct {
 	client HerokuClient
@@ -29,10 +29,18 @@ func (h *Heroku) Name() string {
 }
 
 func (h *Heroku) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", h.Name())
+	k := p.EffectiveKey()
+	_, err := h.client.ConfigVarUpdate(context.TODO(), p.Path, map[string]*string{k: &val})
+	return err
 }
 func (h *Heroku) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", h.Name())
+	vars := map[string]*string{}
+	for k := range m {
+		v := m[k]
+		vars[k] = &v
+	}
+	_, err := h.client.ConfigVarUpdate(context.TODO(), p.Path, vars)
+	return err
 }
 
 // LINTFIX: Extract this commonly somewhere
