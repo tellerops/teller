@@ -40,6 +40,7 @@ func (k *KeyPath) Missing() EnvEntry {
 	return EnvEntry{
 		IsFound:      false,
 		Key:          k.Env,
+		Field:        k.Field,
 		ResolvedPath: k.Path,
 	}
 }
@@ -48,6 +49,7 @@ func (k *KeyPath) Found(v string) EnvEntry {
 	return EnvEntry{
 		IsFound:      true,
 		Key:          k.Env,
+		Field:        k.Field,
 		Value:        v,
 		ResolvedPath: k.Path,
 	}
@@ -58,6 +60,7 @@ func (k *KeyPath) FoundWithKey(key, v string) EnvEntry {
 	return EnvEntry{
 		IsFound:      true,
 		Key:          key,
+		Field:        k.Field,
 		Value:        v,
 		ResolvedPath: k.Path,
 	}
@@ -106,6 +109,7 @@ func (a EntriesByValueSize) Less(i, j int) bool { return len(a[i].Value) > len(a
 
 type EnvEntry struct {
 	Key          string
+	Field        string
 	Value        string
 	ProviderName string
 	ResolvedPath string
@@ -114,6 +118,14 @@ type EnvEntry struct {
 	Source       string
 	Sink         string
 	IsFound      bool
+}
+
+func (ee *EnvEntry) AddressingKeyPath() *KeyPath {
+	return &KeyPath{
+		Env:   ee.Key,
+		Field: ee.Field,
+		Path:  ee.ResolvedPath,
+	}
 }
 
 type DriftedEntry struct {

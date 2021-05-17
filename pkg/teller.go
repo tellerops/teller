@@ -431,19 +431,24 @@ func (tl *Teller) Drift(providerNames []string) []core.DriftedEntry {
 	return drifts
 }
 
+func (tl *Teller) GetProviderByName(pname string) (*MappingConfig, core.Provider, error) {
+	pcfg, ok := tl.Config.Providers[pname]
+	if !ok {
+		return nil, nil, fmt.Errorf("provider %v not found", pname)
+	}
+	p := pname
+	if pcfg.Kind != "" {
+		p = pcfg.Kind
+	}
+	provider, err := tl.Providers.GetProvider(p)
+	return &pcfg, provider, err
+}
+
 func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool, directPath string) error {
 	for _, pname := range providerNames {
-		pcfg, ok := tl.Config.Providers[pname]
-		if !ok {
-			return fmt.Errorf("provider %v not found", pname)
-		}
-		p := pname
-		if pcfg.Kind != "" {
-			p = pcfg.Kind
-		}
-		provider, err := tl.Providers.GetProvider(p)
+		pcfg, provider, err := tl.GetProviderByName(pname)
 		if err != nil {
-			return fmt.Errorf("cannot create provider %v", p)
+			return fmt.Errorf("cannot create provider %v: %v", pname, err)
 		}
 
 		useDirectPath := directPath != ""
@@ -455,14 +460,14 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 				kvp = core.KeyPath{Path: directPath}
 			} else {
 				if pcfg.EnvMapping == nil {
-					return fmt.Errorf("there is no env sync mapping for provider '%v'", p)
+					return fmt.Errorf("there is no env sync mapping for provider '%v'", pname)
 				}
 				kvp = *pcfg.EnvMapping
 			}
 			kvpResolved := tl.Populate.KeyPath(kvp)
 			err := provider.PutMapping(kvpResolved, kvmap)
 			if err != nil {
-				return fmt.Errorf("cannot put (sync) %v in provider %v: %v", kvpResolved.Path, p, err)
+				return fmt.Errorf("cannot put (sync) %v in provider %v: %v", kvpResolved.Path, pname, err)
 			}
 			tl.Porcelain.DidPutKVP(kvpResolved, pname, true)
 		} else {
@@ -482,7 +487,7 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 					kvpResolved := tl.Populate.KeyPath(kvp.WithEnv(k))
 					err := provider.Put(kvpResolved, v)
 					if err != nil {
-						return fmt.Errorf("cannot put %v in provider %v: %v", k, p, err)
+						return fmt.Errorf("cannot put %v in provider %v: %v", k, pname, err)
 					}
 					tl.Porcelain.DidPutKVP(kvpResolved, pname, false)
 				} else {
