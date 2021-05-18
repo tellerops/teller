@@ -259,6 +259,38 @@ Will get you, assuming `FOO_BAR=Spock`:
 Hello, Spock!
 ```
 
+## :bike: Multi-write, rotation & sync
+
+Teller providers supporting _write_ use cases which allow writing values _into_ the providers: **putting new values, synchronizing values, synchronizing providers, and fixing drift**.
+
+Remember, for this feature it still revolves around definitions in your `teller.yml` file:
+
+```bash
+$ teller put FOO_BAR=$MY_NEW_PASS --providers dotenv -c .teller.write.yml
+```
+
+A few notes:
+
+* Values are key-value pair in the format: `key=value` and you can specify multiple pairs at once
+* When you're specifying a literal sensitive value, make sure to use an ENV variable so that nothing sensitive is recorded in your history
+* The flag `--providers` lets you push to one or more providers at once
+* `FOO_BAR` must be a mapped key in your configuration for each provider you want to update
+
+
+Sometimes you don't have a mapped key in your configuration file and want to perform an ad-hoc write, you can do that with `--path`:
+
+
+```
+$ teller put SMTP_PASS=newpass --path secret/data/foo --providers hashicorp_vault
+```
+
+A few notes:
+
+* The pair `SMTP_PASS=newpass` will be pushed to the specified path
+* While you can push to multiple providers, please make sure the _path semantics_ are the same
+
+
+
 ## :white_check_mark: Prompts and options
 
 There are a few options that you can use:
@@ -599,7 +631,51 @@ That allows us to keep two important points:
 2. Don't encourage the user to do what we're here for -- save secrets and sensitive details from being forgotten in various places.
 
 
+## Developer Guide
 
+* Quick testing as you code: `make lint && make test`
+* Checking your work before PR, run also integration tests: `make integration`
+
+
+### Testing
+
+Testing is composed of _unit tests_ and _integration tests_. Integration tests are based on _testcontainers_ as well as live sandbox APIs (where containers are not available)
+
+* Unit tests are a mix of pure and mocks based tests, abstracting each provider's interface with a custom _client_
+* View [integration tests](/pkg/integration_test)
+
+To run all unit tests without integration:
+
+```
+$ make test
+```
+
+To run all unit tests including container-based integration:
+
+```
+$ make integration
+```
+
+To run all unit tests including container and live API based integration (this is effectively **all integration tests**):
+
+```
+$ make integration_api
+```
+
+Running all tests:
+
+```
+$ make test
+$ make integration_api
+```
+
+### Linting
+
+Linting is treated as a form of testing (using `golangci`, configuration [here](.golangci.yml)), to run:
+
+```
+$ make lint
+```
 
 ### Thanks:
 

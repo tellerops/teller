@@ -20,7 +20,10 @@ test:
 	go test -v ./pkg/... -cover
 
 integration:
-	go test -v ./pkg/integration_test -cover
+	go test -v ./pkg/integration_test -cover -tags=integration
+
+integration_api:
+	go test -v ./pkg/integration_test -cover -tags="integration_api integration"
 
 deps:
 	go mod tidy && go mod vendor

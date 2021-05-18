@@ -1,3 +1,5 @@
+// +build integration_api
+
 package integration_test
 
 import (
