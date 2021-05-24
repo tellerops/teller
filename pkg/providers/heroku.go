@@ -43,8 +43,6 @@ func (h *Heroku) PutMapping(p core.KeyPath, m map[string]string) error {
 	return err
 }
 
-// LINTFIX: Extract this commonly somewhere
-// nolint: dupl
 func (h *Heroku) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	secret, err := h.getSecret(p)
 	if err != nil {
