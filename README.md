@@ -347,7 +347,7 @@ Configuration is environment based, as defined by client standard. See variables
 
 * Sync - `yes`
 * Mapping - `yes`
-* Key format - path based, has to start with `secret/data/`
+* Key format - path based, usually starts with `secret/data/`, and more generically `[engine name]/data`
 
 ### Example Config
 
