@@ -52,6 +52,19 @@ You can now use `teller` or `tlr` (if you like shortcuts!) in your terminal.
 
 
 `teller` needs a tellerfile. This is a `.teller.yml` file that lives in your repo, or one that you point teller to with `teller -c your-conf.yml`.
+## Using a Github Action
+
+For those using Github Action, you can have a 1-click experience of installing Teller in your CI:
+
+```yaml
+      - name: Setup Teller
+        uses: spectralops/setup-teller@v1
+      - name: Run a Teller task (show, scan, run, etc.)
+        run: teller run [args]
+```
+
+For more, check our [setup teller action](https://github.com/marketplace/actions/setup-teller) on the marketplace.
+
 
 ## Create your configuration
 
