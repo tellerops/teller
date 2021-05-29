@@ -6,3 +6,4 @@ node_modules/
 todo.txt
 .teller.writecase.yml
 coverage.out
+fixtures/sync/target.env

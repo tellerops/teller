@@ -208,7 +208,43 @@ If you omit `--in` Teller will take `stdin`, and if you omit `--out` Teller will
 
 You can detect _secret drift_ by comparing values from different providers against each other. It might be that you want to pin a set of keys in different providers to always be the same value; when they aren't -- that means you have a drift.
 
-For this, you first need to label values as `source` and couple with the appropriate sink as `sink` (use same label for both to couple them). Then, source keys will be compared against other keys in your configuration:
+In most cases, keys in providers would be similar which we call _mirrored_ providers. Example:
+
+```
+Provider1:
+  MG_PASS=foo***
+
+Provider2:
+  MG_PASS=foo***   # Both keys are called MG_PASS
+```
+
+To detected mirror drifts, we use `teller mirror-drift`.
+
+```bash
+$ teller mirror-drift --from global-dotenv --to my-dotenv
+
+Drifts detected: 2
+
+changed [] global-dotenv FOO_BAR "n***** != my-dotenv FOO_BAR ne*****
+missing [] global-dotenv FB 3***** ??
+```
+
+As always, the specific provider definitions are in your `teller.yml` file.
+## :beetle: Detect secrets and value drift (non-mirrored providers)
+
+Some times you want to check drift between two providers, and two unrelated keys. For example:
+
+```
+Provider1:
+  MG_PASS=foo***
+
+Provider2:
+  MAILGUN_PASS=foo***
+```
+
+This poses a challenge. We need some way to "wire" the keys `MG_PASS` and `MAILGUN_PASS` and declare a relationship of source (`MG_PASS`) and destination, or sink (`MAILGUN_PASS`).
+
+For this, you can label mappings as `source` and couple with the appropriate sink as `sink` (use same label value for both to wire them together). Then, source values will be compared against sink values in your configuration:
 
 ```yaml
 providers:
@@ -259,9 +295,42 @@ Will get you, assuming `FOO_BAR=Spock`:
 Hello, Spock!
 ```
 
-## :bike: Multi-write, rotation & sync
+## :arrows_counterclockwise: Copy/sync data between providers
 
-Teller providers supporting _write_ use cases which allow writing values _into_ the providers: **putting new values, synchronizing values, synchronizing providers, and fixing drift**.
+In cases where you want to sync between providers, you can do that with `teller copy`.
+
+
+**Specific mapping key sync**
+
+```bash
+$ teller copy --from dotenv1 --to dotenv2,heroku1
+```
+
+This will:
+
+1. Grab all mapped values from source (`dotenv1`)
+2. For each target provider, find the matching mapped key, and copy the value from source into it
+
+**Full copy sync**
+
+```bash
+$ teller copy --sync --from dotenv1 --to dotenv2,heroku1
+```
+This will:
+
+1. Grab all mapped values from source (`dotenv1`)
+2. For each target provider, perform a full copy of values from source into the mapped `env_sync` key
+
+
+Notes:
+
+* The mapping per provider is as configured in your `teller.yaml` file, in the `env_sync` or `env` properties.
+* This sync will try to copy _all_ values from the source.
+
+
+## :bike: Write and multi-write to providers
+
+Teller providers supporting _write_ use cases which allow writing values _into_ providers.
 
 Remember, for this feature it still revolves around definitions in your `teller.yml` file:
 

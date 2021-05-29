@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"sort"
 	"testing"
 
@@ -252,4 +254,73 @@ func TestTellerDrift(t *testing.T) {
 	d := drifts[0]
 	assert.Equal(t, d.Source.Value, "vx")
 	assert.Equal(t, d.Target.Value, "CHANGED")
+}
+
+func TestTellerMirrorDrift(t *testing.T) {
+	tlrfile, err := NewTellerFile("../fixtures/mirror-drift/teller.yml")
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		os.Exit(1)
+	}
+
+	tl := NewTeller(tlrfile, []string{}, false)
+
+	drifts, err := tl.MirrorDrift("source", "target")
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(drifts), 2)
+	d := drifts[0]
+	assert.Equal(t, d.Source.Key, "THREE")
+	assert.Equal(t, d.Source.Value, "3")
+	assert.Equal(t, d.Diff, "missing")
+	assert.Equal(t, d.Target.Value, "")
+
+	d = drifts[1]
+	assert.Equal(t, d.Source.Key, "ONE")
+	assert.Equal(t, d.Source.Value, "1")
+	assert.Equal(t, d.Diff, "changed")
+	assert.Equal(t, d.Target.Value, "5")
+}
+
+func TestTellerSync(t *testing.T) {
+	tlrfile, err := NewTellerFile("../fixtures/sync/teller.yml")
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		os.Exit(1)
+	}
+
+	tl := NewTeller(tlrfile, []string{}, false)
+
+	//nolint
+	err = ioutil.WriteFile("../fixtures/sync/target.env", []byte(`
+FOO=1
+`), 0644)
+	assert.NoError(t, err)
+
+	//nolint
+	err = ioutil.WriteFile("../fixtures/sync/target2.env", []byte(`
+FOO=2
+`), 0644)
+
+	assert.NoError(t, err)
+
+	err = tl.Sync("source", []string{"target", "target2"}, true)
+
+	assert.NoError(t, err)
+
+	content, err := ioutil.ReadFile("../fixtures/sync/target.env")
+	assert.NoError(t, err)
+
+	assert.Equal(t, string(content), `FOO="1"
+ONE="1"
+THREE="3"
+TWO="2"`)
+
+	content, err = ioutil.ReadFile("../fixtures/sync/target2.env")
+	assert.NoError(t, err)
+
+	assert.Equal(t, string(content), `FOO="2"
+ONE="1"
+THREE="3"
+TWO="2"`)
 }

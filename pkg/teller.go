@@ -319,55 +319,66 @@ func updateParams(ent *core.EnvEntry, from *core.KeyPath, pname string) {
 	}
 }
 
-func (tl *Teller) CollectFromProviderMap(ps *ProvidersMap) ([]core.EnvEntry, error) {
+func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 	entries := []core.EnvEntry{}
-	for pname, conf := range *ps {
-		p, err := tl.Providers.GetProvider(pname)
-		if err != nil {
-			// ok, maybe same provider, with 'kind'?
-			p, err = tl.Providers.GetProvider(conf.Kind)
-		}
+	conf := tl.Config.Providers[pname]
+	p, err := tl.Providers.GetProvider(pname)
+	if err != nil {
+		// ok, maybe same provider, with 'kind'?
+		p, err = tl.Providers.GetProvider(conf.Kind)
+	}
 
-		// still no provider? bail.
+	// still no provider? bail.
+	if err != nil {
+		return nil, err
+	}
+
+	if conf.EnvMapping != nil {
+		es, err := p.GetMapping(tl.Populate.KeyPath(*conf.EnvMapping))
 		if err != nil {
 			return nil, err
 		}
 
-		if conf.EnvMapping != nil {
-			es, err := p.GetMapping(tl.Populate.KeyPath(*conf.EnvMapping))
+		//nolint
+		for k, v := range es {
+			// optionally remap environment variables synced from the provider
+			if val, ok := conf.EnvMapping.Remap[v.Key]; ok {
+				es[k].Key = val
+			}
+			updateParams(&es[k], conf.EnvMapping, pname)
+		}
+
+		entries = append(entries, es...)
+	}
+
+	if conf.Env != nil {
+		//nolint
+		for k, v := range *conf.Env {
+			ent, err := p.Get(tl.Populate.KeyPath(v.WithEnv(k)))
 			if err != nil {
-				return nil, err
-			}
-
-			//nolint
-			for k, v := range es {
-				// optionally remap environment variables synced from the provider
-				if val, ok := conf.EnvMapping.Remap[v.Key]; ok {
-					es[k].Key = val
-				}
-				updateParams(&es[k], conf.EnvMapping, pname)
-			}
-
-			entries = append(entries, es...)
-		}
-
-		if conf.Env != nil {
-			//nolint
-			for k, v := range *conf.Env {
-				ent, err := p.Get(tl.Populate.KeyPath(v.WithEnv(k)))
-				if err != nil {
-					if v.Optional {
-						continue
-					} else {
-						return nil, err
-					}
+				if v.Optional {
+					continue
 				} else {
-					//nolint
-					updateParams(ent, &v, pname)
-					entries = append(entries, *ent)
+					return nil, err
 				}
+			} else {
+				//nolint
+				updateParams(ent, &v, pname)
+				entries = append(entries, *ent)
 			}
 		}
+	}
+	return entries, nil
+}
+
+func (tl *Teller) CollectFromProviderMap(ps *ProvidersMap) ([]core.EnvEntry, error) {
+	entries := []core.EnvEntry{}
+	for pname := range *ps {
+		pents, err := tl.CollectFromProvider(pname)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, pents...)
 	}
 
 	sort.Sort(core.EntriesByKey(entries))
@@ -498,4 +509,49 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 	}
 
 	return nil
+}
+
+func (tl *Teller) Sync(from string, to []string, sync bool) error {
+	entries, err := tl.CollectFromProvider(from)
+	if err != nil {
+		return err
+	}
+	kvmap := map[string]string{}
+	for i := range entries {
+		ent := entries[i]
+		kvmap[ent.Key] = ent.Value
+	}
+
+	err = tl.Put(kvmap, to, sync, "")
+	return err
+}
+
+func (tl *Teller) MirrorDrift(source, target string) ([]core.DriftedEntry, error) {
+	drifts := []core.DriftedEntry{}
+	sourceEntries, err := tl.CollectFromProvider(source)
+	if err != nil {
+		return nil, err
+	}
+
+	targetEntries, err := tl.CollectFromProvider(target)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range sourceEntries {
+		sent := sourceEntries[i]
+		tent := funk.Find(targetEntries, func(ent core.EnvEntry) bool {
+			return sent.Key == ent.Key
+		})
+		if tent == nil {
+			drifts = append(drifts, core.DriftedEntry{Diff: "missing", Source: sent})
+			continue
+		}
+		tentry := tent.(core.EnvEntry)
+		if sent.Value != tentry.Value {
+			drifts = append(drifts, core.DriftedEntry{Diff: "changed", Source: sent, Target: tentry})
+		}
+	}
+
+	return drifts, nil
 }

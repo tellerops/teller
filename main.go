@@ -57,6 +57,17 @@ var CLI struct {
 		Sync      bool              `optional name:"sync" help:"Sync all given k/vs to the env_sync key"`
 		Path      string            `optional name:"path" help:"Take literal path and not from config"`
 	} `cmd help:"Put a new value"`
+
+	Copy struct {
+		From string   `name:"from" help:"A provider name to sync from"`
+		To   []string `name:"to" help:"A list of provider names to copy values from the source provider to"`
+		Sync bool     `optional name:"sync" help:"Sync all given k/vs to the env_sync key"`
+	} `cmd help:"Sync data from a source provider directly to multiple target providers"`
+
+	MirrorDrift struct {
+		Source string `name:"source" help:"A source to check drift against"`
+		Target string `name:"target" help:"A target to check against source"`
+	} `cmd help:"Check same-key (mirror) value drift between source and target"`
 }
 
 var (
@@ -113,6 +124,24 @@ func main() {
 		err := teller.Put(CLI.Put.Kvs, CLI.Put.Providers, CLI.Put.Sync, CLI.Put.Path)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	case "copy":
+		err := teller.Sync(CLI.Copy.From, CLI.Copy.To, CLI.Copy.Sync)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	case "mirror-drift":
+		drifts, err := teller.MirrorDrift(CLI.MirrorDrift.Source, CLI.MirrorDrift.Target)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		if len(drifts) > 0 {
+			teller.Porcelain.PrintDrift(drifts)
 			os.Exit(1)
 		}
 		os.Exit(0)
