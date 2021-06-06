@@ -152,6 +152,20 @@ Use this one liner from now on:
 $ docker run --rm -it --env-file <(teller env) alpine sh
 ```
 
+## :whale: Export in YAML format
+You can export in a YAML format, suitable for [GCloud](https://cloud.google.com/functions/docs/env-var):
+
+```
+$ teller yaml
+```
+
+Example format:
+
+```yaml
+FOO: "1"
+KEY: VALUE
+```
+
 ## :warning:  Scan for secrets
 
 Teller can help you fight secret sprawl and hard coded secrets, as well as be the best productivity tool for working with your vault.
