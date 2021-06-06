@@ -89,6 +89,13 @@ func TestTellerExports(t *testing.T) {
 
 	b = tl.ExportEnv()
 	assert.Equal(t, b, "#!/bin/sh\nexport k=v\n")
+
+	b, err := tl.ExportYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, b, "k: v\n")
+	b, err = tl.ExportJSON()
+	assert.NoError(t, err)
+	assert.Equal(t, b, "{\n  \"k\": \"v\"\n}")
 }
 
 func TestTellerCollect(t *testing.T) {
