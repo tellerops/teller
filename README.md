@@ -165,6 +165,20 @@ Example format:
 FOO: "1"
 KEY: VALUE
 ```
+## :whale: Export in JSON format
+You can export in a JSON format, suitable for piping through `jq` or other workflows:
+
+```
+$ teller json
+```
+
+Example format:
+
+```json
+{
+  "FOO": "1"
+}
+```
 
 ## :warning:  Scan for secrets
 

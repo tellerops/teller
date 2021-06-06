@@ -29,6 +29,9 @@ var CLI struct {
 	Yaml struct {
 	} `cmd help:"Print values in a YAML format (suitable for GCloud)"`
 
+	JSON struct {
+	} `cmd help:"Print values in a JSON format"`
+
 	Sh struct {
 	} `cmd help:"Print ready to be eval'd exports for your shell"`
 
@@ -164,6 +167,14 @@ func main() {
 
 	case "yaml":
 		out, err := teller.ExportYAML()
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Print(out)
+
+	case "json":
+		out, err := teller.ExportJSON()
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)

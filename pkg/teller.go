@@ -3,6 +3,7 @@ package pkg
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -123,6 +124,20 @@ func (tl *Teller) ExportYAML() (out string, err error) {
 		valmap[v.Key] = v.Value
 	}
 	content, err := yaml.Marshal(valmap)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
+func (tl *Teller) ExportJSON() (out string, err error) {
+	valmap := map[string]string{}
+
+	for i := range tl.Entries {
+		v := tl.Entries[i]
+		valmap[v.Key] = v.Value
+	}
+	content, err := json.MarshalIndent(valmap, "", "  ")
 	if err != nil {
 		return "", err
 	}
