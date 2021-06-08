@@ -52,6 +52,19 @@ You can now use `teller` or `tlr` (if you like shortcuts!) in your terminal.
 
 
 `teller` needs a tellerfile. This is a `.teller.yml` file that lives in your repo, or one that you point teller to with `teller -c your-conf.yml`.
+## Using a Github Action
+
+For those using Github Action, you can have a 1-click experience of installing Teller in your CI:
+
+```yaml
+      - name: Setup Teller
+        uses: spectralops/setup-teller@v1
+      - name: Run a Teller task (show, scan, run, etc.)
+        run: teller run [args]
+```
+
+For more, check our [setup teller action](https://github.com/marketplace/actions/setup-teller) on the marketplace.
+
 
 ## Create your configuration
 
@@ -139,6 +152,34 @@ Use this one liner from now on:
 $ docker run --rm -it --env-file <(teller env) alpine sh
 ```
 
+## :whale: Export in YAML format
+You can export in a YAML format, suitable for [GCloud](https://cloud.google.com/functions/docs/env-var):
+
+```
+$ teller yaml
+```
+
+Example format:
+
+```yaml
+FOO: "1"
+KEY: VALUE
+```
+## :whale: Export in JSON format
+You can export in a JSON format, suitable for piping through `jq` or other workflows:
+
+```
+$ teller json
+```
+
+Example format:
+
+```json
+{
+  "FOO": "1"
+}
+```
+
 ## :warning:  Scan for secrets
 
 Teller can help you fight secret sprawl and hard coded secrets, as well as be the best productivity tool for working with your vault.
@@ -199,7 +240,7 @@ $ tail -f /var/log/apache.log | teller redact
 Finally, if you've got some files you want to redact, you can do that too:
 
 ```
-$ teller --in dirty.csv --out clean.csv
+$ teller redact --in dirty.csv --out clean.csv
 ```
 
 If you omit `--in` Teller will take `stdin`, and if you omit `--out` Teller will output to `stdout`.
@@ -438,7 +479,7 @@ Configuration is environment based, as defined by client standard. See variables
 * Sync - `yes`
 * Mapping - `yes`
 * Modes - `read+write`
-* Key format - path based, has to start with `secret/data/`
+* Key format - path based, usually starts with `secret/data/`, and more generically `[engine name]/data`
 
 ### Example Config
 

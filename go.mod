@@ -43,4 +43,5 @@ require (
 	golang.org/x/sys v0.0.0-20210228012217-479acdf4ea46 // indirect
 	google.golang.org/genproto v0.0.0-20210222152913-aa3ee6e6a81c
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )

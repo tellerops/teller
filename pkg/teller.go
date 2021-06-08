@@ -3,6 +3,7 @@ package pkg
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,6 +17,7 @@ import (
 	"github.com/karrick/godirwalk"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/thoas/go-funk"
+	"gopkg.in/yaml.v3"
 )
 
 // Teller
@@ -112,6 +114,34 @@ func (tl *Teller) ExportDotenv() string {
 		fmt.Fprintf(&b, "%s=%s\n", v.Key, v.Value)
 	}
 	return b.String()
+}
+
+func (tl *Teller) ExportYAML() (out string, err error) {
+	valmap := map[string]string{}
+
+	for i := range tl.Entries {
+		v := tl.Entries[i]
+		valmap[v.Key] = v.Value
+	}
+	content, err := yaml.Marshal(valmap)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
+func (tl *Teller) ExportJSON() (out string, err error) {
+	valmap := map[string]string{}
+
+	for i := range tl.Entries {
+		v := tl.Entries[i]
+		valmap[v.Key] = v.Value
+	}
+	content, err := json.MarshalIndent(valmap, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }
 
 func renderWizardTemplate(fname string, answers *core.WizardAnswers) error {
