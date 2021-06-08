@@ -221,7 +221,7 @@ Provider2:
 To detected mirror drifts, we use `teller mirror-drift`.
 
 ```bash
-$ teller mirror-drift --from global-dotenv --to my-dotenv
+$ teller mirror-drift --source global-dotenv --target my-dotenv
 
 Drifts detected: 2
 
@@ -229,8 +229,10 @@ changed [] global-dotenv FOO_BAR "n***** != my-dotenv FOO_BAR ne*****
 missing [] global-dotenv FB 3***** ??
 ```
 
+Use `mirror-drift --sync ...` in order to declare that the two providers should represent a completely synchronized mirror (all keys, all values).
+
 As always, the specific provider definitions are in your `teller.yml` file.
-## :beetle: Detect secrets and value drift (non-mirrored providers)
+## :beetle: Detect secrets and value drift (graph links between providers)
 
 Some times you want to check drift between two providers, and two unrelated keys. For example:
 
@@ -244,7 +246,7 @@ Provider2:
 
 This poses a challenge. We need some way to "wire" the keys `MG_PASS` and `MAILGUN_PASS` and declare a relationship of source (`MG_PASS`) and destination, or sink (`MAILGUN_PASS`).
 
-For this, you can label mappings as `source` and couple with the appropriate sink as `sink` (use same label value for both to wire them together). Then, source values will be compared against sink values in your configuration:
+For this, you can label mappings as `source` and couple with the appropriate sink as `sink`, effectively creating a graph of wirings. We call this `graph-drift` (use same label value for both to wire them together). Then, source values will be compared against sink values in your configuration:
 
 ```yaml
 providers:
@@ -262,7 +264,7 @@ providers:
 And run
 
 ```
-$ teller drift dotenv dotenv2 -c your-config.yml
+$ teller graph-drift dotenv dotenv2 -c your-config.yml
 ```
 
 ![](https://user-images.githubusercontent.com/83390/117453797-07512380-af4e-11eb-949e-cc875e854fad.png)
@@ -435,6 +437,7 @@ Configuration is environment based, as defined by client standard. See variables
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format - path based, has to start with `secret/data/`
 
 ### Example Config
@@ -461,6 +464,7 @@ Configuration is environment based, as defined by client standard. See variables
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format 
   * `env_sync` - path based, we use the last segment as the variable name
   * `env` - any string, no special requirement
@@ -487,6 +491,7 @@ Requires an API key populated in your environment in: `HEROKU_API_KEY` (you can 
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format 
   * `env_sync` - name of your Heroku app
   * `env` - the actual env variable name in your Heroku settings
@@ -523,6 +528,7 @@ For TLS:
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format 
   * `env_sync` - path based
   * `env` - path based
@@ -549,6 +555,7 @@ Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
 * Key format 
   * `env_sync` - path based
   * `env` - path based
@@ -576,6 +583,7 @@ Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 * Sync - `no`
 * Mapping - `yes`
+* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
 * Key format 
   * `env` - path based
   * `decrypt` - available in this provider, will use KMS automatically
@@ -601,6 +609,7 @@ You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your enviro
 
 * Sync - `no`
 * Mapping - `yes`
+* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
 * Key format 
   * `env` - path based, needs to include a version
   * `decrypt` - available in this provider, will use KMS automatically
@@ -626,6 +635,7 @@ No need. You'll be pointing to a one or more `.env` files on your disk.
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format 
   * `env` - env key like
 
@@ -653,6 +663,7 @@ Install the [doppler cli][dopplercli] then run `doppler login`. You'll also need
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read`
 * Key format
   * `env` - env key like
 
@@ -669,6 +680,33 @@ doppler:
 ```
 
 [dopplercli]: https://docs.doppler.com/docs/cli
+
+
+## Vercel
+
+### Authentication
+
+Requires an API key populated in your environment in: `VERCEL_TOKEN`.
+
+### Features
+
+* Sync - `yes`
+* Mapping - `yes`
+* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
+* Key format 
+  * `env_sync` - name of your Vercel app
+  * `env` - the actual env variable name in your Vercel settings
+
+### Example Config
+
+```yaml
+vercel:
+  env_sync:
+    path: my-app-dev
+  env:
+    MG_KEY:
+      path: my-app-dev
+```
 
 # Semantics
 

@@ -56,6 +56,6 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 	case "doppler":
 		return providers.NewDoppler()
 	default:
-		return nil, fmt.Errorf("provider %s does not exist", name)
+		return nil, fmt.Errorf("provider '%s' does not exist", name)
 	}
 }

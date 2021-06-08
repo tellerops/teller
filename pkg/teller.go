@@ -321,9 +321,9 @@ func updateParams(ent *core.EnvEntry, from *core.KeyPath, pname string) {
 
 func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 	entries := []core.EnvEntry{}
-	conf := tl.Config.Providers[pname]
+	conf, ok := tl.Config.Providers[pname]
 	p, err := tl.Providers.GetProvider(pname)
-	if err != nil {
+	if err != nil && ok && conf.Kind != "" {
 		// ok, maybe same provider, with 'kind'?
 		p, err = tl.Providers.GetProvider(conf.Kind)
 	}
@@ -482,6 +482,10 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 			}
 			tl.Porcelain.DidPutKVP(kvpResolved, pname, true)
 		} else {
+			if pcfg.Env == nil {
+				return fmt.Errorf("there is no specific key mapping to map to for provider '%v'", pname)
+			}
+
 			for k, v := range kvmap {
 				// get the kvp for specific mapping
 				ok := false

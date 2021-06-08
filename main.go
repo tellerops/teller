@@ -47,7 +47,7 @@ var CLI struct {
 		Silent bool   `optional name:"silent" help:"No text, just exit code"`
 	} `cmd help:"Scans your codebase for sensitive keys"`
 
-	Drift struct {
+	GraphDrift struct {
 		Providers []string `arg optional name:"providers" help:"A list of providers to check for drift"`
 	} `cmd help:"Detect secret and value drift between providers"`
 
@@ -164,10 +164,10 @@ func main() {
 		}
 		teller.Exec()
 
-	case "drift <providers>":
+	case "graph-drift <providers>":
 		fallthrough
-	case "drift":
-		drifts := teller.Drift(CLI.Drift.Providers)
+	case "graph-drift":
+		drifts := teller.Drift(CLI.GraphDrift.Providers)
 		if len(drifts) > 0 {
 			teller.Porcelain.PrintDrift(drifts)
 			os.Exit(1)
