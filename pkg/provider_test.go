@@ -12,7 +12,7 @@ func TestGetProvider(t *testing.T) {
 	p, err := providers.GetProvider("missing")
 	assert.Nil(t, p)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "provider missing does not exist")
+	assert.Contains(t, err.Error(), "provider 'missing' does not exist")
 
 	for _, v := range providers.ProviderHumanToMachine() {
 		_, err := providers.GetProvider(v)
