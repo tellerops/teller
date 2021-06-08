@@ -1,0 +1,15 @@
+project: sync
+
+providers:
+  source:
+    kind: dotenv
+    env_sync:
+      path: ../fixtures/sync/source.env
+  target:
+    kind: dotenv
+    env_sync:
+      path: ../fixtures/sync/target.env
+  target2:
+    kind: dotenv
+    env_sync:
+      path: ../fixtures/sync/target2.env

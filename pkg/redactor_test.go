@@ -16,14 +16,14 @@ func TestRedactorOverlap(t *testing.T) {
 
 	entries := []core.EnvEntry{
 		{
-			Provider:     "test",
+			ProviderName: "test",
 			ResolvedPath: "/some/path",
 			Key:          "OTHER_KEY",
 			Value:        "hello",
 			RedactWith:   "**OTHER_KEY**",
 		},
 		{
-			Provider:     "test",
+			ProviderName: "test",
 			ResolvedPath: "/some/path",
 			Key:          "SOME_KEY",
 			Value:        "hello123",
@@ -52,14 +52,14 @@ func TestRedactorMultiple(t *testing.T) {
 
 	entries := []core.EnvEntry{
 		{
-			Provider:     "test",
+			ProviderName: "test",
 			ResolvedPath: "/some/path",
 			Key:          "SOME_KEY",
 			Value:        "shazam",
 			RedactWith:   "**SOME_KEY**",
 		},
 		{
-			Provider:     "test",
+			ProviderName: "test",
 			ResolvedPath: "/some/path",
 			Key:          "OTHER_KEY",
 			Value:        "loot",
@@ -87,7 +87,7 @@ func TestRedactor(t *testing.T) {
 
 	entries := []core.EnvEntry{
 		{
-			Provider:     "test",
+			ProviderName: "test",
 			ResolvedPath: "/some/path",
 			Key:          "SOME_KEY",
 			Value:        "shazam",

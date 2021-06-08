@@ -75,7 +75,6 @@ func (ve *Vercel) Name() string {
 	return "vercel"
 }
 
-//nolint: dupl
 func (ve *Vercel) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	secret, err := ve.getSecret(p)
 	if err != nil {
@@ -89,7 +88,7 @@ func (ve *Vercel) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 		if v != nil {
 			val = *v
 		}
-		entries = append(entries, core.EnvEntry{Key: k, Value: val, Provider: ve.Name(), ResolvedPath: p.Path})
+		entries = append(entries, p.FoundWithKey(k, val))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
@@ -108,15 +107,19 @@ func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	if k == nil {
-		return nil, fmt.Errorf("field at '%s' does not exist", p.Path)
+		ent := p.Missing()
+		return &ent, nil
 	}
 
-	return &core.EnvEntry{
-		Key:          p.Env,
-		Value:        *k,
-		ResolvedPath: p.Path,
-		Provider:     ve.Name(),
-	}, nil
+	ent := p.Found(*k)
+	return &ent, nil
+}
+
+func (ve *Vercel) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", ve.Name())
+}
+func (ve *Vercel) PutMapping(p core.KeyPath, m map[string]string) error {
+	return fmt.Errorf("%v does not implement write yet", ve.Name())
 }
 
 func (ve *Vercel) getSecret(kp core.KeyPath) (map[string]*string, error) {

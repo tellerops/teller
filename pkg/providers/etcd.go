@@ -21,6 +21,7 @@ import (
 
 type EtcdClient interface {
 	Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error)
+	Put(ctx context.Context, key, val string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error)
 }
 type Etcd struct {
 	client EtcdClient
@@ -44,6 +45,21 @@ func (a *Etcd) Name() string {
 	return "etcd"
 }
 
+func (a *Etcd) Put(p core.KeyPath, val string) error {
+	_, err := a.client.Put(context.TODO(), p.Path, val)
+	return err
+}
+func (a *Etcd) PutMapping(p core.KeyPath, m map[string]string) error {
+	for k, v := range m {
+		ap := p.SwitchPath(fmt.Sprintf("%v/%v", p.Path, k))
+		err := a.Put(ap, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (a *Etcd) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	kvs, err := a.getSecret(p, clientv3.WithPrefix())
 	if err != nil {
@@ -54,19 +70,13 @@ func (a *Etcd) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 		k := string(kv.Key)
 		v := string(kv.Value)
 		seg := utils.LastSegment(k)
-		entries = append(entries, core.EnvEntry{
-			Key:          seg,
-			Value:        v,
-			ResolvedPath: p.Path,
-			Provider:     a.Name(),
-		})
+		entries = append(entries, p.FoundWithKey(seg, v))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
 }
 
 func (a *Etcd) Get(p core.KeyPath) (*core.EnvEntry, error) {
-
 	kvs, err := a.getSecret(p)
 	if err != nil {
 		return nil, err
@@ -75,16 +85,13 @@ func (a *Etcd) Get(p core.KeyPath) (*core.EnvEntry, error) {
 		k := string(kv.Key)
 		v := string(kv.Value)
 		if k == p.Path {
-			return &core.EnvEntry{
-				Key:          p.Env,
-				Value:        v,
-				ResolvedPath: p.Path,
-				Provider:     a.Name(),
-			}, nil
+			ent := p.Found(v)
+			return &ent, nil
 		}
 	}
 
-	return nil, fmt.Errorf("key %s not found", p.Path)
+	ent := p.Missing()
+	return &ent, nil
 }
 
 func (a *Etcd) getSecret(kp core.KeyPath, opts ...clientv3.OpOption) ([]*spb.KeyValue, error) {

@@ -50,10 +50,18 @@ func (a *AWSSecretsManager) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) 
 
 	entries := []core.EnvEntry{}
 	for k, v := range k {
-		entries = append(entries, core.EnvEntry{Key: k, Value: v, Provider: a.Name(), ResolvedPath: p.Path})
+		entries = append(entries, p.FoundWithKey(k, v))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
+}
+
+func (a *AWSSecretsManager) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
+
+func (a *AWSSecretsManager) PutMapping(p core.KeyPath, m map[string]string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
 }
 
 func (a *AWSSecretsManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
@@ -63,17 +71,18 @@ func (a *AWSSecretsManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	data := secret
-	k := data[p.Env]
+	k, ok := data[p.Env]
 	if p.Field != "" {
-		k = data[p.Field]
+		k, ok = data[p.Field]
 	}
 
-	return &core.EnvEntry{
-		Key:          p.Env,
-		Value:        k,
-		ResolvedPath: p.Path,
-		Provider:     a.Name(),
-	}, nil
+	if !ok {
+		ent := p.Missing()
+		return &ent, nil
+	}
+
+	ent := p.Found(k)
+	return &ent, nil
 }
 
 func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error) {

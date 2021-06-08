@@ -37,7 +37,12 @@ func NewAzureKeyVault() (core.Provider, error) {
 func (a *AzureKeyVault) Name() string {
 	return "azure_keyvault"
 }
-
+func (a *AzureKeyVault) Put(p core.KeyPath, val string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
+func (a *AzureKeyVault) PutMapping(p core.KeyPath, m map[string]string) error {
+	return fmt.Errorf("%v does not implement write yet", a.Name())
+}
 func (a *AzureKeyVault) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 	r := []core.EnvEntry{}
 	ctx := context.Background()
@@ -52,9 +57,12 @@ func (a *AzureKeyVault) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 			if err != nil {
 				return nil, err
 			}
-
-			r = append(r, core.EnvEntry{Key: path.Base(*secret.ID), Value: value, Provider: a.Name()})
+			if value.Value != nil {
+				ent := kp.FoundWithKey(path.Base(*secret.ID), *value.Value)
+				r = append(r, ent)
+			}
 		}
+
 		err := secretList.NextWithContext(ctx)
 		if err != nil {
 			return nil, err
@@ -64,25 +72,19 @@ func (a *AzureKeyVault) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 }
 
 func (a *AzureKeyVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
-	secret, err := a.getSecret(p)
+	secretResp, err := a.getSecret(p)
 	if err != nil {
 		return nil, err
 	}
-
-	return &core.EnvEntry{
-		Key:          p.Env,
-		Value:        secret,
-		ResolvedPath: p.Path,
-		Provider:     a.Name(),
-	}, nil
-}
-
-func (a *AzureKeyVault) getSecret(kp core.KeyPath) (string, error) {
-	// assuming latest version
-	secretResp, err := a.client.GetSecret(context.Background(), "https://"+a.vaultName+"."+AzureVaultDomain, kp.Path, "")
-	if err != nil {
-		return "", err
+	if secretResp.Value == nil {
+		ent := p.Missing()
+		return &ent, nil
 	}
 
-	return *secretResp.Value, nil
+	ent := p.Found(*secretResp.Value)
+	return &ent, nil
+}
+
+func (a *AzureKeyVault) getSecret(kp core.KeyPath) (keyvault.SecretBundle, error) {
+	return a.client.GetSecret(context.Background(), "https://"+a.vaultName+"."+AzureVaultDomain, kp.Path, "")
 }

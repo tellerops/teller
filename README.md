@@ -249,7 +249,45 @@ If you omit `--in` Teller will take `stdin`, and if you omit `--out` Teller will
 
 You can detect _secret drift_ by comparing values from different providers against each other. It might be that you want to pin a set of keys in different providers to always be the same value; when they aren't -- that means you have a drift.
 
-For this, you first need to label values as `source` and couple with the appropriate sink as `sink` (use same label for both to couple them). Then, source keys will be compared against other keys in your configuration:
+In most cases, keys in providers would be similar which we call _mirrored_ providers. Example:
+
+```
+Provider1:
+  MG_PASS=foo***
+
+Provider2:
+  MG_PASS=foo***   # Both keys are called MG_PASS
+```
+
+To detected mirror drifts, we use `teller mirror-drift`.
+
+```bash
+$ teller mirror-drift --source global-dotenv --target my-dotenv
+
+Drifts detected: 2
+
+changed [] global-dotenv FOO_BAR "n***** != my-dotenv FOO_BAR ne*****
+missing [] global-dotenv FB 3***** ??
+```
+
+Use `mirror-drift --sync ...` in order to declare that the two providers should represent a completely synchronized mirror (all keys, all values).
+
+As always, the specific provider definitions are in your `teller.yml` file.
+## :beetle: Detect secrets and value drift (graph links between providers)
+
+Some times you want to check drift between two providers, and two unrelated keys. For example:
+
+```
+Provider1:
+  MG_PASS=foo***
+
+Provider2:
+  MAILGUN_PASS=foo***
+```
+
+This poses a challenge. We need some way to "wire" the keys `MG_PASS` and `MAILGUN_PASS` and declare a relationship of source (`MG_PASS`) and destination, or sink (`MAILGUN_PASS`).
+
+For this, you can label mappings as `source` and couple with the appropriate sink as `sink`, effectively creating a graph of wirings. We call this `graph-drift` (use same label value for both to wire them together). Then, source values will be compared against sink values in your configuration:
 
 ```yaml
 providers:
@@ -267,7 +305,7 @@ providers:
 And run
 
 ```
-$ teller drift dotenv dotenv2 -c your-config.yml
+$ teller graph-drift dotenv dotenv2 -c your-config.yml
 ```
 
 ![](https://user-images.githubusercontent.com/83390/117453797-07512380-af4e-11eb-949e-cc875e854fad.png)
@@ -299,6 +337,71 @@ Will get you, assuming `FOO_BAR=Spock`:
 ```
 Hello, Spock!
 ```
+
+## :arrows_counterclockwise: Copy/sync data between providers
+
+In cases where you want to sync between providers, you can do that with `teller copy`.
+
+
+**Specific mapping key sync**
+
+```bash
+$ teller copy --from dotenv1 --to dotenv2,heroku1
+```
+
+This will:
+
+1. Grab all mapped values from source (`dotenv1`)
+2. For each target provider, find the matching mapped key, and copy the value from source into it
+
+**Full copy sync**
+
+```bash
+$ teller copy --sync --from dotenv1 --to dotenv2,heroku1
+```
+This will:
+
+1. Grab all mapped values from source (`dotenv1`)
+2. For each target provider, perform a full copy of values from source into the mapped `env_sync` key
+
+
+Notes:
+
+* The mapping per provider is as configured in your `teller.yaml` file, in the `env_sync` or `env` properties.
+* This sync will try to copy _all_ values from the source.
+
+
+## :bike: Write and multi-write to providers
+
+Teller providers supporting _write_ use cases which allow writing values _into_ providers.
+
+Remember, for this feature it still revolves around definitions in your `teller.yml` file:
+
+```bash
+$ teller put FOO_BAR=$MY_NEW_PASS --providers dotenv -c .teller.write.yml
+```
+
+A few notes:
+
+* Values are key-value pair in the format: `key=value` and you can specify multiple pairs at once
+* When you're specifying a literal sensitive value, make sure to use an ENV variable so that nothing sensitive is recorded in your history
+* The flag `--providers` lets you push to one or more providers at once
+* `FOO_BAR` must be a mapped key in your configuration for each provider you want to update
+
+
+Sometimes you don't have a mapped key in your configuration file and want to perform an ad-hoc write, you can do that with `--path`:
+
+
+```
+$ teller put SMTP_PASS=newpass --path secret/data/foo --providers hashicorp_vault
+```
+
+A few notes:
+
+* The pair `SMTP_PASS=newpass` will be pushed to the specified path
+* While you can push to multiple providers, please make sure the _path semantics_ are the same
+
+
 
 ## :white_check_mark: Prompts and options
 
@@ -375,6 +478,7 @@ Configuration is environment based, as defined by client standard. See variables
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format - path based, usually starts with `secret/data/`, and more generically `[engine name]/data`
 
 ### Example Config
@@ -401,6 +505,7 @@ Configuration is environment based, as defined by client standard. See variables
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format 
   * `env_sync` - path based, we use the last segment as the variable name
   * `env` - any string, no special requirement
@@ -427,6 +532,7 @@ Requires an API key populated in your environment in: `HEROKU_API_KEY` (you can 
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format 
   * `env_sync` - name of your Heroku app
   * `env` - the actual env variable name in your Heroku settings
@@ -463,6 +569,7 @@ For TLS:
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format 
   * `env_sync` - path based
   * `env` - path based
@@ -489,6 +596,7 @@ Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
 * Key format 
   * `env_sync` - path based
   * `env` - path based
@@ -516,6 +624,7 @@ Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 * Sync - `no`
 * Mapping - `yes`
+* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
 * Key format 
   * `env` - path based
   * `decrypt` - available in this provider, will use KMS automatically
@@ -541,6 +650,7 @@ You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your enviro
 
 * Sync - `no`
 * Mapping - `yes`
+* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
 * Key format 
   * `env` - path based, needs to include a version
   * `decrypt` - available in this provider, will use KMS automatically
@@ -566,6 +676,7 @@ No need. You'll be pointing to a one or more `.env` files on your disk.
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read+write`
 * Key format 
   * `env` - env key like
 
@@ -593,6 +704,7 @@ Install the [doppler cli][dopplercli] then run `doppler login`. You'll also need
 
 * Sync - `yes`
 * Mapping - `yes`
+* Modes - `read`
 * Key format
   * `env` - env key like
 
@@ -609,6 +721,45 @@ doppler:
 ```
 
 [dopplercli]: https://docs.doppler.com/docs/cli
+
+
+## Vercel
+
+### Authentication
+
+Requires an API key populated in your environment in: `VERCEL_TOKEN`.
+
+### Features
+
+* Sync - `yes`
+* Mapping - `yes`
+* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
+* Key format 
+  * `env_sync` - name of your Vercel app
+  * `env` - the actual env variable name in your Vercel settings
+
+### Example Config
+
+```yaml
+vercel:
+  env_sync:
+    path: my-app-dev
+  env:
+    MG_KEY:
+      path: my-app-dev
+```
+
+# Semantics
+
+## Addressing
+
+* Stores that support key-value interfaces: `path` is the direct location of the value, no need for the `env` key or `field`.
+* Stores that support key-valuemap interfaces: `path` is the location of the map, while the `env` key or `field` (if exists) will be used to do the additional final addressing.
+* For env-sync (fetching value map out of a store), path will be a direct pointer at the key-valuemap
+## Errors
+
+* **Principle of non-recovery**: where possible an error is return when it is not recoverable (nothing to do), but when it is -- providers should attempt recovery (e.g. retry API call)
+* **Missing key/value**: it's possible that when trying to fetch value in a provider - it's missing. This is not an error, rather an indication of a missing entry is returned (`EnvEntry#IsFound`)
 
 # Security Model
 
@@ -628,7 +779,51 @@ That allows us to keep two important points:
 2. Don't encourage the user to do what we're here for -- save secrets and sensitive details from being forgotten in various places.
 
 
+## Developer Guide
 
+* Quick testing as you code: `make lint && make test`
+* Checking your work before PR, run also integration tests: `make integration`
+
+
+### Testing
+
+Testing is composed of _unit tests_ and _integration tests_. Integration tests are based on _testcontainers_ as well as live sandbox APIs (where containers are not available)
+
+* Unit tests are a mix of pure and mocks based tests, abstracting each provider's interface with a custom _client_
+* View [integration tests](/pkg/integration_test)
+
+To run all unit tests without integration:
+
+```
+$ make test
+```
+
+To run all unit tests including container-based integration:
+
+```
+$ make integration
+```
+
+To run all unit tests including container and live API based integration (this is effectively **all integration tests**):
+
+```
+$ make integration_api
+```
+
+Running all tests:
+
+```
+$ make test
+$ make integration_api
+```
+
+### Linting
+
+Linting is treated as a form of testing (using `golangci`, configuration [here](.golangci.yml)), to run:
+
+```
+$ make lint
+```
 
 ### Thanks:
 

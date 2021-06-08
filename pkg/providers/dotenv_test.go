@@ -23,6 +23,7 @@ func TestDotenv(t *testing.T) {
 	}
 	client.EXPECT().Read(gomock.Eq(path)).Return(out, nil).AnyTimes()
 	client.EXPECT().Read(gomock.Eq(pathmap)).Return(out, nil).AnyTimes()
+	client.EXPECT().Read(gomock.Eq(pathmap)).Return(out, nil).AnyTimes()
 	s := Dotenv{
 		client: client,
 	}

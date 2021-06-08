@@ -1,0 +1,11 @@
+project: mirror-drift
+
+providers:
+  source:
+    kind: dotenv
+    env_sync:
+      path: ../fixtures/mirror-drift/source.env
+  target:
+    kind: dotenv
+    env_sync:
+      path: ../fixtures/mirror-drift/target.env

@@ -48,3 +48,18 @@ func (mr *MockHashicorpClientMockRecorder) Read(path interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*MockHashicorpClient)(nil).Read), path)
 }
+
+// Write mocks base method.
+func (m *MockHashicorpClient) Write(path string, data map[string]interface{}) (*api.Secret, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Write", path, data)
+	ret0, _ := ret[0].(*api.Secret)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Write indicates an expected call of Write.
+func (mr *MockHashicorpClientMockRecorder) Write(path, data interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockHashicorpClient)(nil).Write), path, data)
+}

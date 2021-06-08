@@ -2,7 +2,6 @@ package providers
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"sort"
 
@@ -12,6 +11,7 @@ import (
 
 type HerokuClient interface {
 	ConfigVarInfoForApp(ctx context.Context, appIdentity string) (heroku.ConfigVarInfoForAppResult, error)
+	ConfigVarUpdate(ctx context.Context, appIdentity string, o map[string]*string) (heroku.ConfigVarUpdateResult, error)
 }
 type Heroku struct {
 	client HerokuClient
@@ -28,8 +28,21 @@ func (h *Heroku) Name() string {
 	return "heroku"
 }
 
-// LINTFIX: Extract this commonly somewhere
-// nolint: dupl
+func (h *Heroku) Put(p core.KeyPath, val string) error {
+	k := p.EffectiveKey()
+	_, err := h.client.ConfigVarUpdate(context.TODO(), p.Path, map[string]*string{k: &val})
+	return err
+}
+func (h *Heroku) PutMapping(p core.KeyPath, m map[string]string) error {
+	vars := map[string]*string{}
+	for k := range m {
+		v := m[k]
+		vars[k] = &v
+	}
+	_, err := h.client.ConfigVarUpdate(context.TODO(), p.Path, vars)
+	return err
+}
+
 func (h *Heroku) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	secret, err := h.getSecret(p)
 	if err != nil {
@@ -44,7 +57,7 @@ func (h *Heroku) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 		if v != nil {
 			val = *v
 		}
-		entries = append(entries, core.EnvEntry{Key: k, Value: val, Provider: h.Name(), ResolvedPath: p.Path})
+		entries = append(entries, p.FoundWithKey(k, val))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
@@ -63,15 +76,12 @@ func (h *Heroku) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	if k == nil {
-		return nil, fmt.Errorf("field at '%s' does not exist", p.Path)
+		ent := p.Missing()
+		return &ent, nil
 	}
 
-	return &core.EnvEntry{
-		Key:          p.Env,
-		Value:        *k,
-		ResolvedPath: p.Path,
-		Provider:     h.Name(),
-	}, nil
+	ent := p.Found(*k)
+	return &ent, nil
 }
 
 func (h *Heroku) getSecret(kp core.KeyPath) (heroku.ConfigVarInfoForAppResult, error) {

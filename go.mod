@@ -15,7 +15,6 @@ require (
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/kong v0.2.15
 	github.com/alecthomas/repr v0.0.0-20201120212035-bb82daffcca2 // indirect
-	github.com/alexsasharegan/dotenv v0.0.0-20171113213728-090a4d1b5d42
 	github.com/aws/aws-sdk-go-v2/config v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.1.1
@@ -28,12 +27,13 @@ require (
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/heroku/heroku-go/v5 v5.2.1
 	github.com/jftuga/ellipsis v1.0.0
+	github.com/joho/godotenv v1.3.0
 	github.com/karrick/godirwalk v1.16.1
 	github.com/miekg/dns v1.1.35 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
-	github.com/stretchr/testify v1.6.1 // indirect
+	github.com/stretchr/testify v1.7.0
+	github.com/testcontainers/testcontainers-go v0.10.1-0.20210331130832-54854fb15ccb
 	github.com/thoas/go-funk v0.7.0
 	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
@@ -41,7 +41,6 @@ require (
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/sys v0.0.0-20210228012217-479acdf4ea46 // indirect
-	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/genproto v0.0.0-20210222152913-aa3ee6e6a81c
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c

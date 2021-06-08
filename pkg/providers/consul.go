@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/hashicorp/consul/api"
@@ -12,7 +13,9 @@ import (
 type ConsulClient interface {
 	Get(key string, q *api.QueryOptions) (*api.KVPair, *api.QueryMeta, error)
 	List(prefix string, q *api.QueryOptions) (api.KVPairs, *api.QueryMeta, error)
+	Put(p *api.KVPair, q *api.WriteOptions) (*api.WriteMeta, error)
 }
+
 type Consul struct {
 	client ConsulClient
 }
@@ -31,6 +34,26 @@ func (a *Consul) Name() string {
 	return "consul"
 }
 
+func (a *Consul) Put(p core.KeyPath, val string) error {
+	_, err := a.client.Put(&api.KVPair{
+		Key:   p.Path,
+		Value: []byte(val),
+	}, &api.WriteOptions{})
+
+	return err
+}
+
+func (a *Consul) PutMapping(p core.KeyPath, m map[string]string) error {
+	for k, v := range m {
+		ap := p.SwitchPath(fmt.Sprintf("%v/%v", p.Path, k))
+		err := a.Put(ap, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (a *Consul) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	kvs, err := a.getSecrets(p)
 	if err != nil {
@@ -41,28 +64,25 @@ func (a *Consul) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 		k := kv.Key
 		v := string(kv.Value)
 		seg := utils.LastSegment(k)
-		entries = append(entries, core.EnvEntry{
-			Key:          seg,
-			Value:        v,
-			ResolvedPath: p.Path,
-			Provider:     a.Name(),
-		})
+		entries = append(entries, p.FoundWithKey(seg, v))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 	return entries, nil
 }
 
 func (a *Consul) Get(p core.KeyPath) (*core.EnvEntry, error) {
-	secret, err := a.getSecret(p)
+	kv, err := a.getSecret(p)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%v cannot get value: %v", a.Name(), err)
 	}
-	return &core.EnvEntry{
-		Key:          p.Env,
-		Value:        secret,
-		ResolvedPath: p.Path,
-		Provider:     a.Name(),
-	}, nil
+
+	if kv == nil {
+		ent := p.Missing()
+		return &ent, nil
+	}
+
+	ent := p.Found(string(kv.Value))
+	return &ent, nil
 }
 
 func (a *Consul) getSecrets(kp core.KeyPath) (api.KVPairs, error) {
@@ -70,14 +90,10 @@ func (a *Consul) getSecrets(kp core.KeyPath) (api.KVPairs, error) {
 	return kvs, err
 }
 
-func (a *Consul) getSecret(kp core.KeyPath) (string, error) {
+func (a *Consul) getSecret(kp core.KeyPath) (*api.KVPair, error) {
 	kv, _, err := a.client.Get(kp.Path, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	if kv == nil {
-		return "", err
-	}
-	return string(kv.Value), nil
-
+	return kv, nil
 }

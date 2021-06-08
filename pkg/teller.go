@@ -249,7 +249,7 @@ func checkForMatches(path string, entries []core.EnvEntry) ([]core.Match, error)
 		linestr := string(line)
 		for i := range entries {
 			ent := entries[i]
-			if ent.Value == "" || ent.Severity == core.None {
+			if !ent.IsFound || ent.Value == "" || ent.Severity == core.None {
 				continue
 			}
 			if matchIndex := strings.Index(linestr, ent.Value); matchIndex != -1 {
@@ -349,55 +349,66 @@ func updateParams(ent *core.EnvEntry, from *core.KeyPath, pname string) {
 	}
 }
 
-func (tl *Teller) CollectFromProviderMap(ps *ProvidersMap) ([]core.EnvEntry, error) {
+func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 	entries := []core.EnvEntry{}
-	for pname, conf := range *ps {
-		p, err := tl.Providers.GetProvider(pname)
-		if err != nil {
-			// ok, maybe same provider, with 'kind'?
-			p, err = tl.Providers.GetProvider(conf.Kind)
-		}
+	conf, ok := tl.Config.Providers[pname]
+	p, err := tl.Providers.GetProvider(pname)
+	if err != nil && ok && conf.Kind != "" {
+		// ok, maybe same provider, with 'kind'?
+		p, err = tl.Providers.GetProvider(conf.Kind)
+	}
 
-		// still no provider? bail.
+	// still no provider? bail.
+	if err != nil {
+		return nil, err
+	}
+
+	if conf.EnvMapping != nil {
+		es, err := p.GetMapping(tl.Populate.KeyPath(*conf.EnvMapping))
 		if err != nil {
 			return nil, err
 		}
 
-		if conf.EnvMapping != nil {
-			es, err := p.GetMapping(tl.Populate.KeyPath(*conf.EnvMapping))
+		//nolint
+		for k, v := range es {
+			// optionally remap environment variables synced from the provider
+			if val, ok := conf.EnvMapping.Remap[v.Key]; ok {
+				es[k].Key = val
+			}
+			updateParams(&es[k], conf.EnvMapping, pname)
+		}
+
+		entries = append(entries, es...)
+	}
+
+	if conf.Env != nil {
+		//nolint
+		for k, v := range *conf.Env {
+			ent, err := p.Get(tl.Populate.KeyPath(v.WithEnv(k)))
 			if err != nil {
-				return nil, err
-			}
-
-			//nolint
-			for k, v := range es {
-				// optionally remap environment variables synced from the provider
-				if val, ok := conf.EnvMapping.Remap[v.Key]; ok {
-					es[k].Key = val
-				}
-				updateParams(&es[k], conf.EnvMapping, pname)
-			}
-
-			entries = append(entries, es...)
-		}
-
-		if conf.Env != nil {
-			//nolint
-			for k, v := range *conf.Env {
-				ent, err := p.Get(tl.Populate.KeyPath(v.WithEnv(k)))
-				if err != nil {
-					if v.Optional {
-						continue
-					} else {
-						return nil, err
-					}
+				if v.Optional {
+					continue
 				} else {
-					//nolint
-					updateParams(ent, &v, pname)
-					entries = append(entries, *ent)
+					return nil, err
 				}
+			} else {
+				//nolint
+				updateParams(ent, &v, pname)
+				entries = append(entries, *ent)
 			}
 		}
+	}
+	return entries, nil
+}
+
+func (tl *Teller) CollectFromProviderMap(ps *ProvidersMap) ([]core.EnvEntry, error) {
+	entries := []core.EnvEntry{}
+	for pname := range *ps {
+		pents, err := tl.CollectFromProvider(pname)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, pents...)
 	}
 
 	sort.Sort(core.EntriesByKey(entries))
@@ -459,4 +470,122 @@ func (tl *Teller) Drift(providerNames []string) []core.DriftedEntry {
 
 	sort.Sort(core.DriftedEntriesBySource(drifts))
 	return drifts
+}
+
+func (tl *Teller) GetProviderByName(pname string) (*MappingConfig, core.Provider, error) {
+	pcfg, ok := tl.Config.Providers[pname]
+	if !ok {
+		return nil, nil, fmt.Errorf("provider %v not found", pname)
+	}
+	p := pname
+	if pcfg.Kind != "" {
+		p = pcfg.Kind
+	}
+	provider, err := tl.Providers.GetProvider(p)
+	return &pcfg, provider, err
+}
+
+func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool, directPath string) error {
+	for _, pname := range providerNames {
+		pcfg, provider, err := tl.GetProviderByName(pname)
+		if err != nil {
+			return fmt.Errorf("cannot create provider %v: %v", pname, err)
+		}
+
+		useDirectPath := directPath != ""
+
+		// XXXWIP design - decide porcelain or not, errors?
+		if sync {
+			var kvp core.KeyPath
+			if useDirectPath {
+				kvp = core.KeyPath{Path: directPath}
+			} else {
+				if pcfg.EnvMapping == nil {
+					return fmt.Errorf("there is no env sync mapping for provider '%v'", pname)
+				}
+				kvp = *pcfg.EnvMapping
+			}
+			kvpResolved := tl.Populate.KeyPath(kvp)
+			err := provider.PutMapping(kvpResolved, kvmap)
+			if err != nil {
+				return fmt.Errorf("cannot put (sync) %v in provider %v: %v", kvpResolved.Path, pname, err)
+			}
+			tl.Porcelain.DidPutKVP(kvpResolved, pname, true)
+		} else {
+			if pcfg.Env == nil {
+				return fmt.Errorf("there is no specific key mapping to map to for provider '%v'", pname)
+			}
+
+			for k, v := range kvmap {
+				// get the kvp for specific mapping
+				ok := false
+				var kvp core.KeyPath
+
+				if useDirectPath {
+					kvp = core.KeyPath{Path: directPath}
+					ok = true
+				} else {
+					kvp, ok = (*pcfg.Env)[k]
+				}
+
+				if ok {
+					kvpResolved := tl.Populate.KeyPath(kvp.WithEnv(k))
+					err := provider.Put(kvpResolved, v)
+					if err != nil {
+						return fmt.Errorf("cannot put %v in provider %v: %v", k, pname, err)
+					}
+					tl.Porcelain.DidPutKVP(kvpResolved, pname, false)
+				} else {
+					tl.Porcelain.NoPutKVP(k, pname)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (tl *Teller) Sync(from string, to []string, sync bool) error {
+	entries, err := tl.CollectFromProvider(from)
+	if err != nil {
+		return err
+	}
+	kvmap := map[string]string{}
+	for i := range entries {
+		ent := entries[i]
+		kvmap[ent.Key] = ent.Value
+	}
+
+	err = tl.Put(kvmap, to, sync, "")
+	return err
+}
+
+func (tl *Teller) MirrorDrift(source, target string) ([]core.DriftedEntry, error) {
+	drifts := []core.DriftedEntry{}
+	sourceEntries, err := tl.CollectFromProvider(source)
+	if err != nil {
+		return nil, err
+	}
+
+	targetEntries, err := tl.CollectFromProvider(target)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range sourceEntries {
+		sent := sourceEntries[i]
+		tent := funk.Find(targetEntries, func(ent core.EnvEntry) bool {
+			return sent.Key == ent.Key
+		})
+		if tent == nil {
+			drifts = append(drifts, core.DriftedEntry{Diff: "missing", Source: sent})
+			continue
+		}
+		tentry := tent.(core.EnvEntry)
+		if sent.Value != tentry.Value {
+			drifts = append(drifts, core.DriftedEntry{Diff: "changed", Source: sent, Target: tentry})
+		}
+	}
+
+	return drifts, nil
 }

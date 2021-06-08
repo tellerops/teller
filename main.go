@@ -53,9 +53,27 @@ var CLI struct {
 		Silent bool   `optional name:"silent" help:"No text, just exit code"`
 	} `cmd help:"Scans your codebase for sensitive keys"`
 
-	Drift struct {
+	GraphDrift struct {
 		Providers []string `arg optional name:"providers" help:"A list of providers to check for drift"`
 	} `cmd help:"Detect secret and value drift between providers"`
+
+	Put struct {
+		Kvs       map[string]string `arg name:"kvs" help:"A list of key/value pairs, where key is from your tellerfile mapping"`
+		Providers []string          `name:"providers" help:"A list of providers to put the new value into"`
+		Sync      bool              `optional name:"sync" help:"Sync all given k/vs to the env_sync key"`
+		Path      string            `optional name:"path" help:"Take literal path and not from config"`
+	} `cmd help:"Put a new value"`
+
+	Copy struct {
+		From string   `name:"from" help:"A provider name to sync from"`
+		To   []string `name:"to" help:"A list of provider names to copy values from the source provider to"`
+		Sync bool     `optional name:"sync" help:"Sync all given k/vs to the env_sync key"`
+	} `cmd help:"Sync data from a source provider directly to multiple target providers"`
+
+	MirrorDrift struct {
+		Source string `name:"source" help:"A source to check drift against"`
+		Target string `name:"target" help:"A target to check against source"`
+	} `cmd help:"Check same-key (mirror) value drift between source and target"`
 }
 
 var (
@@ -104,6 +122,39 @@ func main() {
 	}
 
 	teller := pkg.NewTeller(tlrfile, CLI.Run.Cmd, CLI.Run.Redact)
+
+	// below commands don't require collecting
+	//nolint
+	switch ctx.Command() {
+	case "put <kvs>":
+		err := teller.Put(CLI.Put.Kvs, CLI.Put.Providers, CLI.Put.Sync, CLI.Put.Path)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	case "copy":
+		err := teller.Sync(CLI.Copy.From, CLI.Copy.To, CLI.Copy.Sync)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	case "mirror-drift":
+		drifts, err := teller.MirrorDrift(CLI.MirrorDrift.Source, CLI.MirrorDrift.Target)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		if len(drifts) > 0 {
+			teller.Porcelain.PrintDrift(drifts)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	// collecting
+
 	err = teller.Collect()
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -119,10 +170,10 @@ func main() {
 		}
 		teller.Exec()
 
-	case "drift <providers>":
+	case "graph-drift <providers>":
 		fallthrough
-	case "drift":
-		drifts := teller.Drift(CLI.Drift.Providers)
+	case "graph-drift":
+		drifts := teller.Drift(CLI.GraphDrift.Providers)
 		if len(drifts) > 0 {
 			teller.Porcelain.PrintDrift(drifts)
 			os.Exit(1)
@@ -204,7 +255,7 @@ func main() {
 		}
 
 	default:
+		println(ctx.Command())
 		teller.PrintEnvKeys()
-
 	}
 }
