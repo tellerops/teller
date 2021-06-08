@@ -152,33 +152,6 @@ Use this one liner from now on:
 $ docker run --rm -it --env-file <(teller env) alpine sh
 ```
 
-## :whale: Export in YAML format
-You can export in a YAML format, suitable for [GCloud](https://cloud.google.com/functions/docs/env-var):
-
-```
-$ teller yaml
-```
-
-Example format:
-
-```yaml
-FOO: "1"
-KEY: VALUE
-```
-## :whale: Export in JSON format
-You can export in a JSON format, suitable for piping through `jq` or other workflows:
-
-```
-$ teller json
-```
-
-Example format:
-
-```json
-{
-  "FOO": "1"
-}
-```
 
 ## :warning:  Scan for secrets
 
@@ -422,6 +395,37 @@ opts:
 And now you can use paths like `/{{stage}}/{{region}}/billing-svc` where ever you want (this templating is available for the __confirm__ question too).
 
 If you prefix a value with `env:` it will get pulled from your current environment.
+
+
+
+## `YAML` Export in YAML format
+You can export in a YAML format, suitable for [GCloud](https://cloud.google.com/functions/docs/env-var):
+
+```
+$ teller yaml
+```
+
+Example format:
+
+```yaml
+FOO: "1"
+KEY: VALUE
+```
+## `JSON` Export in JSON format
+You can export in a JSON format, suitable for piping through `jq` or other workflows:
+
+```
+$ teller json
+```
+
+Example format:
+
+```json
+{
+  "FOO": "1"
+}
+```
+
 
 # Providers
 
