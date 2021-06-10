@@ -105,6 +105,8 @@ Port: 5050
 ```
 
 Behind the scenes: `teller` fetched the correct variables, placed those (and _just_ those) in `ENV` for the `node` process to use.
+# Best practices
+Go and have a look at a collection of our [best practices](./best-practices.md) 
 
 # Features
 
