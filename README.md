@@ -767,9 +767,9 @@ Requires a username and API key populated in your environment:
 Requires a .conjurrc file in your User's home directory:
 ```yaml
 ---
-account: cyberarkdemo
+account: conjurdemo
 plugins: []
-appliance_url: https://dap.joegarcia.dev
+appliance_url: https://conjur.example.com
 cert_file: ""
 ```
 * `account` is the organization account created during initial deployment
