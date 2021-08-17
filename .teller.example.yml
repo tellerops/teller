@@ -85,3 +85,18 @@ providers:
   #     SAVE_TIME:
   #       # need to supply the relevant version (versions/1)
   #       path: redis/config/savetime
+
+  # cyberark_conjur:
+  #   # configures client from environment:
+  #   # CONJUR_AUTHN_LOGIN
+  #   # CONJUR_AUTHN_API_KEY
+  #   # also, configures client from file:
+  #   # FILENAME: ~/.conjurrc
+  #   # appliance_url: https://conjur.cyberark.com
+  #   # account: cyberarkdemo
+  #   # cert_file: /root/conjur-cyberarkdemo.pem
+  #   env:
+  #     DB_USERNAME:
+  #       path: secrets/database/username
+  #     DB_PASSWORD:
+  #       path: secrets/database/passwords

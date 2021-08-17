@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -11,7 +10,7 @@ import (
 )
 
 type ConjurClient interface {
-	RetrieveSecret(ctx context.Context, variableId string) (string, error)
+	RetrieveSecret(variableId string) ([]byte, error)
 }
 
 type CyberArkConjur struct {
@@ -57,15 +56,15 @@ func (c *CyberArkConjur) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	if secret == "" {
+	if secret == nil {
 		ent := p.Missing()
 		return &ent, nil
 	}
 
-	ent := p.Found(secret)
+	ent := p.Found(string(secret))
 	return &ent, nil
 }
 
-func (c *CyberArkConjur) getSecret(kp core.KeyPath) (string, error) {
-	return c.client.RetrieveSecret(context.TODO(), kp.Path)
+func (c *CyberArkConjur) getSecret(kp core.KeyPath) ([]byte, error) {
+	return c.client.RetrieveSecret(kp.Path)
 }
