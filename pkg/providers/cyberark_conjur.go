@@ -17,8 +17,8 @@ type ResourceFilter struct {
 }
 
 type ConjurClient interface {
-	AddSecret(variableId string, secretValue string) error
-	RetrieveSecret(variableId string) ([]byte, error)
+	AddSecret(variableID string, secretValue string) error
+	RetrieveSecret(variableID string) ([]byte, error)
 }
 
 type CyberArkConjur struct {
