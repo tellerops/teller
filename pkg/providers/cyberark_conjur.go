@@ -9,7 +9,15 @@ import (
 	"github.com/spectralops/teller/pkg/core"
 )
 
+type ResourceFilter struct {
+	Kind   string
+	Search string
+	Limit  int
+	Offset int
+}
+
 type ConjurClient interface {
+	AddSecret(variableId string, secretValue string) error
 	RetrieveSecret(variableId string) ([]byte, error)
 }
 
@@ -41,10 +49,12 @@ func (c *CyberArkConjur) Name() string {
 }
 
 func (c *CyberArkConjur) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", c.Name())
+	err := c.putSecret(p, val)
+
+	return err
 }
 func (c *CyberArkConjur) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", c.Name())
+	return fmt.Errorf("%v does not implement put mapping yet", c.Name())
 }
 
 func (c *CyberArkConjur) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -67,4 +77,8 @@ func (c *CyberArkConjur) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 func (c *CyberArkConjur) getSecret(kp core.KeyPath) ([]byte, error) {
 	return c.client.RetrieveSecret(kp.Path)
+}
+
+func (c *CyberArkConjur) putSecret(kp core.KeyPath, val string) error {
+	return c.client.AddSecret(kp.Path, val)
 }

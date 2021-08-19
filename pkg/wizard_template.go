@@ -150,4 +150,14 @@ providers:
       FOO_BAR:
         path: prd
 {{end}}
+
+{{- if index .ProviderKeys "cyberark_conjur" }}
+  # https://conjur.org
+  # set CONJUR_AUTHN_LOGIN and CONJUR_AUTHN_API_KEY env vars
+  # set .conjurrc file in user's home directory
+  cyberark_conjur:
+    env:
+      FOO_BAR:
+        path: /secrets/foo/bar
+{{end}}
 `

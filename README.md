@@ -779,10 +779,11 @@ cert_file: ""
 
 ### Features
 
-* Sync - `no`
-* Mapping - `no`
-* Modes - `read`
+* Sync - `no` [sync: accepting PR](https://github.com/spectralops/teller)
+* Mapping - `yes`
+* Modes - `read+write`
 * Key format
+  * `env_sync` - not supported to comply with least-privilege model
   * `env` - the secret variable path in Conjur Secrets Manager
 
 ### Example Config
