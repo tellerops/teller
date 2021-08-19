@@ -157,6 +157,8 @@ github.com/aws/smithy-go/time
 github.com/aws/smithy-go/transport/http
 github.com/aws/smithy-go/transport/http/internal/io
 github.com/aws/smithy-go/waiter
+# github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d
+github.com/bgentry/go-netrc/netrc
 # github.com/cenkalti/backoff v2.2.1+incompatible
 github.com/cenkalti/backoff
 # github.com/containerd/cgroups v0.0.0-20200824123100-0b889c03f102
@@ -173,6 +175,12 @@ github.com/containerd/continuity/sysx
 github.com/coreos/go-semver/semver
 # github.com/coreos/go-systemd/v22 v22.1.0
 github.com/coreos/go-systemd/v22/journal
+# github.com/cyberark/conjur-api-go v0.7.1
+## explicit
+github.com/cyberark/conjur-api-go/conjurapi
+github.com/cyberark/conjur-api-go/conjurapi/authn
+github.com/cyberark/conjur-api-go/conjurapi/logging
+github.com/cyberark/conjur-api-go/conjurapi/response
 # github.com/danieljoos/wincred v1.1.0
 github.com/danieljoos/wincred
 # github.com/davecgh/go-spew v1.1.1

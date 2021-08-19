@@ -18,6 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.1.1
+	github.com/cyberark/conjur-api-go v0.7.1
 	github.com/dghubble/sling v1.3.0
 	github.com/fatih/color v1.10.0
 	github.com/golang/mock v1.4.4

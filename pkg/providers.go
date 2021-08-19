@@ -28,6 +28,7 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		"Vercel":                   "vercel",
 		"Azure Key Vault":          "azure_keyvault",
 		"Doppler":                  "doppler",
+		"CyberArk Conjur":          "cyberark_conjur",
 	}
 }
 
@@ -55,6 +56,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 		return providers.NewAzureKeyVault()
 	case "doppler":
 		return providers.NewDoppler()
+	case "cyberark_conjur":
+		return providers.NewConjurClient()
 	default:
 		return nil, fmt.Errorf("provider '%s' does not exist", name)
 	}

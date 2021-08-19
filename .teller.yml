@@ -22,8 +22,8 @@ opts:
 providers:
   # Configure via environment:
   # CONSUL_HTTP_ADDR
-  dotenv:
+  cyberark_conjur:
     env:
-      FOO:
-        path: ~/my-dot-env.env
+      GH_USERNAME:
+        path: github/username
 
