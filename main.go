@@ -46,7 +46,7 @@ var CLI struct {
 	Redact struct {
 		In  string `optional name:"in" help:"Input file"`
 		Out string `optional name:"out" help:"Output file"`
-	} `cmd help:"Scans your codebase for sensitive keys"`
+	} `cmd help:"Redacts secrets from a process output"`
 
 	Scan struct {
 		Path   string `arg optional name:"path" help:"Scan root, default: '.'"`
