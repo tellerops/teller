@@ -27,13 +27,13 @@ func NewCloudflareClient() (core.Provider, error) {
 		os.Getenv("CLOUDFLARE_API_EMAIL"),
 	)
 
-	cloudflare.UsingAccount(os.Getenv("CLOUDFLARE_ACCOUNT_ID"))(api) //nolint
-
 	if err != nil {
 		return nil, err
 	}
 
-	return &Cloudflare{client: api}, err
+	cloudflare.UsingAccount(os.Getenv("CLOUDFLARE_ACCOUNT_ID"))(api) //nolint
+
+	return &Cloudflare{client: api}, nil
 }
 
 func (c *Cloudflare) Name() string {
