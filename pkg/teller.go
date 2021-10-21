@@ -237,7 +237,7 @@ func checkForMatches(path string, entries []core.EnvEntry) ([]core.Match, error)
 	//nolint
 	scanner.Buffer(buf, 10*1024*1024) // 10MB lines correlating to 10MB files max (bundles?)
 
-	var lineNumber int = 0
+	var lineNumber int = 0 //nolint
 	for scanner.Scan() {
 		lineNumber++
 		line := scanner.Bytes()

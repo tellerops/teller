@@ -23,7 +23,7 @@ func TestCloudflareWorkersKV(t *testing.T) {
 	shazam := []byte("shazam")
 	mailman := []byte("mailman")
 
-	listOut := cloudflare.ListStorageKeysResponse{
+	listOut := cloudflare.ListStorageKeysResponse{ //nolint
 		cloudflare.Response{},
 		[]cloudflare.StorageKey{{Name: "MG_KEY"}, {Name: "SMTP_PASS"}},
 		cloudflare.ResultInfo{},

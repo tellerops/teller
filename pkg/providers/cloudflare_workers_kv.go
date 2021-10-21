@@ -27,7 +27,7 @@ func NewCloudflareClient() (core.Provider, error) {
 		os.Getenv("CLOUDFLARE_API_EMAIL"),
 	)
 
-	cloudflare.UsingAccount(os.Getenv("CLOUDFLARE_ACCOUNT_ID"))(api)
+	cloudflare.UsingAccount(os.Getenv("CLOUDFLARE_ACCOUNT_ID"))(api) //nolint
 
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (c *Cloudflare) getSecret(p core.KeyPath) ([]byte, error) {
 		k = p.Env
 	}
 	if k == "" {
-		return nil, fmt.Errorf("Key required for fetching secrets. Received \"\"")
+		return nil, fmt.Errorf("Key required for fetching secrets. Received \"\"") //nolint
 	}
 	return c.client.ReadWorkersKV(context.TODO(), p.Path, k)
 }
