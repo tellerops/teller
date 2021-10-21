@@ -107,7 +107,7 @@ func (p *Porcelain) PrintEntries(entries []core.EnvEntry) {
 
 	for i := range entries {
 		v := entries[i]
-		ep := ellipsis.Shorten(v.ResolvedPath, 30) //nolint
+		ep := ellipsis.Shorten(v.ResolvedPath, 30)
 		if !v.IsFound {
 			fmt.Fprintf(&buf, "[%s %s %s] %s\n", yellow(v.ProviderName), gray(ep), red("missing"), green(v.Key))
 		} else {
@@ -120,7 +120,7 @@ func (p *Porcelain) PrintEntries(entries []core.EnvEntry) {
 	fmt.Fprint(p.Out, out)
 }
 func maskedValue(v string) string {
-	return fmt.Sprintf("%s*****", v[:int(math.Min(float64(len(v)), 2))]) //nolint
+	return fmt.Sprintf("%s*****", v[:int(math.Min(float64(len(v)), 2))])
 }
 
 func (p *Porcelain) PrintMatches(matches []core.Match) {
