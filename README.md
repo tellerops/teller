@@ -920,6 +920,10 @@ $ make lint
 
 To all [Contributors](https://github.com/spectralops/teller/graphs/contributors) - you make this happen, thanks!
 
+### Code of conduct
+
+Teller follows [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md)
+
 
 # Copyright
 
