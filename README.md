@@ -534,6 +534,8 @@ consul:
 
 Requires an API key populated in your environment in: `HEROKU_API_KEY` (you can fetch it from your ~/.netrc).
 
+Generate new token with Heroku cli:  `heroku authorizations:create` then use the TOKEN value.
+
 ### Features
 
 * Sync - `yes`
