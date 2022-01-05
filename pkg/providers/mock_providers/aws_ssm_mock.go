@@ -54,3 +54,23 @@ func (mr *MockAWSSSMClientMockRecorder) GetParameter(ctx, params interface{}, op
 	varargs := append([]interface{}{ctx, params}, optFns...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetParameter", reflect.TypeOf((*MockAWSSSMClient)(nil).GetParameter), varargs...)
 }
+
+// PutParameter mocks base method.
+func (m *MockAWSSSMClient) PutParameter(ctx context.Context, params *ssm.PutParameterInput, optFns ...func(*ssm.Options)) (*ssm.PutParameterOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PutParameter", varargs...)
+	ret0, _ := ret[0].(*ssm.PutParameterOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PutParameter indicates an expected call of PutParameter.
+func (mr *MockAWSSSMClientMockRecorder) PutParameter(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutParameter", reflect.TypeOf((*MockAWSSSMClient)(nil).PutParameter), varargs...)
+}

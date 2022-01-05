@@ -20,6 +20,7 @@ rig the mock inside
 */
 type AWSSecretsManagerClient interface {
 	GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
+	PutSecretValue(ctx context.Context, params *secretsmanager.PutSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.PutSecretValueOutput, error)
 }
 type AWSSecretsManager struct {
 	client AWSSecretsManagerClient
@@ -57,11 +58,27 @@ func (a *AWSSecretsManager) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) 
 }
 
 func (a *AWSSecretsManager) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	secrets, _ := a.getSecret(p)
+	k := p.EffectiveKey()
+	if secrets == nil {
+		secrets = map[string]string{k: val}
+	} else {
+		secrets[k] = val
+	}
+	return a.putSecret(p, map[string]string{k: val})
 }
 
 func (a *AWSSecretsManager) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	secrets, _ := a.getSecret(p)
+	if secrets == nil {
+		return a.putSecret(p, m)
+	}
+
+	for k, v := range m {
+		secrets[k] = v
+	}
+
+	return a.putSecret(p, secrets)
 }
 
 func (a *AWSSecretsManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
@@ -103,3 +120,20 @@ func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error
 
 	return m, nil
 }
+
+func (a *AWSSecretsManager) putSecret(kp core.KeyPath, m map[string]string) error {
+	encodedSecret, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	encodedSecretString := string(encodedSecret)
+
+	_ , err = a.client.PutSecretValue(context.TODO(), &secretsmanager.PutSecretValueInput{SecretId: &kp.Path, SecretString: &encodedSecretString})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+

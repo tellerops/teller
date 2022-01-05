@@ -11,6 +11,7 @@ import (
 
 type AWSSSMClient interface {
 	GetParameter(ctx context.Context, params *ssm.GetParameterInput, optFns ...func(*ssm.Options)) (*ssm.GetParameterOutput, error)
+	PutParameter(ctx context.Context, params *ssm.PutParameterInput, optFns ...func(*ssm.Options)) (*ssm.PutParameterOutput, error)
 }
 type AWSSSM struct {
 	client AWSSSMClient
@@ -32,7 +33,7 @@ func (a *AWSSSM) Name() string {
 }
 
 func (a *AWSSSM) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	return a.putSecret(p, &val)
 }
 func (a *AWSSSM) PutMapping(p core.KeyPath, m map[string]string) error {
 	return fmt.Errorf("%v does not implement write yet", a.Name())
@@ -68,4 +69,9 @@ func (a *AWSSSM) getSecret(kp core.KeyPath) (*string, error) {
 	}
 
 	return res.Parameter.Value, nil
+}
+
+func (a *AWSSSM) putSecret(kp core.KeyPath, val *string) error {
+	_, err := a.client.PutParameter(context.TODO(), &ssm.PutParameterInput{Name: &kp.Path, Value: val})
+	return err
 }
