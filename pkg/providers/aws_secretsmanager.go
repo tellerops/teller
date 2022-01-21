@@ -111,14 +111,18 @@ func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error
 	if res == nil || res.SecretString == nil {
 		return nil, fmt.Errorf("data not found at '%s'", kp.Path)
 	}
-	m := map[string]string{}
+	m := map[string]interface{}{}
 	err = json.Unmarshal([]byte(*res.SecretString), &m)
-
 	if err != nil {
 		return nil, err
 	}
-
-	return m, nil
+	secret := map[string]string{}
+	for k,v := range m {
+		secretValue, ok :=v.(string)
+		if !ok { continue }
+		secret[k]=secretValue
+	}
+	return secret, nil
 }
 
 func (a *AWSSecretsManager) putSecret(kp core.KeyPath, m map[string]string) error {
