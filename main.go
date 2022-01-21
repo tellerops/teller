@@ -67,6 +67,8 @@ var CLI struct {
 	Copy struct {
 		From string   `name:"from" help:"A provider name to sync from"`
 		To   []string `name:"to" help:"A list of provider names to copy values from the source provider to"`
+		Source string `name:"source" help:"A source to check drift against"`
+		Target string `name:"target" help:"A target to check against source"`
 		Sync bool     `optional name:"sync" help:"Sync all given k/vs to the env_sync key"`
 	} `cmd help:"Sync data from a source provider directly to multiple target providers"`
 
@@ -134,7 +136,15 @@ func main() {
 		}
 		os.Exit(0)
 	case "copy":
-		err := teller.Sync(CLI.Copy.From, CLI.Copy.To, CLI.Copy.Sync)
+		from:= CLI.Copy.From
+		to := CLI.Copy.To
+		if len(CLI.Copy.Source) != 0 {
+			from = CLI.Copy.Source
+		}
+		if len(CLI.Copy.Target) != 0 {
+			to = append(to, CLI.Copy.Target)
+		}
+		err := teller.Sync(from, to, CLI.Copy.Sync)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
