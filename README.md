@@ -887,10 +887,10 @@ Requires the following environment variables to be set:
         field: type
 ```
 
-### Example execution:
+### Run Example:
 Example:
 ```sh
-OP_CONNECT_HOST="http://localhost:8080" OP_CONNECT_TOKEN=""  go run main.go yaml
+OP_CONNECT_HOST="http://localhost:8080" OP_CONNECT_TOKEN=""  teller yaml
 ```
 # Semantics
 
