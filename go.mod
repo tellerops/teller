@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	cloud.google.com/go v0.78.0
+	github.com/1Password/connect-sdk-go v1.2.0
 	github.com/AlecAivazis/survey/v2 v2.2.8
 	github.com/Azure/azure-sdk-for-go v52.5.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect

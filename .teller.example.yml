@@ -100,3 +100,13 @@ providers:
   #       path: secrets/database/username
   #     DB_PASSWORD:
   #       path: secrets/database/passwords
+  
+  # 1password:
+  #   env_sync:
+  #       path: # Key title
+  #       source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory     
+  #   env:
+  #     FOO_BAR:
+  #       path: # Key title
+  #       source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
+  #       field: # The secret field to get. notesPlain, {label key}, password etc.

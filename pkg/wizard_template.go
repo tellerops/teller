@@ -160,4 +160,19 @@ providers:
       FOO_BAR:
         path: /secrets/foo/bar
 {{end}}
+
+{{- if index .ProviderKeys "1password" }}
+  # Configure via environment variables:
+  # OP_CONNECT_HOST
+  # OP_CONNECT_TOKEN
+  1password:
+    env_sync:
+        path: # Key title
+        source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
+    env:
+      FOO_BAR:
+        path: # Key title
+        source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
+        field: # The secret field to get. notesPlain, {label key}, password etc.
+{{end}}
 `

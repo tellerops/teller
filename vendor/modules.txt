@@ -3,6 +3,10 @@
 cloud.google.com/go/compute/metadata
 cloud.google.com/go/iam
 cloud.google.com/go/secretmanager/apiv1
+# github.com/1Password/connect-sdk-go v1.2.0
+## explicit
+github.com/1Password/connect-sdk-go/connect
+github.com/1Password/connect-sdk-go/onepassword
 # github.com/AlecAivazis/survey/v2 v2.2.8
 ## explicit
 github.com/AlecAivazis/survey/v2
@@ -352,6 +356,10 @@ github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v1.0.0-rc93
 github.com/opencontainers/runc/libcontainer/user
+# github.com/opentracing/opentracing-go v1.2.0
+github.com/opentracing/opentracing-go
+github.com/opentracing/opentracing-go/ext
+github.com/opentracing/opentracing-go/log
 # github.com/pborman/uuid v1.2.0
 github.com/pborman/uuid
 # github.com/pierrec/lz4 v2.0.5+incompatible
@@ -382,6 +390,28 @@ github.com/testcontainers/testcontainers-go/wait
 # github.com/thoas/go-funk v0.7.0
 ## explicit
 github.com/thoas/go-funk
+# github.com/uber/jaeger-client-go v2.25.0+incompatible
+github.com/uber/jaeger-client-go
+github.com/uber/jaeger-client-go/config
+github.com/uber/jaeger-client-go/internal/baggage
+github.com/uber/jaeger-client-go/internal/baggage/remote
+github.com/uber/jaeger-client-go/internal/reporterstats
+github.com/uber/jaeger-client-go/internal/spanlog
+github.com/uber/jaeger-client-go/internal/throttler
+github.com/uber/jaeger-client-go/internal/throttler/remote
+github.com/uber/jaeger-client-go/log
+github.com/uber/jaeger-client-go/rpcmetrics
+github.com/uber/jaeger-client-go/thrift
+github.com/uber/jaeger-client-go/thrift-gen/agent
+github.com/uber/jaeger-client-go/thrift-gen/baggage
+github.com/uber/jaeger-client-go/thrift-gen/jaeger
+github.com/uber/jaeger-client-go/thrift-gen/sampling
+github.com/uber/jaeger-client-go/thrift-gen/zipkincore
+github.com/uber/jaeger-client-go/transport
+github.com/uber/jaeger-client-go/utils
+github.com/uber/jaeger-client-go/zipkin
+# github.com/uber/jaeger-lib v2.4.0+incompatible
+github.com/uber/jaeger-lib/metrics
 # github.com/zalando/go-keyring v0.1.1-0.20210112083600-4d37811583ad
 github.com/zalando/go-keyring
 github.com/zalando/go-keyring/secret_service
@@ -423,7 +453,7 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# go.uber.org/atomic v1.6.0
+# go.uber.org/atomic v1.7.0
 go.uber.org/atomic
 # go.uber.org/multierr v1.5.0
 go.uber.org/multierr
