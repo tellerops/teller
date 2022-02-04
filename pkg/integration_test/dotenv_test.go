@@ -1,9 +1,9 @@
+//go:build integration
 // +build integration
 
 package integration_test
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -16,7 +16,7 @@ func TestGetDotEnv(t *testing.T) {
 	//
 	// pre-insert data
 	//
-	f, err := ioutil.TempFile("", "dotenv-*")
+	f, err := os.CreateTemp("", "dotenv-*")
 	assert.NoError(t, err)
 	f.WriteString("MG_KEY=123\n")
 	f.Close()

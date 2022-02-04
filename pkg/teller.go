@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"sort"
@@ -312,7 +311,7 @@ func (tl *Teller) Scan(path string, silent bool) ([]core.Match, error) {
 }
 
 func (tl *Teller) TemplateFile(from, to string) error {
-	tfile, err := ioutil.ReadFile(from)
+	tfile, err := os.ReadFile(from)
 	if err != nil {
 		return fmt.Errorf("cannot read template '%v': %v", from, err)
 	}
@@ -324,7 +323,7 @@ func (tl *Teller) TemplateFile(from, to string) error {
 
 	info, _ := os.Stat(from)
 
-	err = ioutil.WriteFile(to, []byte(res), info.Mode())
+	err = os.WriteFile(to, []byte(res), info.Mode())
 	if err != nil {
 		return fmt.Errorf("cannot save to '%v': %v", to, err)
 	}
