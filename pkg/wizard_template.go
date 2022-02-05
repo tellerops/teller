@@ -175,4 +175,14 @@ providers:
         source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
         field: # The secret field to get. notesPlain, {label key}, password etc.
 {{end}}
+
+{{- if index .ProviderKeys "gopass" }}
+  # Override default configuration: https://github.com/gopasspw/gopass/blob/master/docs/config.md
+  gopass:
+    env_sync:
+      path: foo
+    env:
+      ETC_DSN:
+        path: foo/bar
+{{end}}
 `
