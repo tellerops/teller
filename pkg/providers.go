@@ -31,6 +31,7 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		"CyberArk Conjur":          "cyberark_conjur",
 		"Cloudlflare Workers KV":   "cloudflare_workers_kv",
 		"1Password":                "1password",
+		"Gopass":                   "gopass",
 	}
 }
 
@@ -64,6 +65,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 		return providers.NewCloudflareClient()
 	case "1password":
 		return providers.NewOnePassword()
+	case "gopass":
+		return providers.NewGopass()
 	default:
 		return nil, fmt.Errorf("provider '%s' does not exist", name)
 	}

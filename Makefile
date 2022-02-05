@@ -14,6 +14,7 @@ mocks:
 	mockgen -source pkg/providers/heroku.go -destination pkg/providers/mock_providers/heroku_mock.go
 	mockgen -source pkg/providers/vercel.go -destination pkg/providers/mock_providers/vercel_mock.go
 	mockgen -source pkg/providers/onepassword.go -destination pkg/providers/mock_providers/onepassword_mock.go
+	mockgen -source pkg/providers/gopass.go -destination pkg/providers/mock_providers/gopass_mock.go
 readme:
 	yarn readme
 lint:
