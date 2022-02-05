@@ -30,7 +30,7 @@ func (d *DotEnvReader) Write(p string, kvs map[string]string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(p, []byte(content), 0644) //nolint
+	return os.WriteFile(p, []byte(content), 0644)
 }
 
 type Dotenv struct {

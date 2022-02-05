@@ -297,13 +297,11 @@ func TestTellerSync(t *testing.T) {
 
 	tl := NewTeller(tlrfile, []string{}, false)
 
-	//nolint
 	err = os.WriteFile("../fixtures/sync/target.env", []byte(`
 FOO=1
 `), 0644)
 	assert.NoError(t, err)
 
-	//nolint
 	err = os.WriteFile("../fixtures/sync/target2.env", []byte(`
 FOO=2
 `), 0644)
