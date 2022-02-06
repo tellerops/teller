@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sort"
 	"testing"
@@ -298,14 +297,12 @@ func TestTellerSync(t *testing.T) {
 
 	tl := NewTeller(tlrfile, []string{}, false)
 
-	//nolint
-	err = ioutil.WriteFile("../fixtures/sync/target.env", []byte(`
+	err = os.WriteFile("../fixtures/sync/target.env", []byte(`
 FOO=1
 `), 0644)
 	assert.NoError(t, err)
 
-	//nolint
-	err = ioutil.WriteFile("../fixtures/sync/target2.env", []byte(`
+	err = os.WriteFile("../fixtures/sync/target2.env", []byte(`
 FOO=2
 `), 0644)
 
@@ -315,7 +312,7 @@ FOO=2
 
 	assert.NoError(t, err)
 
-	content, err := ioutil.ReadFile("../fixtures/sync/target.env")
+	content, err := os.ReadFile("../fixtures/sync/target.env")
 	assert.NoError(t, err)
 
 	assert.Equal(t, string(content), `FOO="1"
@@ -323,7 +320,7 @@ ONE="1"
 THREE="3"
 TWO="2"`)
 
-	content, err = ioutil.ReadFile("../fixtures/sync/target2.env")
+	content, err = os.ReadFile("../fixtures/sync/target2.env")
 	assert.NoError(t, err)
 
 	assert.Equal(t, string(content), `FOO="2"

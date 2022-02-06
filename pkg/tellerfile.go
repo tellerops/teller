@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/spectralops/teller/pkg/core"
 	"gopkg.in/yaml.v2"
@@ -24,7 +24,7 @@ type MappingConfig struct {
 }
 
 func NewTellerFile(s string) (*TellerFile, error) {
-	yamlFile, err := ioutil.ReadFile(s)
+	yamlFile, err := os.ReadFile(s)
 	if err != nil {
 		return nil, err
 	}

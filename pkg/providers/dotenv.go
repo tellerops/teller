@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"io/ioutil"
+	"os"
 	"sort"
 
 	"github.com/joho/godotenv"
@@ -18,7 +18,7 @@ type DotEnvReader struct {
 }
 
 func (d *DotEnvReader) Read(p string) (map[string]string, error) {
-	content, err := ioutil.ReadFile(p)
+	content, err := os.ReadFile(p)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (d *DotEnvReader) Write(p string, kvs map[string]string) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(p, []byte(content), 0644) //nolint
+	return os.WriteFile(p, []byte(content), 0644)
 }
 
 type Dotenv struct {
