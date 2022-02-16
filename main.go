@@ -103,11 +103,15 @@ func main() {
 		telleryml = CLI.Config
 	}
 
-	if _, err := os.Stat(telleryml); os.IsNotExist(err) {
+	if ctx.Command() == "new" {
 		teller := pkg.Teller{
 			Porcelain: &pkg.Porcelain{Out: os.Stderr},
 		}
-		err = teller.SetupNewProject(telleryml)
+		if _, err := os.Stat(telleryml); err == nil && !teller.Porcelain.AskForConfirmation(fmt.Sprintf("The file %s already exists. Do you want to override the configuration with new settings?", telleryml)) {
+			os.Exit(0)
+		}
+
+		err := teller.SetupNewProject(telleryml)
 		if err != nil {
 			fmt.Printf("Error: %v", err)
 			os.Exit(1)
