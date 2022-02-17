@@ -39,9 +39,9 @@ var CLI struct {
 	} `cmd help:"Print in a .env format for Docker and others"`
 
 	Template struct {
-		TemplateFile string `arg name:"template_file" help:"Input template file (Go template format)"`
-		OutFile      string `arg name:"out_file" help:"Output file"`
-	} `cmd help:"Inject vars into a template file"`
+		TemplatePath string `arg name:"template_path" help:"Path to the template source (Go template format)"`
+		Out          string `arg name:"out" help:"Output file"`
+	} `cmd help:"Inject vars from a template by given source path (single file or folder)"`
 
 	Redact struct {
 		In  string `optional name:"in" help:"Input file"`
@@ -251,8 +251,8 @@ func main() {
 			os.Exit(1)
 		}
 
-	case "template <template_file> <out_file>":
-		err := teller.TemplateFile(CLI.Template.TemplateFile, CLI.Template.OutFile)
+	case "template <template_path> <out>":
+		err := teller.Template(CLI.Template.TemplatePath, CLI.Template.Out)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
