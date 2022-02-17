@@ -35,6 +35,26 @@ func (m *MockAWSSecretsManagerClient) EXPECT() *MockAWSSecretsManagerClientMockR
 	return m.recorder
 }
 
+// CreateSecret mocks base method.
+func (m *MockAWSSecretsManagerClient) CreateSecret(ctx context.Context, params *secretsmanager.CreateSecretInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.CreateSecretOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateSecret", varargs...)
+	ret0, _ := ret[0].(*secretsmanager.CreateSecretOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateSecret indicates an expected call of CreateSecret.
+func (mr *MockAWSSecretsManagerClientMockRecorder) CreateSecret(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecret", reflect.TypeOf((*MockAWSSecretsManagerClient)(nil).CreateSecret), varargs...)
+}
+
 // GetSecretValue mocks base method.
 func (m *MockAWSSecretsManagerClient) GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error) {
 	m.ctrl.T.Helper()
@@ -53,4 +73,24 @@ func (mr *MockAWSSecretsManagerClientMockRecorder) GetSecretValue(ctx, params in
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, params}, optFns...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecretValue", reflect.TypeOf((*MockAWSSecretsManagerClient)(nil).GetSecretValue), varargs...)
+}
+
+// PutSecretValue mocks base method.
+func (m *MockAWSSecretsManagerClient) PutSecretValue(ctx context.Context, params *secretsmanager.PutSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.PutSecretValueOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PutSecretValue", varargs...)
+	ret0, _ := ret[0].(*secretsmanager.PutSecretValueOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PutSecretValue indicates an expected call of PutSecretValue.
+func (mr *MockAWSSecretsManagerClientMockRecorder) PutSecretValue(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutSecretValue", reflect.TypeOf((*MockAWSSecretsManagerClient)(nil).PutSecretValue), varargs...)
 }

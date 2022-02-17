@@ -93,7 +93,7 @@ func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	entries := []core.EnvEntry{}
+	var entries []core.EnvEntry
 	for k, v := range kvs {
 		entries = append(entries, p.FoundWithKey(k, v))
 	}
@@ -109,7 +109,6 @@ func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	k := p.EffectiveKey()
 	val, ok := kvs[k]
-
 	if !ok {
 		ent := p.Missing()
 		return &ent, nil

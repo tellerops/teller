@@ -604,7 +604,7 @@ Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 * Sync - `yes`
 * Mapping - `yes`
-* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
+* Modes - `read+write`
 * Key format 
   * `env_sync` - path based
   * `env` - path based
