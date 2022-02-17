@@ -8,6 +8,10 @@ func LastSegment(s string) string {
 }
 
 func Merge(from, into map[string]string) {
+	if into == nil {
+		into = make(map[string]string)
+	}
+
 	for k, v := range from {
 		into[k] = v
 	}
