@@ -11,6 +11,11 @@ import (
 	"github.com/spectralops/teller/pkg/utils"
 )
 
+const (
+	filePerm = 0644
+	dirPerm  = 0755
+)
+
 type DotEnvClient interface {
 	Read(p string) (map[string]string, error)
 	Write(p string, kvs map[string]string) error
@@ -31,7 +36,7 @@ func (d *DotEnvReader) Write(p string, kvs map[string]string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(p, []byte(content), 0644)
+	return os.WriteFile(p, []byte(content), filePerm)
 }
 
 type Dotenv struct {
@@ -64,7 +69,8 @@ func (a *Dotenv) PutMapping(kp core.KeyPath, m map[string]string) error {
 	switch {
 	case err == nil:
 		// get a fresh copy of a hash
-		into, err := a.client.Read(p)
+		var into map[string]string
+		into, err = a.client.Read(p)
 		if err != nil {
 			return err
 		}
@@ -72,7 +78,7 @@ func (a *Dotenv) PutMapping(kp core.KeyPath, m map[string]string) error {
 		return a.client.Write(p, into)
 	case os.IsNotExist(err):
 		// ensure all subdirectories exist
-		err := os.MkdirAll(path.Dir(p), 0755)
+		err = os.MkdirAll(path.Dir(p), dirPerm)
 		if err != nil {
 			return err
 		}
