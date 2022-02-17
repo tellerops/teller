@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 
@@ -327,4 +329,81 @@ TWO="2"`)
 ONE="1"
 THREE="3"
 TWO="2"`)
+}
+
+func TestTemplateFile(t *testing.T) {
+
+	tlrfile, err := NewTellerFile("../fixtures/sync/teller.yml")
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		os.Exit(1)
+	}
+
+	tl := NewTeller(tlrfile, []string{}, false)
+	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER", Value: "secret-here"})
+
+	tempFolder, _ := os.MkdirTemp(os.TempDir(), "test-template")
+	defer os.RemoveAll(tempFolder)
+
+	templatePath := filepath.Join(tempFolder, "target.tpl")      // prepare template file path
+	destinationPath := filepath.Join(tempFolder, "starget.envs") // prepare destination file path
+
+	err = os.WriteFile(templatePath, []byte(`Hello, {{.Teller.EnvByKey "TEST-PLACEHOLDER" "default-value" }}!`), 0644)
+	assert.NoError(t, err)
+
+	err = tl.templateFile(templatePath, destinationPath)
+	assert.NoError(t, err)
+
+	txt, err := ioutil.ReadFile(destinationPath)
+	assert.NoError(t, err)
+	assert.Equal(t, string(txt), "Hello, secret-here!")
+
+}
+
+func TestTemplateFolder(t *testing.T) {
+
+	tlrfile, err := NewTellerFile("../fixtures/sync/teller.yml")
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		os.Exit(1)
+	}
+
+	tl := NewTeller(tlrfile, []string{}, false)
+	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER", Value: "secret-here"})
+	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER-2", Value: "secret2-here"})
+
+	rootTempDir := os.TempDir()
+	tempFolder, _ := os.MkdirTemp(rootTempDir, "test-template") // create temp root folder
+	// Create template folders structure
+	templateFolder := filepath.Join(tempFolder, "from")
+	err = os.MkdirAll(templateFolder, os.ModePerm)
+	assert.NoError(t, err)
+	err = os.MkdirAll(filepath.Join(templateFolder, "folder1", "folder2"), os.ModePerm)
+	assert.NoError(t, err)
+
+	// copy to:
+	copyToFolder := filepath.Join(tempFolder, "to")
+
+	err = os.MkdirAll(copyToFolder, os.ModePerm)
+	assert.NoError(t, err)
+
+	defer os.RemoveAll(tempFolder)
+
+	err = os.WriteFile(filepath.Join(templateFolder, "target.tpl"), []byte(`Hello, {{.Teller.EnvByKey "TEST-PLACEHOLDER" "default-value" }}!`), 0644)
+	assert.NoError(t, err)
+	err = os.WriteFile(filepath.Join(templateFolder, "folder1", "folder2", "target2.tpl"), []byte(`Hello, {{.Teller.EnvByKey "TEST-PLACEHOLDER-2" "default-value" }}!`), 0644)
+	assert.NoError(t, err)
+
+	err = tl.templateFolder(templateFolder, copyToFolder)
+	assert.NoError(t, err)
+	fmt.Println(copyToFolder)
+
+	txt, err := ioutil.ReadFile(filepath.Join(copyToFolder, "target.tpl"))
+	assert.NoError(t, err)
+	assert.Equal(t, string(txt), "Hello, secret-here!")
+
+	txt, err = ioutil.ReadFile(filepath.Join(copyToFolder, "folder1", "folder2", "target2.tpl"))
+	assert.NoError(t, err)
+	assert.Equal(t, string(txt), "Hello, secret2-here!")
+
 }

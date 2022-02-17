@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"text/template"
@@ -310,7 +311,40 @@ func (tl *Teller) Scan(path string, silent bool) ([]core.Match, error) {
 	return findings, err
 }
 
-func (tl *Teller) TemplateFile(from, to string) error {
+// Template Teller vars from a given path (can be file or folder)
+func (tl *Teller) Template(from, to string) error {
+
+	fileInfo, err := os.Stat(from)
+	if err != nil {
+		return fmt.Errorf("invald path. err: %v", err)
+	}
+
+	if fileInfo.IsDir() {
+		return tl.templateFolder(from, to)
+	}
+
+	return tl.templateFile(from, to)
+}
+
+// templateFolder scan given folder and inject Teller vars for each search file
+func (tl *Teller) templateFolder(from, to string) error {
+
+	err := godirwalk.Walk(from, &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+			if de.IsDir() {
+				return nil
+			}
+			copyTo := filepath.Join(to, strings.Replace(osPathname, from, "", 1))
+			return tl.templateFile(osPathname, copyTo)
+		},
+		Unsorted: true,
+	})
+
+	return err
+}
+
+// templateFile inject Teller vars into a single file
+func (tl *Teller) templateFile(from, to string) error {
 	tfile, err := os.ReadFile(from)
 	if err != nil {
 		return fmt.Errorf("cannot read template '%v': %v", from, err)
@@ -322,6 +356,16 @@ func (tl *Teller) TemplateFile(from, to string) error {
 	}
 
 	info, _ := os.Stat(from)
+
+	// crate destination path if not exists
+	toFolder := filepath.Dir(to)
+	if _, err = os.Stat(toFolder); os.IsNotExist(err) {
+		err = os.MkdirAll(toFolder, os.ModePerm)
+		if err != nil {
+			fmt.Println("1")
+			return fmt.Errorf("cannot create folder '%v': %v", to, err)
+		}
+	}
 
 	err = os.WriteFile(to, []byte(res), info.Mode())
 	if err != nil {
