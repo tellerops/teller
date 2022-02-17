@@ -2,6 +2,7 @@ package providers
 
 import (
 	"os"
+	"path"
 	"sort"
 
 	"github.com/joho/godotenv"
@@ -58,13 +59,27 @@ func (a *Dotenv) PutMapping(kp core.KeyPath, m map[string]string) error {
 		return err
 	}
 
-	// get a fresh copy of a hash
-	into, err := a.client.Read(p)
-	if err != nil {
+	// check if the file does exist
+	_, err = os.Stat(p)
+	switch {
+	case err == nil:
+		// get a fresh copy of a hash
+		into, err := a.client.Read(p)
+		if err != nil {
+			return err
+		}
+		utils.Merge(m, into)
+		return a.client.Write(p, into)
+	case os.IsNotExist(err):
+		// ensure all subdirectories exist
+		err := os.MkdirAll(path.Dir(p), 0755)
+		if err != nil {
+			return err
+		}
+		return a.client.Write(p, m)
+	default:
 		return err
 	}
-	utils.Merge(m, into)
-	return a.client.Write(p, into)
 }
 
 func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
