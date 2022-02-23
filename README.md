@@ -6,13 +6,16 @@
 <br/>
 <br/>
 </p>
+
 <p align="center">
 <b>:computer: Never leave your terminal for secrets</b>
 <br/>
 <b>:pager: Create easy and clean workflows for working with cloud environments</b>
 <br/>
 <b>:mag_right: Scan for secrets and fight secret sprawl</b>
-<br/>
+<br/><br/><br/>
+   <a href="https://www.producthunt.com/posts/teller-3?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-teller-3" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=332313&theme=light" alt="Teller - The open-source universal secret manager for developers | Product Hunt" style="width: 250px; height: 54px;" width="150"  /></a><br/>
+<br/><br/><br/>
 <hr/>
 </p>
 
