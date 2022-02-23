@@ -106,6 +106,14 @@ func (a *AWSSecretsManager) Get(kp core.KeyPath) (*core.EnvEntry, error) {
 	return &ent, nil
 }
 
+func (a *AWSSecretsManager) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
+func (a *AWSSecretsManager) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
 func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error) {
 	res, err := a.client.GetSecretValue(context.Background(), &secretsmanager.GetSecretValueInput{SecretId: &kp.Path})
 	if err != nil {

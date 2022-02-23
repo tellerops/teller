@@ -100,6 +100,14 @@ func (g *Gopass) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	return &ent, nil
 }
 
+func (g *Gopass) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", g.Name())
+}
+
+func (g *Gopass) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", g.Name())
+}
+
 func (g *Gopass) getSecret(path string) (gopass.Secret, error) {
 
 	secret, err := g.client.Get(context.TODO(), path, "")

@@ -49,7 +49,7 @@ func (o *OnePassword) Put(p core.KeyPath, val string) error {
 }
 
 func (o *OnePassword) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write multiple keys", o.Name())
+	return fmt.Errorf("provider %q does not implement write multiple keys", o.Name())
 }
 
 func (o *OnePassword) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -83,6 +83,14 @@ func (o *OnePassword) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	return &ent, nil
+}
+
+func (o *OnePassword) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", o.Name())
+}
+
+func (o *OnePassword) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", o.Name())
 }
 
 func (o *OnePassword) getItemByTitle(p core.KeyPath) (*onepassword.Item, error) {

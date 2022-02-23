@@ -32,14 +32,22 @@ func (a *AWSSSM) Name() string {
 }
 
 func (a *AWSSSM) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }
 func (a *AWSSSM) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }
 
 func (a *AWSSSM) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 	return nil, fmt.Errorf("does not support full env sync (path: %s)", kp.Path)
+}
+
+func (a *AWSSSM) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
+func (a *AWSSSM) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
 }
 
 func (a *AWSSSM) Get(p core.KeyPath) (*core.EnvEntry, error) {

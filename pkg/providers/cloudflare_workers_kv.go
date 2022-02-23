@@ -41,11 +41,11 @@ func (c *Cloudflare) Name() string {
 }
 
 func (c *Cloudflare) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", c.Name())
+	return fmt.Errorf("provider %q does not implement write yet", c.Name())
 }
 
 func (c *Cloudflare) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", c.Name())
+	return fmt.Errorf("provider %q does not implement write yet", c.Name())
 }
 
 func (c *Cloudflare) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -64,6 +64,14 @@ func (c *Cloudflare) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 	ent := p.Found(string(secret))
 	return &ent, nil
+}
+
+func (c *Cloudflare) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", c.Name())
+}
+
+func (c *Cloudflare) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", c.Name())
 }
 
 func (c *Cloudflare) getSecrets(p core.KeyPath) ([]core.EnvEntry, error) {

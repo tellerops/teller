@@ -94,6 +94,14 @@ func (a *Etcd) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	return &ent, nil
 }
 
+func (a *Etcd) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
+func (a *Etcd) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
 func (a *Etcd) getSecret(kp core.KeyPath, opts ...clientv3.OpOption) ([]*spb.KeyValue, error) {
 	res, err := a.client.Get(context.TODO(), kp.Path, opts...)
 	if err != nil {
