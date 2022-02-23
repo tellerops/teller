@@ -105,6 +105,14 @@ func (h *HashicorpVault) PutMapping(p core.KeyPath, m map[string]string) error {
 	return err
 }
 
+func (h *HashicorpVault) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", h.Name())
+}
+
+func (h *HashicorpVault) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", h.Name())
+}
+
 func (h *HashicorpVault) getSecret(kp core.KeyPath) (*api.Secret, error) {
 	secret, err := h.client.Read(kp.Path)
 	if err != nil {

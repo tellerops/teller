@@ -5,35 +5,36 @@
 package mock_providers
 
 import (
+	reflect "reflect"
+
 	onepassword "github.com/1Password/connect-sdk-go/onepassword"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
-// MockOnePasswordClient is a mock of OnePasswordClient interface
+// MockOnePasswordClient is a mock of OnePasswordClient interface.
 type MockOnePasswordClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockOnePasswordClientMockRecorder
 }
 
-// MockOnePasswordClientMockRecorder is the mock recorder for MockOnePasswordClient
+// MockOnePasswordClientMockRecorder is the mock recorder for MockOnePasswordClient.
 type MockOnePasswordClientMockRecorder struct {
 	mock *MockOnePasswordClient
 }
 
-// NewMockOnePasswordClient creates a new mock instance
+// NewMockOnePasswordClient creates a new mock instance.
 func NewMockOnePasswordClient(ctrl *gomock.Controller) *MockOnePasswordClient {
 	mock := &MockOnePasswordClient{ctrl: ctrl}
 	mock.recorder = &MockOnePasswordClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockOnePasswordClient) EXPECT() *MockOnePasswordClientMockRecorder {
 	return m.recorder
 }
 
-// GetItemByTitle mocks base method
+// GetItemByTitle mocks base method.
 func (m *MockOnePasswordClient) GetItemByTitle(title, vaultUUID string) (*onepassword.Item, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetItemByTitle", title, vaultUUID)
@@ -42,13 +43,13 @@ func (m *MockOnePasswordClient) GetItemByTitle(title, vaultUUID string) (*onepas
 	return ret0, ret1
 }
 
-// GetItemByTitle indicates an expected call of GetItemByTitle
+// GetItemByTitle indicates an expected call of GetItemByTitle.
 func (mr *MockOnePasswordClientMockRecorder) GetItemByTitle(title, vaultUUID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemByTitle", reflect.TypeOf((*MockOnePasswordClient)(nil).GetItemByTitle), title, vaultUUID)
 }
 
-// UpdateItem mocks base method
+// UpdateItem mocks base method.
 func (m *MockOnePasswordClient) UpdateItem(item *onepassword.Item, vaultUUID string) (*onepassword.Item, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateItem", item, vaultUUID)
@@ -57,7 +58,7 @@ func (m *MockOnePasswordClient) UpdateItem(item *onepassword.Item, vaultUUID str
 	return ret0, ret1
 }
 
-// UpdateItem indicates an expected call of UpdateItem
+// UpdateItem indicates an expected call of UpdateItem.
 func (mr *MockOnePasswordClientMockRecorder) UpdateItem(item, vaultUUID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateItem", reflect.TypeOf((*MockOnePasswordClient)(nil).UpdateItem), item, vaultUUID)

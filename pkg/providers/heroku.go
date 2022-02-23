@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sort"
 
@@ -82,6 +83,14 @@ func (h *Heroku) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	ent := p.Found(*k)
 	return &ent, nil
+}
+
+func (h *Heroku) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", h.Name())
+}
+
+func (h *Heroku) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", h.Name())
 }
 
 func (h *Heroku) getSecret(kp core.KeyPath) (heroku.ConfigVarInfoForAppResult, error) {

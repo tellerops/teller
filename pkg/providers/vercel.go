@@ -116,10 +116,18 @@ func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (ve *Vercel) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", ve.Name())
+	return fmt.Errorf("provider %q does not implement write yet", ve.Name())
 }
 func (ve *Vercel) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", ve.Name())
+	return fmt.Errorf("provider %q does not implement write yet", ve.Name())
+}
+
+func (ve *Vercel) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", ve.Name())
+}
+
+func (ve *Vercel) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", ve.Name())
 }
 
 func (ve *Vercel) getSecret(kp core.KeyPath) (map[string]*string, error) {

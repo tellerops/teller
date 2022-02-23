@@ -31,10 +31,10 @@ func (a *GoogleSecretManager) Name() string {
 }
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }
 func (a *GoogleSecretManager) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }
 
 func (a *GoogleSecretManager) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
@@ -49,6 +49,14 @@ func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	ent := p.Found(secret)
 	return &ent, nil
+}
+
+func (a *GoogleSecretManager) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
+func (a *GoogleSecretManager) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
 }
 
 func (a *GoogleSecretManager) getSecret(kp core.KeyPath) (string, error) {

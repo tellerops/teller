@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"sort"
@@ -116,6 +117,14 @@ func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	ent := p.Found(val)
 	return &ent, nil
+}
+
+func (a *Dotenv) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
+func (a *Dotenv) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
 }
 
 func (a *Dotenv) getSecrets(kp core.KeyPath) (map[string]string, error) {

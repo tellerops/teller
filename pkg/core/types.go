@@ -178,6 +178,9 @@ type Provider interface {
 
 	Put(p KeyPath, val string) error
 	PutMapping(p KeyPath, m map[string]string) error
+
+	Delete(p KeyPath) error
+	DeleteMapping(p KeyPath) error
 }
 
 type Match struct {

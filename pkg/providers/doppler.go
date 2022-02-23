@@ -41,10 +41,10 @@ func (h *Doppler) Name() string {
 }
 
 func (h *Doppler) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", h.Name())
+	return fmt.Errorf("provider %q does not implement write yet", h.Name())
 }
 func (h *Doppler) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", h.Name())
+	return fmt.Errorf("provider %q does not implement write yet", h.Name())
 }
 
 func (h *Doppler) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -81,6 +81,14 @@ func (h *Doppler) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	ent := p.Found(v.ComputedValue)
 
 	return &ent, nil
+}
+
+func (h *Doppler) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", h.Name())
+}
+
+func (h *Doppler) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", h.Name())
 }
 
 func (h *Doppler) getConfig(config string) (map[string]models.ComputedSecret, error) {

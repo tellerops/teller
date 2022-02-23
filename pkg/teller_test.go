@@ -21,11 +21,20 @@ type InMemProvider struct {
 }
 
 func (im *InMemProvider) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", im.Name())
+	return fmt.Errorf("provider %q does not implement write yet", im.Name())
 }
 func (im *InMemProvider) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", im.Name())
+	return fmt.Errorf("provider %q does not implement write yet", im.Name())
 }
+
+func (im *InMemProvider) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", im.Name())
+}
+
+func (im *InMemProvider) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", im.Name())
+}
+
 func (im *InMemProvider) GetProvider(name string) (core.Provider, error) {
 	return im, nil //hardcode to return self
 }

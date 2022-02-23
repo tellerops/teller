@@ -85,6 +85,14 @@ func (a *Consul) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	return &ent, nil
 }
 
+func (a *Consul) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
+func (a *Consul) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
 func (a *Consul) getSecrets(kp core.KeyPath) (api.KVPairs, error) {
 	kvs, _, err := a.client.List(kp.Path, nil)
 	return kvs, err

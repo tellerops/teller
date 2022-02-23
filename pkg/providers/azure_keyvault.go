@@ -38,10 +38,10 @@ func (a *AzureKeyVault) Name() string {
 	return "azure_keyvault"
 }
 func (a *AzureKeyVault) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }
 func (a *AzureKeyVault) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%v does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }
 func (a *AzureKeyVault) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 	r := []core.EnvEntry{}
@@ -83,6 +83,14 @@ func (a *AzureKeyVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	ent := p.Found(*secretResp.Value)
 	return &ent, nil
+}
+
+func (a *AzureKeyVault) Delete(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
+}
+
+func (a *AzureKeyVault) DeleteMapping(kp core.KeyPath) error {
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
 }
 
 func (a *AzureKeyVault) getSecret(kp core.KeyPath) (keyvault.SecretBundle, error) {
