@@ -632,3 +632,48 @@ func (tl *Teller) MirrorDrift(source, target string) ([]core.DriftedEntry, error
 
 	return drifts, nil
 }
+
+func (tl *Teller) Delete(keys []string, providerNames []string, directPath string) error {
+	for _, pname := range providerNames {
+		pcfg, provider, err := tl.GetProviderByName(pname)
+		if err != nil {
+			return fmt.Errorf("cannot create provider %v: %v", pname, err)
+		}
+
+		useDirectPath := directPath != ""
+
+		if pcfg.Env == nil {
+			return fmt.Errorf("there is no specific key mapping to map to for provider '%v'", pname)
+		}
+
+		for _, key := range keys {
+			// get the kp for specific mapping
+			var (
+				kp core.KeyPath
+				ok bool
+			)
+
+			if useDirectPath {
+				kp = core.KeyPath{Path: directPath}
+				ok = true
+			} else {
+				kp, ok = (*pcfg.Env)[key]
+			}
+
+			if !ok {
+				tl.Porcelain.NoDeleteKP(key, pname)
+				continue
+			}
+
+			kpResolved := tl.Populate.KeyPath(kp.WithEnv(key))
+			err := provider.Delete(kpResolved)
+			if err != nil {
+				return fmt.Errorf("cannot delete %v in provider %q: %v", key, pname, err)
+			}
+
+			tl.Porcelain.DidDeleteKP(kp, pname)
+		}
+	}
+
+	return nil
+}
