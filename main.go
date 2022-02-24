@@ -74,6 +74,12 @@ var CLI struct {
 		Source string `name:"source" help:"A source to check drift against"`
 		Target string `name:"target" help:"A target to check against source"`
 	} `cmd help:"Check same-key (mirror) value drift between source and target"`
+
+	Delete struct {
+		Keys      []string `arg name:"keys" help:"A list of keys, where key is from your tellerfile mapping"`
+		Providers []string `name:"providers" help:"A list of providers to delete the key from"`
+		Path      string   `optional name:"path" help:"Take literal path and not from config"`
+	} `cmd help:"Delete a secret"`
 }
 
 var (
@@ -152,6 +158,13 @@ func main() {
 		}
 		if len(drifts) > 0 {
 			teller.Porcelain.PrintDrift(drifts)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	case "delete":
+		err := teller.Delete(CLI.Delete.Keys, CLI.Delete.Providers, CLI.Delete.Path)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)
 		}
 		os.Exit(0)

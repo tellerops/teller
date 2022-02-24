@@ -188,3 +188,16 @@ func (p *Porcelain) NoPutKVP(k, pname string) {
 	yellow := color.New(color.FgYellow).SprintFunc()
 	fmt.Fprintf(p.Out, "Put %v in %v: no such key '%v' in mapping\n", yellow(k), green(pname), yellow(k))
 }
+
+func (p *Porcelain) DidDeleteKP(kp core.KeyPath, pname string) {
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	gray := color.New(color.FgHiBlack).SprintFunc()
+	fmt.Fprintf(p.Out, "Delete %v (%v) in %v: OK.\n", yellow(kp.Env), gray(kp.Path), green(pname))
+}
+
+func (p *Porcelain) NoDeleteKP(k, pname string) {
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	fmt.Fprintf(p.Out, "Delete %v in %v: no such key '%v' in mapping\n", yellow(k), green(pname), yellow(k))
+}
