@@ -18,21 +18,33 @@ type AWSSecretsManagerClient interface {
 	GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
 	CreateSecret(ctx context.Context, params *secretsmanager.CreateSecretInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.CreateSecretOutput, error)
 	PutSecretValue(ctx context.Context, params *secretsmanager.PutSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.PutSecretValueOutput, error)
+	DescribeSecret(ctx context.Context, params *secretsmanager.DescribeSecretInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.DescribeSecretOutput, error)
+	DeleteSecret(ctx context.Context, params *secretsmanager.DeleteSecretInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.DeleteSecretOutput, error)
 }
 
 type AWSSecretsManager struct {
-	client AWSSecretsManagerClient
+	client                                    AWSSecretsManagerClient
+	deletionDisableRecoveryWindow             bool
+	treatSecretMarkedForDeletionAsNonExisting bool
+	deletionRecoveryWindowInDays              int64
 }
 
+const defaultDeletionRecoveryWindowInDays = 7
+
 func NewAWSSecretsManager() (core.Provider, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
+	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
 	client := secretsmanager.NewFromConfig(cfg)
 
-	return &AWSSecretsManager{client: client}, nil
+	return &AWSSecretsManager{
+		client:                                    client,
+		deletionRecoveryWindowInDays:              defaultDeletionRecoveryWindowInDays,
+		deletionDisableRecoveryWindow:             false,
+		treatSecretMarkedForDeletionAsNonExisting: true,
+	}, nil
 }
 
 func (a *AWSSecretsManager) Name() string {
@@ -66,8 +78,8 @@ func (a *AWSSecretsManager) PutMapping(kp core.KeyPath, m map[string]string) err
 
 	secretAlreadyExist := len(secrets) != 0
 
-	utils.Merge(m, secrets)
-	secretBytes, err := json.Marshal(m)
+	secrets = utils.Merge(secrets, m)
+	secretBytes, err := json.Marshal(secrets)
 	if err != nil {
 		return err
 	}
@@ -107,34 +119,98 @@ func (a *AWSSecretsManager) Get(kp core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *AWSSecretsManager) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	kvs, err := a.getSecret(kp)
+	if err != nil {
+		return err
+	}
+
+	k := kp.EffectiveKey()
+	delete(kvs, k)
+
+	if len(kvs) == 0 {
+		return a.DeleteMapping(kp)
+	}
+
+	secretBytes, err := json.Marshal(kvs)
+	if err != nil {
+		return err
+	}
+
+	secretString := string(secretBytes)
+	ctx := context.Background()
+	_, err = a.client.PutSecretValue(ctx, &secretsmanager.PutSecretValueInput{SecretId: &kp.Path, SecretString: &secretString})
+	return err
 }
 
 func (a *AWSSecretsManager) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	kvs, err := a.getSecret(kp)
+	if err != nil {
+		return err
+	}
+
+	if kvs == nil {
+		// already deleted
+		return nil
+	}
+
+	ctx := context.Background()
+	_, err = a.client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
+		SecretId:                   &kp.Path,
+		RecoveryWindowInDays:       a.deletionRecoveryWindowInDays,
+		ForceDeleteWithoutRecovery: a.deletionDisableRecoveryWindow,
+	})
+
+	return err
 }
 
 func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error) {
 	res, err := a.client.GetSecretValue(context.Background(), &secretsmanager.GetSecretValueInput{SecretId: &kp.Path})
-	if err != nil {
-		var resNotFound *smtypes.ResourceNotFoundException
-		if !errors.As(err, &resNotFound) {
+
+	var (
+		resNotFoundErr *smtypes.ResourceNotFoundException
+		invalidReqErr  *smtypes.InvalidRequestException
+	)
+
+	switch {
+	case err == nil:
+		if res == nil || res.SecretString == nil {
+			return nil, fmt.Errorf("data not found at %q", kp.Path)
+		}
+
+		var secret map[string]string
+		err = json.Unmarshal([]byte(*res.SecretString), &secret)
+		if err != nil {
 			return nil, err
 		}
 
+		return secret, nil
+	case errors.As(err, &resNotFoundErr):
 		// doesn't exist - do not treat as an error
+		return nil, nil
+	case a.treatSecretMarkedForDeletionAsNonExisting && errors.As(err, &invalidReqErr):
+		// see whether it is marked for deletion
+		markedForDeletion, markedForDeletionErr := a.isSecretMarkedForDeletion(kp)
+		if err != nil {
+			return nil, markedForDeletionErr
+		}
+
+		if markedForDeletion {
+			// doesn't exist anymore - do not treat as an error
+			return nil, nil
+		}
+
 		return nil, nil
 	}
 
-	if res == nil || res.SecretString == nil {
-		return nil, fmt.Errorf("data not found at %q", kp.Path)
-	}
+	return nil, err
 
-	var secret map[string]string
-	err = json.Unmarshal([]byte(*res.SecretString), &secret)
+}
+
+func (a *AWSSecretsManager) isSecretMarkedForDeletion(kp core.KeyPath) (bool, error) {
+	data, err := a.client.DescribeSecret(context.Background(), &secretsmanager.DescribeSecretInput{SecretId: &kp.Path})
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	return secret, nil
+	return data.DeletedDate != nil, nil
 }

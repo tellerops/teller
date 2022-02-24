@@ -7,12 +7,14 @@ func LastSegment(s string) string {
 	return segs[len(segs)-1]
 }
 
-func Merge(from, into map[string]string) {
-	if into == nil {
-		into = make(map[string]string)
+func Merge(first, second map[string]string) map[string]string {
+	target := make(map[string]string)
+	for k, v := range first {
+		target[k] = v
+	}
+	for k, v := range second {
+		target[k] = v
 	}
 
-	for k, v := range from {
-		into[k] = v
-	}
+	return target
 }

@@ -33,6 +33,35 @@ func (m *MockDotEnvClient) EXPECT() *MockDotEnvClientMockRecorder {
 	return m.recorder
 }
 
+// Delete mocks base method.
+func (m *MockDotEnvClient) Delete(p string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", p)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockDotEnvClientMockRecorder) Delete(p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDotEnvClient)(nil).Delete), p)
+}
+
+// Exists mocks base method.
+func (m *MockDotEnvClient) Exists(p string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Exists", p)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Exists indicates an expected call of Exists.
+func (mr *MockDotEnvClientMockRecorder) Exists(p interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockDotEnvClient)(nil).Exists), p)
+}
+
 // Read mocks base method.
 func (m *MockDotEnvClient) Read(p string) (map[string]string, error) {
 	m.ctrl.T.Helper()
