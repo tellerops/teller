@@ -51,5 +51,18 @@ func TestGetDotEnv(t *testing.T) {
 	assert.Equal(t, "K1", res.Key)
 	assert.Equal(t, "val1", res.Value)
 
-	os.Remove(f.Name())
+	err = p.Delete(core.KeyPath{Env: "MG_KEY", Path: f.Name()})
+	assert.NoError(t, err)
+
+	entries, err := p.GetMapping(core.KeyPath{Path: f.Name()})
+	for _, entry := range entries {
+		assert.NotEqual(t, "MG_KEY", entry.Key)
+	}
+	assert.NoError(t, err)
+
+	err = p.DeleteMapping(kvp)
+	assert.NoError(t, err)
+
+	_, err = os.Stat(f.Name())
+	assert.True(t, os.IsNotExist(err))
 }

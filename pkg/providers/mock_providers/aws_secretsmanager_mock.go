@@ -55,6 +55,46 @@ func (mr *MockAWSSecretsManagerClientMockRecorder) CreateSecret(ctx, params inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecret", reflect.TypeOf((*MockAWSSecretsManagerClient)(nil).CreateSecret), varargs...)
 }
 
+// DeleteSecret mocks base method.
+func (m *MockAWSSecretsManagerClient) DeleteSecret(ctx context.Context, params *secretsmanager.DeleteSecretInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.DeleteSecretOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteSecret", varargs...)
+	ret0, _ := ret[0].(*secretsmanager.DeleteSecretOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteSecret indicates an expected call of DeleteSecret.
+func (mr *MockAWSSecretsManagerClientMockRecorder) DeleteSecret(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSecret", reflect.TypeOf((*MockAWSSecretsManagerClient)(nil).DeleteSecret), varargs...)
+}
+
+// DescribeSecret mocks base method.
+func (m *MockAWSSecretsManagerClient) DescribeSecret(ctx context.Context, params *secretsmanager.DescribeSecretInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.DescribeSecretOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DescribeSecret", varargs...)
+	ret0, _ := ret[0].(*secretsmanager.DescribeSecretOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DescribeSecret indicates an expected call of DescribeSecret.
+func (mr *MockAWSSecretsManagerClientMockRecorder) DescribeSecret(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DescribeSecret", reflect.TypeOf((*MockAWSSecretsManagerClient)(nil).DescribeSecret), varargs...)
+}
+
 // GetSecretValue mocks base method.
 func (m *MockAWSSecretsManagerClient) GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error) {
 	m.ctrl.T.Helper()
