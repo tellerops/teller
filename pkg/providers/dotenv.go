@@ -26,14 +26,20 @@ type DotEnvReader struct {
 }
 
 func (d *DotEnvReader) Read(p string) (map[string]string, error) {
-	content, err := os.ReadFile(p)
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-
+	p, err := homedir.Expand(p)
 	if err != nil {
 		return nil, err
 	}
+
+	content, err := os.ReadFile(p)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
 	return godotenv.Unmarshal(string(content))
 }
 
