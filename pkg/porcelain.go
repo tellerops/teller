@@ -201,3 +201,9 @@ func (p *Porcelain) NoDeleteKP(k, pname string) {
 	yellow := color.New(color.FgYellow).SprintFunc()
 	fmt.Fprintf(p.Out, "Delete %v in %v: no such key '%v' in mapping\n", yellow(k), green(pname), yellow(k))
 }
+
+func (p *Porcelain) DidDeleteP(path, pname string) {
+	green := color.New(color.FgGreen).SprintFunc()
+	gray := color.New(color.FgHiBlack).SprintFunc()
+	fmt.Fprintf(p.Out, "Delete mapping in path %v in %v: OK.\n", gray(path), green(pname))
+}
