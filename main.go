@@ -76,9 +76,10 @@ var CLI struct {
 	} `cmd help:"Check same-key (mirror) value drift between source and target"`
 
 	Delete struct {
-		Keys      []string `arg name:"keys" help:"A list of keys, where key is from your tellerfile mapping"`
+		Keys      []string `arg optional name:"keys" help:"A list of keys, where key is from your tellerfile mapping"`
 		Providers []string `name:"providers" help:"A list of providers to delete the key from"`
 		Path      string   `optional name:"path" help:"Take literal path and not from config"`
+		AllKeys   bool     `optional name:"all-keys" help:"Deletes all keys for a given path. Applicable only when used together with the 'path' flag"`
 	} `cmd help:"Delete a secret"`
 }
 
@@ -162,7 +163,14 @@ func main() {
 		}
 		os.Exit(0)
 	case "delete":
-		err := teller.Delete(CLI.Delete.Keys, CLI.Delete.Providers, CLI.Delete.Path)
+		err := teller.Delete(CLI.Delete.Keys, CLI.Delete.Providers, CLI.Delete.Path, CLI.Delete.AllKeys)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	case "delete <keys>":
+		err := teller.Delete(CLI.Delete.Keys, CLI.Delete.Providers, CLI.Delete.Path, CLI.Delete.AllKeys)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			os.Exit(1)

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -633,17 +634,34 @@ func (tl *Teller) MirrorDrift(source, target string) ([]core.DriftedEntry, error
 	return drifts, nil
 }
 
-func (tl *Teller) Delete(keys []string, providerNames []string, directPath string) error {
+func (tl *Teller) Delete(keys, providerNames []string, directPath string, allKeys bool) error {
+	if len(providerNames) == 0 {
+		return errors.New("at least one provider has to be specified")
+	}
+
+	if len(keys) == 0 && (!allKeys || directPath == "") {
+		return errors.New("at least one key is expected")
+	}
+
+	useDirectPath := directPath != ""
 	for _, pname := range providerNames {
 		pcfg, provider, err := tl.GetProviderByName(pname)
 		if err != nil {
-			return fmt.Errorf("cannot create provider %v: %v", pname, err)
+			return fmt.Errorf("cannot get provider %v: %v", pname, err)
 		}
-
-		useDirectPath := directPath != ""
 
 		if pcfg.Env == nil {
 			return fmt.Errorf("there is no specific key mapping to map to for provider '%v'", pname)
+		}
+
+		if allKeys && useDirectPath {
+			err := provider.DeleteMapping(core.KeyPath{Path: directPath})
+			if err != nil {
+				return fmt.Errorf("cannot delete path %q in provider %q: %v", directPath, pname, err)
+			}
+
+			tl.Porcelain.DidDeleteP(directPath, pname)
+			return nil
 		}
 
 		for _, key := range keys {
@@ -671,7 +689,7 @@ func (tl *Teller) Delete(keys []string, providerNames []string, directPath strin
 				return fmt.Errorf("cannot delete %v in provider %q: %v", key, pname, err)
 			}
 
-			tl.Porcelain.DidDeleteKP(kp, pname)
+			tl.Porcelain.DidDeleteKP(kpResolved, pname)
 		}
 	}
 
