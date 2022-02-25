@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/alecthomas/assert"
@@ -28,11 +29,30 @@ func (im *InMemProvider) PutMapping(p core.KeyPath, m map[string]string) error {
 }
 
 func (im *InMemProvider) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", im.Name())
+	if im.alwaysError {
+		return errors.New("error")
+	}
+
+	k := kp.EffectiveKey()
+
+	delete(im.inmem, fmt.Sprintf("%s/%s", kp.Path, k))
+	return nil
 }
 
 func (im *InMemProvider) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", im.Name())
+	if im.alwaysError {
+		return errors.New("error")
+	}
+
+	for key := range im.inmem {
+		if !strings.HasPrefix(key, kp.Path) {
+			continue
+		}
+
+		delete(im.inmem, key)
+	}
+
+	return nil
 }
 
 func (im *InMemProvider) GetProvider(name string) (core.Provider, error) {
@@ -415,4 +435,94 @@ func TestTemplateFolder(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(txt), "Hello, secret2-here!")
 
+}
+
+func TestTellerDelete(t *testing.T) {
+	fooPath := "/sample/path/FOO"
+	p := &InMemProvider{
+		inmem: map[string]string{
+			fooPath:            "foo",
+			"/sample/path/BAR": "bar",
+		},
+		alwaysError: false,
+	}
+	tl := Teller{
+		Providers: p,
+		Porcelain: &Porcelain{
+			Out: ioutil.Discard,
+		},
+		Populate: core.NewPopulate(map[string]string{"stage": "prod"}),
+		Config: &TellerFile{
+			Project:    "test-project",
+			LoadedFrom: "nowhere",
+			Providers: map[string]MappingConfig{
+				"inmem": {
+					Env: &map[string]core.KeyPath{
+						"FOO": {
+							Path: "/sample/path",
+							Env:  "FOO",
+						},
+						"BAR": {
+							Path: "/sample/path",
+							Env:  "BAR",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	keysToDelete := []string{"FOO"}
+	err := tl.Delete(keysToDelete, []string{"inmem"}, "", false)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(p.inmem), 1)
+	_, ok := p.inmem[fooPath]
+	assert.False(t, ok)
+
+	keysToDelete = []string{"BAR"}
+	err = tl.Delete(keysToDelete, []string{"inmem"}, "/sample/path", false)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(p.inmem), 0)
+}
+
+func TestTellerDeleteAll(t *testing.T) {
+	p := &InMemProvider{
+		inmem: map[string]string{
+			"/sample/path/FOO": "foo",
+			"/sample/path/BAR": "bar",
+		},
+		alwaysError: false,
+	}
+	tl := Teller{
+		Providers: p,
+		Porcelain: &Porcelain{
+			Out: ioutil.Discard,
+		},
+		Populate: core.NewPopulate(map[string]string{"stage": "prod"}),
+		Config: &TellerFile{
+			Project:    "test-project",
+			LoadedFrom: "nowhere",
+			Providers: map[string]MappingConfig{
+				"inmem": {
+					Env: &map[string]core.KeyPath{
+						"FOO": {
+							Path: "/sample/path",
+							Env:  "FOO",
+						},
+						"BAR": {
+							Path: "/sample/path",
+							Env:  "BAR",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := tl.Delete([]string{}, []string{"inmem"}, "/sample/path", true)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(p.inmem), 0)
 }
