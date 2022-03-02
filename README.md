@@ -380,6 +380,38 @@ A few notes:
 * While you can push to multiple providers, please make sure the _path semantics_ are the same
 
 
+## :x: Delete and multi-delete from providers
+
+Teller providers support _deleting_ values _from_ providers.
+
+This feature revolves around definitions in your `teller.yml` file:
+
+```bash
+$ teller delete FOO_BAR --providers dotenv -c .teller.yml
+```
+
+A few notes:
+
+* You can specify multiple keys to delete, for example:
+
+  ```bash
+  $ teller delete FOO BAR BAZ --providers dotenv
+  ```
+* The flag `--providers` lets you push to one or more providers at once
+* All keys must be a mapped key in your configuration for each provider you want to delete from
+
+
+Sometimes you don't have a mapped key in your configuration file and want to perform an ad-hoc delete. You can do that with the `--path` flag:
+
+```bash
+$ teller delete FOO BAR --path ~/my-env-file.env --providers dotenv
+```
+
+You can also delete all keys at once for a given path, without specifying them one by one:
+
+```bash
+$ teller delete --all-keys --path ~/my-env-file.env --providers dotenv
+```
 
 ## :white_check_mark: Prompts and options
 
@@ -607,7 +639,7 @@ Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 * Sync - `yes`
 * Mapping - `yes`
-* Modes - `read+write`
+* Modes - `read+write+delete`
 * Key format 
   * `env_sync` - path based
   * `env` - path based
@@ -687,7 +719,7 @@ No need. You'll be pointing to a one or more `.env` files on your disk.
 
 * Sync - `yes`
 * Mapping - `yes`
-* Modes - `read+write`
+* Modes - `read+write+delete`
 * Key format 
   * `env` - env key like
 
