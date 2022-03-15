@@ -112,8 +112,9 @@ providers:
   #       field: # The secret field to get. notesPlain, {label key}, password etc.
   
   # lastpass:
-  #   # Configure via environment:
-  #   # CONSUL_HTTP_ADDR
+  #   # Configure via environment variables:
+  #   # LASTPASS_USERNAME
+  #   # LASTPASS_PASSWORD
   #   env_sync:
   #       path: # LastPass item ID  
   #   env:
