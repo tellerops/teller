@@ -185,4 +185,18 @@ providers:
       ETC_DSN:
         path: foo/bar
 {{end}}
+
+{{- if index .ProviderKeys "lastpass" }}
+  # Configure via environment variables:
+  # LASTPASS_USERNAME
+  # LASTPASS_PASSWORD
+
+  lastpass:
+    env_sync:
+      path: # LastPass item ID
+    env:
+      ETC_DSN:
+        path: # Lastpass item ID
+        # field: by default taking password property. in case you want other property un-mark this line and set the lastpass property name.
+{{end}}
 `

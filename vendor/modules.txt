@@ -456,6 +456,10 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.14
 ## explicit; go 1.12
 github.com/mattn/go-isatty
+# github.com/mattn/lastpass-go v0.0.0-20160926001517-82bef8502f75
+## explicit
+github.com/mattn/lastpass-go
+github.com/mattn/lastpass-go/ecb
 # github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
 ## explicit
 github.com/mgutz/ansi

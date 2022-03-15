@@ -110,3 +110,14 @@ providers:
   #       path: # Key title
   #       source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
   #       field: # The secret field to get. notesPlain, {label key}, password etc.
+  
+  # lastpass:
+  #   # Configure via environment:
+  #   # CONSUL_HTTP_ADDR
+  #   env_sync:
+  #       path: # LastPass item ID  
+  #   env:
+  #     FOO_BAR:
+  #       path: # LastPass item ID
+  #       #field: by default taking password property. in case you want other property un-mark this line and set the LastPass property name
+  
