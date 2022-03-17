@@ -17,22 +17,23 @@ type BuiltinProviders struct {
 
 func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 	return map[string]string{
-		"Heroku":                   "heroku",
-		"Vault by Hashicorp":       "hashicorp_vault",
-		"AWS SSM (aka paramstore)": "aws_ssm",
-		"AWS Secrets Manager":      "aws_secretsmanager",
-		"Google Secret Manager":    "google_secretmanager",
-		"Etcd":                     "etcd",
-		"Consul":                   "consul",
-		".env":                     "dotenv",
-		"Vercel":                   "vercel",
-		"Azure Key Vault":          "azure_keyvault",
-		"Doppler":                  "doppler",
-		"CyberArk Conjur":          "cyberark_conjur",
-		"Cloudlflare Workers KV":   "cloudflare_workers_kv",
-		"1Password":                "1password",
-		"Gopass":                   "gopass",
-		"LastPass":                 "lastpass",
+		"Heroku":                      "heroku",
+		"Vault by Hashicorp":          "hashicorp_vault",
+		"AWS SSM (aka paramstore)":    "aws_ssm",
+		"AWS Secrets Manager":         "aws_secretsmanager",
+		"Google Secret Manager":       "google_secretmanager",
+		"Etcd":                        "etcd",
+		"Consul":                      "consul",
+		".env":                        "dotenv",
+		"Vercel":                      "vercel",
+		"Azure Key Vault":             "azure_keyvault",
+		"Doppler":                     "doppler",
+		"CyberArk Conjur":             "cyberark_conjur",
+		"Cloudlflare Workers KV":      "cloudflare_workers_kv",
+		"Cloudlflare Workers Secrets": "cloudflare_workers_secrets",
+		"1Password":                   "1password",
+		"Gopass":                      "gopass",
+		"LastPass":                    "lastpass",
 	}
 }
 
@@ -64,6 +65,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 		return providers.NewConjurClient()
 	case "cloudflare_workers_kv":
 		return providers.NewCloudflareClient()
+	case "cloudflare_workers_secrets":
+		return providers.NewCloudflareSecretsClient()
 	case "1password":
 		return providers.NewOnePassword()
 	case "gopass":

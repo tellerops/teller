@@ -5,6 +5,7 @@ mocks:
 	mockgen -source pkg/providers/aws_secretsmanager.go -destination pkg/providers/mock_providers/aws_secretsmanager_mock.go
 	mockgen -source pkg/providers/aws_ssm.go -destination pkg/providers/mock_providers/aws_ssm_mock.go
 	mockgen -source pkg/providers/cloudflare_workers_kv.go -destination pkg/providers/mock_providers/cloudflare_workers_kv_mock.go
+	mockgen -source pkg/providers/cloudflare_workers_secrets.go -destination pkg/providers/mock_providers/cloudflare_workers_secrets_mock.go
 	mockgen -source pkg/providers/consul.go -destination pkg/providers/mock_providers/consul_mock.go
 	mockgen -source pkg/providers/dotenv.go -destination pkg/providers/mock_providers/dotenv_mock.go
 	mockgen -source pkg/providers/doppler.go -destination pkg/providers/mock_providers/doppler_mock.go
