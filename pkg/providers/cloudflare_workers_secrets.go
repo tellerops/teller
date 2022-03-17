@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrCloudFlareSourceFieldIsMissing = errors.New("`source` filed is missing")
+	ErrCloudFlareSourceFieldIsMissing = errors.New("`source` field is missing")
 )
 
 type CloudflareSecretsClient interface {
