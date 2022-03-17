@@ -876,6 +876,50 @@ providers:
         # Accesses the field `SOME_KEY` in the KV namespace and maps it to REMAPPED_KEY.
         field: SOME_KEY
 ```
+
+## Cloudflare Workers Secrets
+
+### Usage:
+```sh
+$ teller put foo-secret=000000  --providers cloudflare_workers_secrets  
+$ telelr put foo-secret=123 foo-secret2=456 --providers cloudflare_workers_secrets --sync # take from env_sync for using the same source for multiple secrets
+$ telelr delete foo-secret foo-secret2 --providers cloudflare_workers_secrets
+```
+
+### Authentication
+
+requires the following environment variables to be set:
+
+`CLOUDFLARE_API_KEY`: Your Cloudflare api key.
+`CLOUDFLARE_API_EMAIL`: Your email associated with the api key.
+`CLOUDFLARE_ACCOUNT_ID`: Your account ID.
+
+### Features
+
+* Sync - `yes`
+* Mapping - `yes`
+* Modes - `write`
+* Key format
+  * `source` - The script name
+  * `path` - Name of the secret, when using `--sync` the path will overridden by the given parameters
+
+### Example Config
+
+```yaml
+
+providers:
+  cloudflare_workers_secrets:
+    env_sync:
+        source: script-id
+    env:
+      foo-secret:
+        path: foo-secret
+        source: script-id
+      foo-secret2:
+        path: foo-secret
+        source: script-id
+```
+
 ## 1Password
 
 ### Authentication

@@ -199,4 +199,21 @@ providers:
         path: # Lastpass item ID
         # field: by default taking password property. in case you want other property un-mark this line and set the lastpass property name.
 {{end}}
+
+{{- if index .ProviderKeys "cloudflare_workers_secrets" }}
+
+  # Configure via environment variables for integration:
+  # CLOUDFLARE_API_KEY: Your Cloudflare api key.
+  # CLOUDFLARE_API_EMAIL: Your email associated with the api key.
+  # CLOUDFLARE_ACCOUNT_ID: Your account ID.
+
+  cloudflare_workers_secrets:
+    env_sync:
+      source: # Mandatory: script field
+    env:
+      script-value:
+        path: foo-secret
+        source: # Mandatory: script field
+{{end}}
+
 `
