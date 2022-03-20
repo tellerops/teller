@@ -14,9 +14,9 @@ import (
 
 	"go.etcd.io/etcd/pkg/v3/transport"
 
+	"github.com/samber/lo"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/utils"
-	"github.com/thoas/go-funk"
 )
 
 type EtcdClient interface {
@@ -33,7 +33,7 @@ func NewEtcd() (core.Provider, error) {
 		return nil, fmt.Errorf("cannot find ETCDCTL_ENDPOINTS for etcd")
 	}
 
-	eps := funk.Map(strings.Split(epstring, ","), func(s string) string { return strings.Trim(s, " ") }).([]string)
+	eps := lo.Map(strings.Split(epstring, ","), func(s string, _ int) string { return strings.Trim(s, " ") })
 	client, err := newClient(eps)
 	if err != nil {
 		return nil, err
