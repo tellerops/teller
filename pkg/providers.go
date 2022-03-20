@@ -34,6 +34,7 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		"1Password":                   "1password",
 		"Gopass":                      "gopass",
 		"LastPass":                    "lastpass",
+		"GitHub":                      "github",
 	}
 }
 
@@ -73,6 +74,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 		return providers.NewGopass()
 	case "lastpass":
 		return providers.NewLastPass()
+	case "github":
+		return providers.NewGitHub()
 	default:
 		return nil, fmt.Errorf("provider '%s' does not exist", name)
 	}
