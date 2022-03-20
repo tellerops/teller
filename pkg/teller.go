@@ -78,7 +78,7 @@ func (tl *Teller) execCmd(cmd string, cmdArgs []string, withRedaction bool) erro
 	if withRedaction {
 		out, err := command.CombinedOutput()
 		redacted := tl.Redactor.Redact(string(out))
-		os.Stdout.Write([]byte(redacted))
+		os.Stdout.WriteString(redacted)
 		return err
 	}
 
