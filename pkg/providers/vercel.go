@@ -57,10 +57,10 @@ func (vp *VercelProject) envMap() map[string]*string {
 https://vercel.com/docs/api#endpoints/secrets
 */
 
-//nolint: golint,stylecheck
+//nolint: golint
 const VERCEL_API_BASE = "https://api.vercel.com/"
 
-//nolint: golint,stylecheck
+//nolint: golint
 const PROJECTS_ENDPOINT = "/projects"
 
 func NewVercel() (core.Provider, error) {

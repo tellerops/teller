@@ -1,3 +1,6 @@
+run:
+  go: 1.18
+
 linters-settings:
   dupl:
     threshold: 100
@@ -112,6 +115,7 @@ issues:
         - gomnd
         - goconst
         - gocritic
+        - gosec
 
     # https://github.com/go-critic/go-critic/issues/926
     - linters:
