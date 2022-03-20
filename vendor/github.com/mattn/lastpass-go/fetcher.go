@@ -1,7 +1,6 @@
 package lastpass
 
 import (
-	"golang.org/x/crypto/pbkdf2"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/xml"
@@ -12,6 +11,8 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strconv"
+
+	"golang.org/x/crypto/pbkdf2"
 )
 
 type blob struct {
