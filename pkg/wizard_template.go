@@ -216,4 +216,17 @@ providers:
         source: # Mandatory: script field
 {{end}}
 
+{{- if index .ProviderKeys "github" }}
+
+  # Configure via environment variables for integration:
+  # GITHUB_AUTH_TOKEN: GitHub token
+
+  github:
+    env_sync:
+       path: owner/github-repo
+    env:
+      script-value:
+        path: owner/github-repo
+
+{{end}}
 `
