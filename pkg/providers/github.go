@@ -131,7 +131,7 @@ func (g *GitHub) DeleteMapping(p core.KeyPath) error {
 // parsePathToOwnerAndRepo parse the key path to the owner and repo name
 func (g *GitHub) parsePathToOwnerAndRepo(p core.KeyPath) (string, string, error) { //nolint
 
-	splitData := strings.SplitN(p.Path, "/", 2)
+	splitData := strings.SplitN(p.Path, "/", 2) //nolint
 	if len(splitData) != gitHubSplitPathCount {
 		return "", "", fmt.Errorf("invalid %s path, expected owner/repo got: %s", g.Name(), p.Path)
 	}
