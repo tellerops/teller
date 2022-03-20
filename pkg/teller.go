@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/karrick/godirwalk"
+	"github.com/samber/lo"
 	"github.com/spectralops/teller/pkg/core"
-	"github.com/thoas/go-funk"
 	"gopkg.in/yaml.v3"
 )
 
@@ -63,11 +63,11 @@ func bail(e error) {
 func (tl *Teller) execCmd(cmd string, cmdArgs []string, withRedaction bool) error {
 	command := exec.Command(cmd, cmdArgs...)
 	if !tl.Config.CarryEnv {
-		command.Env = funk.Map(tl.Entries, func(ent interface{}) string {
-			return fmt.Sprintf("%s=%s", ent.(core.EnvEntry).Key, ent.(core.EnvEntry).Value)
-		}).([]string)
+		command.Env = lo.Map(tl.Entries, func(ent core.EnvEntry, _ int) string {
+			return fmt.Sprintf("%s=%s", ent.Key, ent.Value)
+		})
 
-		command.Env = append(command.Env, funk.Map([]string{"USER", "HOME", "PATH"}, func(k string) string { return fmt.Sprintf("%s=%s", k, os.Getenv(k)) }).([]string)...)
+		command.Env = append(command.Env, lo.Map([]string{"USER", "HOME", "PATH"}, func(k string, _ int) string { return fmt.Sprintf("%s=%s", k, os.Getenv(k)) })...)
 
 	} else {
 		for i := range tl.Entries {
@@ -480,7 +480,7 @@ func (tl *Teller) Drift(providerNames []string) []core.DriftedEntry {
 	filtering := len(providerNames) > 0
 	for i := range tl.Entries {
 		ent := tl.Entries[i]
-		if filtering && !funk.ContainsString(providerNames, ent.ProviderName) {
+		if filtering && !lo.Contains(providerNames, ent.ProviderName) {
 			continue
 		}
 		if ent.Source != "" {
@@ -618,14 +618,15 @@ func (tl *Teller) MirrorDrift(source, target string) ([]core.DriftedEntry, error
 
 	for i := range sourceEntries {
 		sent := sourceEntries[i]
-		tent := funk.Find(targetEntries, func(ent core.EnvEntry) bool {
+		tentry, ok := lo.Find(targetEntries, func(ent core.EnvEntry) bool {
 			return sent.Key == ent.Key
 		})
-		if tent == nil {
+
+		if !ok {
 			drifts = append(drifts, core.DriftedEntry{Diff: "missing", Source: sent})
 			continue
 		}
-		tentry := tent.(core.EnvEntry)
+
 		if sent.Value != tentry.Value {
 			drifts = append(drifts, core.DriftedEntry{Diff: "changed", Source: sent, Target: tentry})
 		}

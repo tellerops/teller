@@ -10,7 +10,7 @@ import (
 	"time"
 
 	survey "github.com/AlecAivazis/survey/v2"
-	"github.com/thoas/go-funk"
+	"github.com/samber/lo"
 
 	"github.com/fatih/color"
 	"github.com/jftuga/ellipsis"
@@ -43,7 +43,7 @@ func (p *Porcelain) StartWizard() (*core.WizardAnswers, error) {
 			Prompt: &survey.MultiSelect{
 				Message:  "Select your secret providers",
 				PageSize: 10,
-				Options:  funk.Keys(providerNames).([]string),
+				Options:  lo.Keys(providerNames),
 			},
 		},
 		{
