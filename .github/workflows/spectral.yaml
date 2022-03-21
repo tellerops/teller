@@ -1,18 +1,15 @@
-name: SpectralOps
+name: Spectral
 on: [push]
 env:
   SPECTRAL_DSN: ${{ secrets.SPECTRAL_DSN }}
 jobs:
-  build:
-    name: Spectral
+  scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup Preflight
-        uses: SpectralOps/setup-preflight-action@v1
-        with:
-          preflight-version: "1.1.4"
-      - name: Spectral Install
-        run: curl -L "https://get.spectralops.io/latest/x/sh?dsn=$SPECTRAL_DSN" | preflight run https://sigs.spectralops.io/spectral
-      - name: Spectral Scan
-        run:  $HOME/.spectral/spectral scan
+    - uses: actions/checkout@v2
+    - name: Install Spectral
+      uses: spectralops/spectral-github-action@v1
+      with:
+        spectral-dsn: ${{ secrets.SPECTRAL_DSN }}
+    - name: Spectral Scan
+      run: spectral scan
