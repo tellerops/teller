@@ -45,12 +45,19 @@ Sec key: secret-from-note
 	ents, err := lastPassProvider.GetMapping(kpmap)
 	assert.Nil(t, err)
 	assert.Equal(t, len(ents), 5)
-	assert.Equal(t, ents[0].Value, "secret-name-2")
-	assert.Equal(t, ents[1].Value, "username-2")
-	assert.Equal(t, ents[2].Value, "http://test.com")
-	assert.Equal(t, ents[3].Value, "shazam")
-	assert.Equal(t, ents[4].Value, "secret-from-note")
-	assert.Equal(t, ents[4].Key, "Sec_key")
+
+	// collect all the fields that returned from GetMapping
+	allValues := []string{}
+	for _, f := range ents {
+		allValues = append(allValues, f.Value)
+	}
+
+	assert.Contains(t, allValues, "secret-name-2")
+	assert.Contains(t, allValues, "username-2")
+	assert.Contains(t, allValues, "http://test.com")
+	assert.Contains(t, allValues, "shazam")
+	assert.Contains(t, allValues, "secret-from-note")
+
 }
 
 func TestLastPassFailures(t *testing.T) {
