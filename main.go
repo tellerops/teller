@@ -7,10 +7,12 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/spectralops/teller/pkg"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 var CLI struct {
-	Config string `short:"c" help:"Path to teller.yml"`
+	Config   string `short:"c" help:"Path to teller.yml"`
+	LogLevel string `short:"l"  help:"Application log level"`
 
 	Run struct {
 		Redact bool     `optional name:"redact" help:"Redact output of the child process"`
@@ -84,14 +86,21 @@ var CLI struct {
 }
 
 var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
+	version         = "dev"
+	commit          = "none"
+	date            = "unknown"
+	defaultLogLevel = "error"
 )
 
 //nolint
 func main() {
 	ctx := kong.Parse(&CLI)
+
+	logger := logging.GetRoot()
+	if CLI.LogLevel != "" {
+		defaultLogLevel = CLI.LogLevel
+	}
+	logger.SetLevel(defaultLogLevel)
 
 	// below commands don't require a tellerfile
 	//nolint
@@ -113,6 +122,7 @@ func main() {
 	if ctx.Command() == "new" {
 		teller := pkg.Teller{
 			Porcelain: &pkg.Porcelain{Out: os.Stderr},
+			Logger:    logger,
 		}
 		if _, err := os.Stat(telleryml); err == nil && !teller.Porcelain.AskForConfirmation(fmt.Sprintf("The file %s already exists. Do you want to override the configuration with new settings?", telleryml)) {
 			os.Exit(0)
@@ -120,19 +130,18 @@ func main() {
 
 		err := teller.SetupNewProject(telleryml)
 		if err != nil {
-			fmt.Printf("Error: %v", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("could not create configuration")
 		}
 		os.Exit(0)
 	}
 
 	tlrfile, err := pkg.NewTellerFile(telleryml)
 	if err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
+		logger.WithError(err).WithField("file", telleryml).Fatal("could not read file")
+
 	}
 
-	teller := pkg.NewTeller(tlrfile, CLI.Run.Cmd, CLI.Run.Redact)
+	teller := pkg.NewTeller(tlrfile, CLI.Run.Cmd, CLI.Run.Redact, logger)
 
 	// below commands don't require collecting
 	//nolint
@@ -140,22 +149,23 @@ func main() {
 	case "put <kvs>":
 		err := teller.Put(CLI.Put.Kvs, CLI.Put.Providers, CLI.Put.Sync, CLI.Put.Path)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("put command field")
 		}
 		os.Exit(0)
 	case "copy":
 		err := teller.Sync(CLI.Copy.From, CLI.Copy.To, CLI.Copy.Sync)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).WithFields(map[string]interface{}{
+				"from":      CLI.Copy.From,
+				"to":        CLI.Copy.To,
+				"sync_flag": CLI.Copy.Sync,
+			}).Fatal("could not copy data between providers")
 		}
 		os.Exit(0)
 	case "mirror-drift":
 		drifts, err := teller.MirrorDrift(CLI.MirrorDrift.Source, CLI.MirrorDrift.Target)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("mirror-drift command field")
 		}
 		if len(drifts) > 0 {
 			teller.Porcelain.PrintDrift(drifts)
@@ -165,15 +175,13 @@ func main() {
 	case "delete":
 		err := teller.Delete(CLI.Delete.Keys, CLI.Delete.Providers, CLI.Delete.Path, CLI.Delete.AllKeys)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("could not delete key")
 		}
 		os.Exit(0)
 	case "delete <keys>":
 		err := teller.Delete(CLI.Delete.Keys, CLI.Delete.Providers, CLI.Delete.Path, CLI.Delete.AllKeys)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("could not delete keys")
 		}
 		os.Exit(0)
 	}
@@ -182,16 +190,14 @@ func main() {
 
 	err = teller.Collect()
 	if err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
+		logger.WithError(err).Fatal("could not load all variables from the given existing providers")
 	}
 
 	// all of the below require a tellerfile
 	switch ctx.Command() {
 	case "run <cmd>":
 		if len(CLI.Run.Cmd) < 1 {
-			fmt.Println("Error: No command given")
-			os.Exit(1)
+			logger.Fatal("Error: No command given")
 		}
 		teller.Exec()
 
@@ -214,8 +220,7 @@ func main() {
 		if CLI.Redact.In != "" {
 			f, err := os.Open(CLI.Redact.In)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
+				logger.WithError(err).Fatal("could not open file")
 			}
 			fin = f
 		}
@@ -223,16 +228,14 @@ func main() {
 		if CLI.Redact.Out != "" {
 			f, err := os.Create(CLI.Redact.Out)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
+				logger.WithError(err).Fatal("could not create file")
 			}
 
 			fout = f
 		}
 
 		if err := teller.RedactLines(fin, fout); err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("could not redact lines")
 		}
 
 	case "sh":
@@ -244,16 +247,14 @@ func main() {
 	case "yaml":
 		out, err := teller.ExportYAML()
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("could not export to YAML")
 		}
 		fmt.Print(out)
 
 	case "json":
 		out, err := teller.ExportJSON()
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).Fatal("could not export to JSON")
 		}
 		fmt.Print(out)
 
@@ -264,8 +265,7 @@ func main() {
 		findings, err := teller.Scan(CLI.Scan.Path, CLI.Scan.Silent)
 
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).WithField("path", CLI.Scan.Path).Fatal("scan error")
 		}
 		num := len(findings)
 		if num > 0 {
@@ -275,8 +275,10 @@ func main() {
 	case "template <template_path> <out>":
 		err := teller.Template(CLI.Template.TemplatePath, CLI.Template.Out)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-			os.Exit(1)
+			logger.WithError(err).WithFields(map[string]interface{}{
+				"template_path":   CLI.Template.TemplatePath,
+				"template_output": CLI.Template.Out,
+			}).Fatal("could not populate template")
 		}
 
 	default:

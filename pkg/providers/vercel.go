@@ -7,6 +7,7 @@ import (
 
 	"github.com/dghubble/sling"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 type VercelClient interface {
@@ -31,6 +32,7 @@ func (v *VercelAPI) GetProject(path string) (map[string]*string, error) {
 
 type Vercel struct {
 	client VercelClient
+	logger logging.Logger
 }
 
 type VercelProject struct {
@@ -63,12 +65,12 @@ const VERCEL_API_BASE = "https://api.vercel.com/"
 //nolint: golint
 const PROJECTS_ENDPOINT = "/projects"
 
-func NewVercel() (core.Provider, error) {
+func NewVercel(logger logging.Logger) (core.Provider, error) {
 	vercelToken := os.Getenv("VERCEL_TOKEN")
 	if vercelToken == "" {
 		return nil, fmt.Errorf("please set VERCEL_TOKEN")
 	}
-	return &Vercel{client: NewVercelAPI(vercelToken)}, nil
+	return &Vercel{client: NewVercelAPI(vercelToken), logger: logger}, nil
 }
 
 func (ve *Vercel) Name() string {
@@ -94,7 +96,7 @@ func (ve *Vercel) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	return entries, nil
 }
 
-func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) {
+func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) { // nolint:dupl
 	secret, err := ve.getSecret(p)
 	if err != nil {
 		return nil, err
@@ -103,10 +105,12 @@ func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	data := secret
 	k := data[p.Env]
 	if p.Field != "" {
+		ve.logger.WithField("path", p.Path).Debug("`env` attribute not found in returned data. take `field` attribute")
 		k = data[p.Field]
 	}
 
 	if k == nil {
+		ve.logger.WithField("path", p.Path).Debug("requested entry not found")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -132,6 +136,7 @@ func (ve *Vercel) DeleteMapping(kp core.KeyPath) error {
 
 func (ve *Vercel) getSecret(kp core.KeyPath) (map[string]*string, error) {
 	/* https://vercel.com/docs/api#endpoints/projects/get-a-single-project */
+	ve.logger.WithField("path", kp.Path).Debug("get secret")
 	project, err := ve.client.GetProject(kp.Path)
 	if err != nil {
 		return nil, err

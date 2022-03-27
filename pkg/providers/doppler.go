@@ -9,6 +9,7 @@ import (
 	"github.com/DopplerHQ/cli/pkg/models"
 	"github.com/DopplerHQ/cli/pkg/utils"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 type DopplerClient interface {
@@ -23,15 +24,17 @@ func (dopplerClient) GetSecrets(host string, verifyTLS bool, apiKey, project, co
 
 type Doppler struct {
 	client DopplerClient
+	logger logging.Logger
 	config models.ScopedOptions
 }
 
-func NewDoppler() (core.Provider, error) {
+func NewDoppler(logger logging.Logger) (core.Provider, error) {
 	configuration.Setup()
 	configuration.LoadConfig()
 
 	return &Doppler{
 		client: dopplerClient{},
+		logger: logger,
 		config: configuration.Get(configuration.Scope),
 	}, nil
 }
@@ -69,11 +72,13 @@ func (h *Doppler) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	key := p.Env
 	if p.Field != "" {
+		h.logger.WithField("path", p.Path).Debug("`env` attribute not configured. take `field` attribute")
 		key = p.Field
 	}
 
 	v, ok := s[key]
 	if !ok {
+		h.logger.WithFields(map[string]interface{}{"key": key, "path": p.Path}).Debug("the given key not exists")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -92,6 +97,7 @@ func (h *Doppler) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (h *Doppler) getConfig(config string) (map[string]models.ComputedSecret, error) {
+	h.logger.Debug("get secrets")
 	r, herr := h.client.GetSecrets(
 		h.config.APIHost.Value,
 		utils.GetBool(h.config.VerifyTLS.Value, true),

@@ -6,6 +6,7 @@ import (
 	"github.com/alecthomas/assert"
 
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 func AssertProvider(t *testing.T, s core.Provider, sync bool) {
@@ -29,4 +30,10 @@ func AssertProvider(t *testing.T, s core.Provider, sync bool) {
 		assert.Equal(t, ents[0].Value, "mailman")
 		assert.Equal(t, ents[1].Value, "shazam")
 	}
+}
+
+func GetTestLogger() logging.Logger {
+	logger := logging.New()
+	logger.SetLevel("null")
+	return logger
 }

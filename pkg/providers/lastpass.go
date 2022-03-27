@@ -10,6 +10,7 @@ import (
 	"github.com/spectralops/teller/pkg/core"
 
 	"github.com/mattn/lastpass-go"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 const (
@@ -18,9 +19,10 @@ const (
 
 type LastPass struct {
 	accounts map[string]*lastpass.Account
+	logger   logging.Logger
 }
 
-func NewLastPass() (core.Provider, error) {
+func NewLastPass(logger logging.Logger) (core.Provider, error) {
 
 	username := os.Getenv("LASTPASS_USERNAME")
 	masterPassword := os.Getenv("LASTPASS_PASSWORD")
@@ -35,7 +37,7 @@ func NewLastPass() (core.Provider, error) {
 		accountsMap[account.Id] = account
 	}
 
-	return &LastPass{accounts: accountsMap}, nil
+	return &LastPass{accounts: accountsMap, logger: logger}, nil
 }
 
 func (l *LastPass) Name() string {
@@ -77,8 +79,13 @@ func (l *LastPass) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	var ent = p.Missing()
 	// if field not defined, password field returned
 	if p.Field == "" {
+		l.logger.WithField("path", p.Path).Debug("field attribute is empty, return item password attribute")
 		ent = p.Found(item.Password)
 	} else {
+		l.logger.WithFields(map[string]interface{}{
+			"path":  p.Path,
+			"field": p.Field,
+		}).Debug("field attribute present, search filed name in notes list")
 		key, err := l.getNodeByKeyName(p.Field, item.Notes)
 		if err == nil {
 			ent = p.Found(key)
@@ -137,5 +144,8 @@ func (l *LastPass) getNodeByKeyName(key, notes string) (string, error) {
 			return strings.TrimSpace(findings[1]), nil
 		}
 	}
+	l.logger.WithFields(map[string]interface{}{
+		"field": key,
+	}).Debug("field attribute not found in notes list")
 	return "", errors.New("key not found")
 }

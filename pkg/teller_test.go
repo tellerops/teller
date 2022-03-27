@@ -13,6 +13,7 @@ import (
 
 	"github.com/alecthomas/assert"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 // implements both Providers and Provider interface, for testing return only itself.
@@ -107,6 +108,12 @@ func (im *InMemProvider) Get(p core.KeyPath) (*core.EnvEntry, error) {
 		ResolvedPath: p.Path,
 		ProviderName: im.Name(),
 	}, nil
+}
+
+func getLogger() logging.Logger {
+	logger := logging.New()
+	logger.SetLevel("null")
+	return logger
 }
 
 func TestTellerExports(t *testing.T) {
@@ -300,7 +307,7 @@ func TestTellerMirrorDrift(t *testing.T) {
 		os.Exit(1)
 	}
 
-	tl := NewTeller(tlrfile, []string{}, false)
+	tl := NewTeller(tlrfile, []string{}, false, getLogger())
 
 	drifts, err := tl.MirrorDrift("source", "target")
 	assert.NoError(t, err)
@@ -326,7 +333,7 @@ func TestTellerSync(t *testing.T) {
 		os.Exit(1)
 	}
 
-	tl := NewTeller(tlrfile, []string{}, false)
+	tl := NewTeller(tlrfile, []string{}, false, getLogger())
 
 	err = os.WriteFile("../fixtures/sync/target.env", []byte(`
 FOO=1
@@ -368,7 +375,7 @@ func TestTemplateFile(t *testing.T) {
 		os.Exit(1)
 	}
 
-	tl := NewTeller(tlrfile, []string{}, false)
+	tl := NewTeller(tlrfile, []string{}, false, getLogger())
 	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER", Value: "secret-here"})
 
 	tempFolder, _ := os.MkdirTemp(os.TempDir(), "test-template")
@@ -397,7 +404,7 @@ func TestTemplateFolder(t *testing.T) {
 		os.Exit(1)
 	}
 
-	tl := NewTeller(tlrfile, []string{}, false)
+	tl := NewTeller(tlrfile, []string{}, false, getLogger())
 	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER", Value: "secret-here"})
 	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER-2", Value: "secret2-here"})
 

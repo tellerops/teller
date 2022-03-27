@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/go-github/v43/github"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/oauth2"
 )
@@ -29,10 +30,11 @@ type GitHubActionClient interface {
 
 type GitHub struct {
 	clientActions GitHubActionClient
+	logger        logging.Logger
 }
 
 // NewGitHub create new GitHub provider
-func NewGitHub() (core.Provider, error) {
+func NewGitHub(logger logging.Logger) (core.Provider, error) {
 
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
 	if token == "" {
@@ -45,7 +47,7 @@ func NewGitHub() (core.Provider, error) {
 	tc := oauth2.NewClient(context.TODO(), ts)
 	client := github.NewClient(tc)
 
-	return &GitHub{clientActions: client.Actions}, nil
+	return &GitHub{clientActions: client.Actions, logger: logger}, nil
 }
 
 func (g *GitHub) Name() string {
@@ -111,13 +113,16 @@ func (g *GitHub) DeleteMapping(p core.KeyPath) error {
 	}
 
 	opt := github.ListOptions{PerPage: 100}
+	g.logger.WithFields(map[string]interface{}{
+		"owner":           owner,
+		"repository_name": repoName,
+	}).Debug("get repo secrets")
 	secrets, _, err := g.clientActions.ListRepoSecrets(context.TODO(), owner, repoName, &opt)
 	if err != nil {
 		return err
 	}
 
 	for _, secret := range secrets.Secrets {
-
 		err := g.Delete(p.WithEnv(secret.Name))
 		if err != nil {
 			return err
@@ -146,11 +151,21 @@ func (g *GitHub) getRepoPublicKey(owner, repo string) (*github.PublicKey, *githu
 
 // CreateOrUpdateRepoSecret creates or updates a repository secret with an encrypted value.
 func (g *GitHub) createOrUpdateRepoSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error) {
+	g.logger.WithFields(map[string]interface{}{
+		"owner":           owner,
+		"repository_name": repo,
+		"name":            eSecret.Name,
+	}).Debug("put repo secret")
 	return g.clientActions.CreateOrUpdateRepoSecret(ctx, owner, repo, eSecret)
 }
 
 // DeleteRepoSecret deletes a secret in a repository using the secret name.
 func (g *GitHub) deleteRepoSecret(ctx context.Context, owner, repo, name string) (*github.Response, error) {
+	g.logger.WithFields(map[string]interface{}{
+		"owner":           owner,
+		"repository_name": repo,
+		"name":            name,
+	}).Debug("delete repo secret")
 	return g.clientActions.DeleteRepoSecret(ctx, owner, repo, name)
 }
 

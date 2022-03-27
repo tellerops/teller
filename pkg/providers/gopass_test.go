@@ -39,6 +39,7 @@ settings / prod / billing-svc
 	client.EXPECT().List(context.TODO()).Return(outlist, nil).AnyTimes()
 	s := Gopass{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	AssertProvider(t, &s, true)
 }
@@ -50,6 +51,7 @@ func TestGopassFailures(t *testing.T) {
 	client.EXPECT().Get(context.TODO(), gomock.Any(), gomock.Any()).Return(nil, errors.New("error")).AnyTimes()
 	s := Gopass{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	_, err := s.Get(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc"})
 	client.EXPECT().List(context.TODO()).Return([]string{"a"}, errors.New("error")).AnyTimes()

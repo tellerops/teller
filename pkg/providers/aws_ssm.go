@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 type AWSSSMClient interface {
@@ -14,9 +15,10 @@ type AWSSSMClient interface {
 }
 type AWSSSM struct {
 	client AWSSSMClient
+	logger logging.Logger
 }
 
-func NewAWSSSM() (core.Provider, error) {
+func NewAWSSSM(logger logging.Logger) (core.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		return nil, err
@@ -24,7 +26,7 @@ func NewAWSSSM() (core.Provider, error) {
 
 	client := ssm.NewFromConfig(cfg)
 
-	return &AWSSSM{client: client}, nil
+	return &AWSSSM{client: client, logger: logger}, nil
 }
 
 func (a *AWSSSM) Name() string {
@@ -57,6 +59,7 @@ func (a *AWSSSM) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	if secret == nil {
+		a.logger.WithField("path", p.Path).Debug("secret is empty")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -66,6 +69,7 @@ func (a *AWSSSM) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *AWSSSM) getSecret(kp core.KeyPath) (*string, error) {
+	a.logger.WithField("path", kp.Path).Debug("get entry")
 	res, err := a.client.GetParameter(context.TODO(), &ssm.GetParameterInput{Name: &kp.Path, WithDecryption: kp.Decrypt})
 	if err != nil {
 		return nil, err

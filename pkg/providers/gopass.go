@@ -9,6 +9,7 @@ import (
 	"github.com/gopasspw/gopass/pkg/gopass"
 	"github.com/gopasspw/gopass/pkg/gopass/api"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/utils"
 )
 
@@ -20,16 +21,17 @@ type GopassClient interface {
 
 type Gopass struct {
 	client GopassClient
+	logger logging.Logger
 }
 
-func NewGopass() (core.Provider, error) {
+func NewGopass(logger logging.Logger) (core.Provider, error) {
 
 	ctx := context.Background()
 	gp, err := api.New(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &Gopass{client: gp}, nil
+	return &Gopass{client: gp, logger: logger}, nil
 }
 
 func (g *Gopass) Name() string {
@@ -43,6 +45,7 @@ func (g *Gopass) Put(p core.KeyPath, val string) error {
 	}
 
 	secret.SetPassword(val)
+	g.logger.WithField("path", p.Path).Debug("set secret")
 	return g.client.Set(context.TODO(), p.Path, secret)
 }
 
@@ -55,6 +58,7 @@ func (g *Gopass) PutMapping(p core.KeyPath, m map[string]string) error {
 		}
 
 		secret.SetPassword(v)
+		g.logger.WithField("path", ap.Path).Debug("set secret")
 		err = g.client.Set(context.TODO(), ap.Path, secret)
 		if err != nil {
 			return fmt.Errorf("%v cannot update value: %v", g.Name(), err)
@@ -65,6 +69,7 @@ func (g *Gopass) PutMapping(p core.KeyPath, m map[string]string) error {
 }
 
 func (g *Gopass) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
+	g.logger.Debug("get all secrets")
 	secretsPath, err := g.client.List(context.TODO())
 	if err != nil {
 		return nil, err
@@ -92,6 +97,7 @@ func (g *Gopass) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	if secret == nil {
+		g.logger.WithField("path", p.Path).Debug("secret is empty")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -109,7 +115,7 @@ func (g *Gopass) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (g *Gopass) getSecret(path string) (gopass.Secret, error) {
-
+	g.logger.WithField("path", path).Debug("get secret")
 	secret, err := g.client.Get(context.TODO(), path, "")
 	if err != nil {
 		return nil, err

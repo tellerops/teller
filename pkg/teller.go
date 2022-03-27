@@ -18,6 +18,7 @@ import (
 	"github.com/karrick/godirwalk"
 	"github.com/samber/lo"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,10 +38,11 @@ type Teller struct {
 	Entries    []core.EnvEntry
 	Templating *Templating
 	Redactor   *Redactor
+	Logger     logging.Logger
 }
 
 // Create a new Teller instance, using a tellerfile, and a command to execute (if any)
-func NewTeller(tlrfile *TellerFile, cmd []string, redact bool) *Teller {
+func NewTeller(tlrfile *TellerFile, cmd []string, redact bool, logger logging.Logger) *Teller {
 	return &Teller{
 		Redact:     redact,
 		Config:     tlrfile,
@@ -50,13 +52,8 @@ func NewTeller(tlrfile *TellerFile, cmd []string, redact bool) *Teller {
 		Porcelain:  &Porcelain{Out: os.Stdout},
 		Templating: &Templating{},
 		Redactor:   &Redactor{},
+		Logger:     logger,
 	}
-}
-
-// shorthand for killing the current process with a bad exist code, but without a Go panic
-func bail(e error) {
-	fmt.Fprintf(os.Stderr, "error: %v\n", e)
-	os.Exit(1)
 }
 
 // execute a command, and take care to sanitize the child process environment (conditionally)
@@ -211,7 +208,7 @@ func (tl *Teller) Exec() {
 
 	err := tl.execCmd(tl.Cmd[0], tl.Cmd[1:], tl.Redact)
 	if err != nil {
-		bail(err)
+		tl.Logger.WithError(err).Fatal("could not execute command")
 	}
 }
 
@@ -363,7 +360,6 @@ func (tl *Teller) templateFile(from, to string) error {
 	if _, err = os.Stat(toFolder); os.IsNotExist(err) {
 		err = os.MkdirAll(toFolder, os.ModePerm)
 		if err != nil {
-			fmt.Println("1")
 			return fmt.Errorf("cannot create folder '%v': %v", to, err)
 		}
 	}
@@ -394,6 +390,7 @@ func updateParams(ent *core.EnvEntry, from *core.KeyPath, pname string) {
 }
 
 func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
+
 	entries := []core.EnvEntry{}
 	conf, ok := tl.Config.Providers[pname]
 	p, err := tl.Providers.GetProvider(pname)
@@ -404,33 +401,41 @@ func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 
 	// still no provider? bail.
 	if err != nil {
+		tl.Logger.Debug("provider not found in providers list with the name: %s or config kind: %s", pname, conf.Kind)
 		return nil, err
 	}
-
+	logger := tl.Logger.WithField("provider_name", p.Name())
 	if conf.EnvMapping != nil {
 		es, err := p.GetMapping(tl.Populate.KeyPath(*conf.EnvMapping))
 		if err != nil {
 			return nil, err
 		}
 
+		logger.Debug("found %d entries from env mapping", len(es))
 		//nolint
 		for k, v := range es {
 			// optionally remap environment variables synced from the provider
 			if val, ok := conf.EnvMapping.Remap[v.Key]; ok {
+				logger.Debug("rename entry from %s to %s", v.Key, val)
 				es[k].Key = val
 			}
 			updateParams(&es[k], conf.EnvMapping, pname)
 		}
 
 		entries = append(entries, es...)
+	} else {
+		logger.Debug("config EnvMapping not configure")
 	}
 
+	logger.Debug("total fetch entries from mapping %d", len(entries))
 	if conf.Env != nil {
 		//nolint
 		for k, v := range *conf.Env {
+			logger.Debug("get value from path: %s", k)
 			ent, err := p.Get(tl.Populate.KeyPath(v.WithEnv(k)))
 			if err != nil {
 				if v.Optional {
+					logger.Debug("optional field is set to path: %s", k)
 					continue
 				} else {
 					return nil, err
@@ -441,7 +446,10 @@ func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 				entries = append(entries, *ent)
 			}
 		}
+	} else {
+		logger.Debug("config env not configure")
 	}
+	logger.Debug("total fetch entries %d", len(entries))
 	return entries, nil
 }
 
@@ -535,6 +543,12 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 		if err != nil {
 			return fmt.Errorf("cannot create provider %v: %v", pname, err)
 		}
+		logger := tl.Logger.WithFields(map[string]interface{}{
+			"provider_name": pname,
+			"flag_sync":     sync,
+			"direct_path":   directPath,
+		})
+		logger.Debug("put secret")
 
 		useDirectPath := directPath != ""
 
@@ -550,6 +564,7 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 				kvp = *pcfg.EnvMapping
 			}
 			kvpResolved := tl.Populate.KeyPath(kvp)
+			logger.Trace("calling PutMapping provider function")
 			err := provider.PutMapping(kvpResolved, kvmap)
 			if err != nil {
 				return fmt.Errorf("cannot put (sync) %v in provider %v: %v", kvpResolved.Path, pname, err)
@@ -574,6 +589,7 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 
 				if ok {
 					kvpResolved := tl.Populate.KeyPath(kvp.WithEnv(k))
+					logger.Trace("calling Put provider function")
 					err := provider.Put(kvpResolved, v)
 					if err != nil {
 						return fmt.Errorf("cannot put %v in provider %v: %v", k, pname, err)
@@ -640,6 +656,13 @@ func (tl *Teller) Delete(keys, providerNames []string, directPath string, allKey
 		return errors.New("at least one provider has to be specified")
 	}
 
+	logger := tl.Logger.WithFields(map[string]interface{}{
+		"providers":   providerNames,
+		"allKeys":     allKeys,
+		"direct_path": directPath,
+	})
+	logger.Debug("delete keys")
+
 	if len(keys) == 0 && (!allKeys || directPath == "") {
 		return errors.New("at least one key is expected")
 	}
@@ -656,6 +679,7 @@ func (tl *Teller) Delete(keys, providerNames []string, directPath string, allKey
 		}
 
 		if allKeys && useDirectPath {
+			logger.WithField("path", directPath).Debug("calling DeleteMapping provider function")
 			err := provider.DeleteMapping(core.KeyPath{Path: directPath})
 			if err != nil {
 				return fmt.Errorf("cannot delete path %q in provider %q: %v", directPath, pname, err)

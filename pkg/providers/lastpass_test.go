@@ -36,6 +36,7 @@ Sec key: secret-from-note
 				Notes:    notes,
 			},
 		},
+		logger: GetTestLogger(),
 	}
 	AssertProvider(t, &lastPassProvider, false)
 
@@ -56,6 +57,7 @@ Sec key: secret-from-note
 func TestLastPassFailures(t *testing.T) {
 	lastPassProvider := LastPass{
 		accounts: map[string]*lastpass.Account{},
+		logger:   GetTestLogger(),
 	}
 
 	_, err := lastPassProvider.Get(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc"})

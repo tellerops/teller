@@ -7,6 +7,7 @@ import (
 	"github.com/cyberark/conjur-api-go/conjurapi"
 	"github.com/cyberark/conjur-api-go/conjurapi/authn"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 type ResourceFilter struct {
@@ -23,9 +24,10 @@ type ConjurClient interface {
 
 type CyberArkConjur struct {
 	client ConjurClient
+	logger logging.Logger
 }
 
-func NewConjurClient() (core.Provider, error) {
+func NewConjurClient(logger logging.Logger) (core.Provider, error) {
 	config, err := conjurapi.LoadConfig()
 	if err != nil {
 		return nil, err
@@ -41,7 +43,7 @@ func NewConjurClient() (core.Provider, error) {
 		return nil, err
 	}
 
-	return &CyberArkConjur{client: conjur}, nil
+	return &CyberArkConjur{client: conjur, logger: logger}, nil
 }
 
 func (c *CyberArkConjur) Name() string {
@@ -67,6 +69,7 @@ func (c *CyberArkConjur) Get(p core.KeyPath) (*core.EnvEntry, error) {
 		return nil, err
 	}
 	if secret == nil {
+		c.logger.WithField("path", p.Path).Debug("secret is empty")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -84,9 +87,11 @@ func (c *CyberArkConjur) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (c *CyberArkConjur) getSecret(kp core.KeyPath) ([]byte, error) {
+	c.logger.WithField("path", kp.Path).Debug("get a secret from the path")
 	return c.client.RetrieveSecret(kp.Path)
 }
 
 func (c *CyberArkConjur) putSecret(kp core.KeyPath, val string) error {
+	c.logger.WithField("path", kp.Path).Debug("create secret")
 	return c.client.AddSecret(kp.Path, val)
 }

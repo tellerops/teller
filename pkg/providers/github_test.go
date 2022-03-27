@@ -33,6 +33,7 @@ func TestGitHubPut(t *testing.T) {
 
 	c := GitHub{
 		clientActions: client,
+		logger:        GetTestLogger(),
 	}
 
 	assert.NotNil(t, c.Put(core.KeyPath{Path: "owner-name", Field: "MG_KEY"}, "put-secret"), "owner or repo name should be invalid")
@@ -63,6 +64,7 @@ func TestGitHubPutMapping(t *testing.T) {
 
 	c := GitHub{
 		clientActions: client,
+		logger:        GetTestLogger(),
 	}
 
 	data := map[string]string{
@@ -85,6 +87,7 @@ func TestGitHubDelete(t *testing.T) {
 
 	c := GitHub{
 		clientActions: client,
+		logger:        GetTestLogger(),
 	}
 
 	assert.NotNil(t, c.Delete(core.KeyPath{Path: "owner-name", Field: "MG_KEY"}), "owner or repo name should be invalid")
@@ -111,6 +114,7 @@ func TestGitHubDeleteMaping(t *testing.T) {
 
 	c := GitHub{
 		clientActions: client,
+		logger:        GetTestLogger(),
 	}
 
 	assert.Nil(t, c.DeleteMapping(core.KeyPath{Path: "owner-name/repo-name", Env: "MG_KEY"}), "delete action should pass")
@@ -135,6 +139,7 @@ func TestGitHubDeleteMapingWithError(t *testing.T) {
 
 	c := GitHub{
 		clientActions: client,
+		logger:        GetTestLogger(),
 	}
 
 	assert.NotNil(t, c.DeleteMapping(core.KeyPath{Path: "owner-name/repo-name", Env: "MG_KEY"}), "delete action should pass")
@@ -149,6 +154,7 @@ func TestParsePathToOwnerAndRepo(t *testing.T) {
 
 	c := GitHub{
 		clientActions: client,
+		logger:        GetTestLogger(),
 	}
 
 	owner, repo, err := c.parsePathToOwnerAndRepo(core.KeyPath{Path: "owner-name/repo-name", Env: "MG_KEY"})

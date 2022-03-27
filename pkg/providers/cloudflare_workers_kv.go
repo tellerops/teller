@@ -8,6 +8,7 @@ import (
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 type CloudflareClient interface {
@@ -19,9 +20,10 @@ type CloudflareClient interface {
 
 type Cloudflare struct {
 	client CloudflareClient
+	logger logging.Logger
 }
 
-func NewCloudflareClient() (core.Provider, error) {
+func NewCloudflareClient(logger logging.Logger) (core.Provider, error) {
 	api, err := cloudflare.New(
 		os.Getenv("CLOUDFLARE_API_KEY"),
 		os.Getenv("CLOUDFLARE_API_EMAIL"),
@@ -33,7 +35,7 @@ func NewCloudflareClient() (core.Provider, error) {
 
 	cloudflare.UsingAccount(os.Getenv("CLOUDFLARE_ACCOUNT_ID"))(api) //nolint
 
-	return &Cloudflare{client: api}, nil
+	return &Cloudflare{client: api, logger: logger}, nil
 }
 
 func (c *Cloudflare) Name() string {
@@ -75,6 +77,7 @@ func (c *Cloudflare) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (c *Cloudflare) getSecrets(p core.KeyPath) ([]core.EnvEntry, error) {
+	c.logger.WithField("namespace_id", p.Path).Debug("get workers KVs")
 	secrets, err := c.client.ListWorkersKVs(context.TODO(), p.Path)
 	if err != nil {
 		return nil, err
@@ -96,10 +99,15 @@ func (c *Cloudflare) getSecrets(p core.KeyPath) ([]core.EnvEntry, error) {
 func (c *Cloudflare) getSecret(p core.KeyPath) ([]byte, error) {
 	k := p.Field
 	if k == "" {
+		c.logger.WithField("field", p.Field).Debug("`field` attribute not configured. trying to get `env` attribute")
 		k = p.Env
 	}
 	if k == "" {
 		return nil, fmt.Errorf("Key required for fetching secrets. Received \"\"") //nolint
 	}
+	c.logger.WithFields(map[string]interface{}{
+		"namespace_id": p.Path,
+		"name":         k,
+	}).Debug("read worker kv")
 	return c.client.ReadWorkersKV(context.TODO(), p.Path, k)
 }
