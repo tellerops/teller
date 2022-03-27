@@ -118,6 +118,7 @@ func getLogger() logging.Logger {
 
 func TestTellerExports(t *testing.T) {
 	tl := Teller{
+		Logger:    getLogger(),
 		Entries:   []core.EnvEntry{},
 		Providers: &BuiltinProviders{},
 	}
@@ -126,6 +127,7 @@ func TestTellerExports(t *testing.T) {
 	assert.Equal(t, b, "#!/bin/sh\n")
 
 	tl = Teller{
+		Logger: getLogger(),
 		Entries: []core.EnvEntry{
 			{Key: "k", Value: "v", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 		},
@@ -146,6 +148,7 @@ func TestTellerCollect(t *testing.T) {
 	var b bytes.Buffer
 	p, _ := NewInMemProvider(false)
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: &b,
@@ -186,6 +189,7 @@ func TestTellerCollectWithSync(t *testing.T) {
 	var b bytes.Buffer
 	p, _ := NewInMemProvider(false)
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: &b,
@@ -228,6 +232,7 @@ func TestTellerCollectWithErrors(t *testing.T) {
 	var b bytes.Buffer
 	p, _ := NewInMemProvider(true)
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: &b,
@@ -254,6 +259,7 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 	entries := []core.EnvEntry{}
 
 	tl := Teller{
+		Logger:  getLogger(),
 		Entries: entries,
 		Porcelain: &Porcelain{
 			Out: &b,
@@ -280,6 +286,7 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 
 func TestTellerDrift(t *testing.T) {
 	tl := Teller{
+		Logger: getLogger(),
 		Entries: []core.EnvEntry{
 			{Key: "k", Value: "v", Source: "s1", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 			{Key: "k", Value: "v", Sink: "s1", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
@@ -454,6 +461,7 @@ func TestTellerDelete(t *testing.T) {
 		alwaysError: false,
 	}
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: ioutil.Discard,
@@ -503,6 +511,7 @@ func TestTellerDeleteAll(t *testing.T) {
 		alwaysError: false,
 	}
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: ioutil.Discard,
