@@ -16,6 +16,7 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/utils"
 )
 
@@ -25,9 +26,10 @@ type EtcdClient interface {
 }
 type Etcd struct {
 	client EtcdClient
+	logger logging.Logger
 }
 
-func NewEtcd() (core.Provider, error) {
+func NewEtcd(logger logging.Logger) (core.Provider, error) {
 	epstring := os.Getenv("ETCDCTL_ENDPOINTS")
 	if epstring == "" {
 		return nil, fmt.Errorf("cannot find ETCDCTL_ENDPOINTS for etcd")
@@ -38,7 +40,7 @@ func NewEtcd() (core.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Etcd{client: client}, nil
+	return &Etcd{client: client, logger: logger}, nil
 }
 
 func (a *Etcd) Name() string {
@@ -46,6 +48,7 @@ func (a *Etcd) Name() string {
 }
 
 func (a *Etcd) Put(p core.KeyPath, val string) error {
+	a.logger.WithField("path", p.Path).Debug("create key")
 	_, err := a.client.Put(context.TODO(), p.Path, val)
 	return err
 }
@@ -103,6 +106,7 @@ func (a *Etcd) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (a *Etcd) getSecret(kp core.KeyPath, opts ...clientv3.OpOption) ([]*spb.KeyValue, error) {
+	a.logger.WithField("path", kp.Path).Debug("get key")
 	res, err := a.client.Get(context.TODO(), kp.Path, opts...)
 	if err != nil {
 		return nil, err

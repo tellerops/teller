@@ -29,6 +29,7 @@ func TestAWSSecretsManager(t *testing.T) {
 	client.EXPECT().GetSecretValue(gomock.Any(), gomock.Eq(&inmap)).Return(&out, nil).AnyTimes()
 	s := AWSSecretsManager{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	AssertProvider(t, &s, true)
 }
@@ -41,6 +42,7 @@ func TestAWSSecretsManagerFailures(t *testing.T) {
 	client.EXPECT().GetSecretValue(gomock.Any(), gomock.Any()).Return(nil, errors.New("error")).AnyTimes()
 	s := AWSSecretsManager{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	_, err := s.Get(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc"})
 	assert.NotNil(t, err)

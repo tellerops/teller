@@ -13,6 +13,7 @@ import (
 
 	"github.com/alecthomas/assert"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 // implements both Providers and Provider interface, for testing return only itself.
@@ -109,8 +110,15 @@ func (im *InMemProvider) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}, nil
 }
 
+func getLogger() logging.Logger {
+	logger := logging.New()
+	logger.SetLevel("null")
+	return logger
+}
+
 func TestTellerExports(t *testing.T) {
 	tl := Teller{
+		Logger:    getLogger(),
 		Entries:   []core.EnvEntry{},
 		Providers: &BuiltinProviders{},
 	}
@@ -119,6 +127,7 @@ func TestTellerExports(t *testing.T) {
 	assert.Equal(t, b, "#!/bin/sh\n")
 
 	tl = Teller{
+		Logger: getLogger(),
 		Entries: []core.EnvEntry{
 			{Key: "k", Value: "v", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 		},
@@ -139,6 +148,7 @@ func TestTellerCollect(t *testing.T) {
 	var b bytes.Buffer
 	p, _ := NewInMemProvider(false)
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: &b,
@@ -179,6 +189,7 @@ func TestTellerCollectWithSync(t *testing.T) {
 	var b bytes.Buffer
 	p, _ := NewInMemProvider(false)
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: &b,
@@ -221,6 +232,7 @@ func TestTellerCollectWithErrors(t *testing.T) {
 	var b bytes.Buffer
 	p, _ := NewInMemProvider(true)
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: &b,
@@ -247,6 +259,7 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 	entries := []core.EnvEntry{}
 
 	tl := Teller{
+		Logger:  getLogger(),
 		Entries: entries,
 		Porcelain: &Porcelain{
 			Out: &b,
@@ -273,6 +286,7 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 
 func TestTellerDrift(t *testing.T) {
 	tl := Teller{
+		Logger: getLogger(),
 		Entries: []core.EnvEntry{
 			{Key: "k", Value: "v", Source: "s1", ProviderName: "test-provider", ResolvedPath: "path/kv"},
 			{Key: "k", Value: "v", Sink: "s1", ProviderName: "test-provider2", ResolvedPath: "path/kv"},
@@ -300,7 +314,7 @@ func TestTellerMirrorDrift(t *testing.T) {
 		os.Exit(1)
 	}
 
-	tl := NewTeller(tlrfile, []string{}, false)
+	tl := NewTeller(tlrfile, []string{}, false, getLogger())
 
 	drifts, err := tl.MirrorDrift("source", "target")
 	assert.NoError(t, err)
@@ -326,7 +340,7 @@ func TestTellerSync(t *testing.T) {
 		os.Exit(1)
 	}
 
-	tl := NewTeller(tlrfile, []string{}, false)
+	tl := NewTeller(tlrfile, []string{}, false, getLogger())
 
 	err = os.WriteFile("../fixtures/sync/target.env", []byte(`
 FOO=1
@@ -368,7 +382,7 @@ func TestTemplateFile(t *testing.T) {
 		os.Exit(1)
 	}
 
-	tl := NewTeller(tlrfile, []string{}, false)
+	tl := NewTeller(tlrfile, []string{}, false, getLogger())
 	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER", Value: "secret-here"})
 
 	tempFolder, _ := os.MkdirTemp(os.TempDir(), "test-template")
@@ -397,7 +411,7 @@ func TestTemplateFolder(t *testing.T) {
 		os.Exit(1)
 	}
 
-	tl := NewTeller(tlrfile, []string{}, false)
+	tl := NewTeller(tlrfile, []string{}, false, getLogger())
 	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER", Value: "secret-here"})
 	tl.Entries = append(tl.Entries, core.EnvEntry{Key: "TEST-PLACEHOLDER-2", Value: "secret2-here"})
 
@@ -447,6 +461,7 @@ func TestTellerDelete(t *testing.T) {
 		alwaysError: false,
 	}
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: ioutil.Discard,
@@ -496,6 +511,7 @@ func TestTellerDeleteAll(t *testing.T) {
 		alwaysError: false,
 	}
 	tl := Teller{
+		Logger:    getLogger(),
 		Providers: p,
 		Porcelain: &Porcelain{
 			Out: ioutil.Discard,

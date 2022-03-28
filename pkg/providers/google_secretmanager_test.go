@@ -30,6 +30,7 @@ func TestGoogleSM(t *testing.T) {
 	client.EXPECT().AccessSecretVersion(gomock.Any(), gomock.Eq(&in)).Return(out, nil).AnyTimes()
 	s := GoogleSecretManager{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	AssertProvider(t, &s, false)
 }
@@ -42,6 +43,7 @@ func TestGoogleSMFailures(t *testing.T) {
 	client.EXPECT().AccessSecretVersion(gomock.Any(), gomock.Any()).Return(nil, errors.New("error")).AnyTimes()
 	s := GoogleSecretManager{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	_, err := s.Get(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc"})
 	assert.NotNil(t, err)

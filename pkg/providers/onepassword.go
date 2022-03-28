@@ -6,6 +6,7 @@ import (
 	"github.com/1Password/connect-sdk-go/connect"
 	"github.com/1Password/connect-sdk-go/onepassword"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 type OnePasswordClient interface {
@@ -15,15 +16,16 @@ type OnePasswordClient interface {
 
 type OnePassword struct {
 	client OnePasswordClient
+	logger logging.Logger
 }
 
-func NewOnePassword() (core.Provider, error) {
+func NewOnePassword(logger logging.Logger) (core.Provider, error) {
 
 	client, err := connect.NewClientFromEnvironment()
 	if err != nil {
 		return nil, err
 	}
-	return &OnePassword{client: client}, nil
+	return &OnePassword{client: client, logger: logger}, nil
 }
 
 func (o *OnePassword) Name() string {
@@ -40,6 +42,10 @@ func (o *OnePassword) Put(p core.KeyPath, val string) error {
 	for _, field := range item.Fields {
 		if field.Label == p.Field {
 			field.Value = val
+			o.logger.WithFields(map[string]interface{}{
+				"item_id":  item.ID,
+				"vault_id": p.Source,
+			}).Debug("update item")
 			_, err := o.client.UpdateItem(item, p.Source)
 			return err
 		}
@@ -80,6 +86,11 @@ func (o *OnePassword) Get(p core.KeyPath) (*core.EnvEntry, error) {
 			ent = p.Found(field.Value)
 			break
 		}
+		o.logger.WithFields(map[string]interface{}{
+			"field": p.Field,
+			"env":   p.Env,
+			"label": field.Label,
+		}).Debug("item not found from list")
 	}
 
 	return &ent, nil
@@ -95,6 +106,10 @@ func (o *OnePassword) DeleteMapping(kp core.KeyPath) error {
 
 func (o *OnePassword) getItemByTitle(p core.KeyPath) (*onepassword.Item, error) {
 
+	o.logger.WithFields(map[string]interface{}{
+		"item_id":  p.Path,
+		"vault_id": p.Source,
+	}).Debug("get item by title")
 	item, err := o.client.GetItemByTitle(p.Path, p.Source)
 	if err != nil {
 		return nil, fmt.Errorf("key %s not found in vaultUUID %s, error: %v", p.Path, p.Source, err)

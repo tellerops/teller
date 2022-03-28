@@ -8,6 +8,7 @@ import (
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 var (
@@ -21,9 +22,10 @@ type CloudflareSecretsClient interface {
 
 type CloudflareSecrets struct {
 	client CloudflareSecretsClient
+	logger logging.Logger
 }
 
-func NewCloudflareSecretsClient() (core.Provider, error) {
+func NewCloudflareSecretsClient(logger logging.Logger) (core.Provider, error) {
 	api, err := cloudflare.New(
 		os.Getenv("CLOUDFLARE_API_KEY"),
 		os.Getenv("CLOUDFLARE_API_EMAIL"),
@@ -34,7 +36,7 @@ func NewCloudflareSecretsClient() (core.Provider, error) {
 	}
 
 	cloudflare.UsingAccount(os.Getenv("CLOUDFLARE_ACCOUNT_ID"))(api) //nolint
-	return &CloudflareSecrets{client: api}, nil
+	return &CloudflareSecrets{client: api, logger: logger}, nil
 }
 
 func (c *CloudflareSecrets) Name() string {
@@ -58,6 +60,10 @@ func (c *CloudflareSecrets) Put(p core.KeyPath, val string) error {
 		Type: cloudflare.WorkerSecretTextBindingType,
 	}
 
+	c.logger.WithFields(map[string]interface{}{
+		"script": p.Source,
+		"name":   secretRequest.Name,
+	}).Debug("set workers secret")
 	_, err = c.client.SetWorkersSecret(context.TODO(), p.Source, &secretRequest)
 
 	return err
@@ -90,6 +96,10 @@ func (c *CloudflareSecrets) Delete(p core.KeyPath) error {
 		return err
 	}
 
+	c.logger.WithFields(map[string]interface{}{
+		"script": p.Source,
+		"name":   secretName,
+	}).Debug("delete workers secret")
 	_, err = c.client.DeleteWorkersSecret(context.TODO(), p.Source, secretName)
 	return err
 }
@@ -110,6 +120,7 @@ func (c *CloudflareSecrets) getSecretName(p core.KeyPath) (string, error) {
 
 	k := p.Field
 	if k == "" {
+		c.logger.WithField("field", p.Field).Debug("`field` attribute not configured. trying to get `env` attribute")
 		k = p.Env
 	}
 	if k == "" {

@@ -25,6 +25,7 @@ func TestCloudflareWorkersSecretsPut(t *testing.T) {
 
 	c := CloudflareSecrets{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	assert.Nil(t, c.Put(core.KeyPath{Field: "MG_KEY", Source: "script-key"}, "put-secret"))
 	assert.Nil(t, c.Put(core.KeyPath{Env: "MG_KEY", Source: "script-key"}, "put-secret"))
@@ -41,6 +42,7 @@ func TestCloudflareWorkersSecretsDelete(t *testing.T) {
 
 	c := CloudflareSecrets{
 		client: client,
+		logger: GetTestLogger(),
 	}
 
 	assert.Nil(t, c.Delete(core.KeyPath{Field: "MG_KEY", Source: "script-key"}))

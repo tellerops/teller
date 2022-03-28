@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 )
 
@@ -39,43 +40,44 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 }
 
 func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
+	logger := logging.GetRoot().WithField("provider_name", name)
 	switch name {
 	case "hashicorp_vault":
-		return providers.NewHashicorpVault()
+		return providers.NewHashicorpVault(logger)
 	case "aws_ssm":
-		return providers.NewAWSSSM()
+		return providers.NewAWSSSM(logger)
 	case "aws_secretsmanager":
-		return providers.NewAWSSecretsManager()
+		return providers.NewAWSSecretsManager(logger)
 	case "heroku":
-		return providers.NewHeroku()
+		return providers.NewHeroku(logger)
 	case "google_secretmanager":
-		return providers.NewGoogleSecretManager()
+		return providers.NewGoogleSecretManager(logger)
 	case "etcd":
-		return providers.NewEtcd()
+		return providers.NewEtcd(logger)
 	case "consul":
-		return providers.NewConsul()
+		return providers.NewConsul(logger)
 	case "dotenv":
-		return providers.NewDotenv()
+		return providers.NewDotenv(logger)
 	case "vercel":
-		return providers.NewVercel()
+		return providers.NewVercel(logger)
 	case "azure_keyvault":
-		return providers.NewAzureKeyVault()
+		return providers.NewAzureKeyVault(logger)
 	case "doppler":
-		return providers.NewDoppler()
+		return providers.NewDoppler(logger)
 	case "cyberark_conjur":
-		return providers.NewConjurClient()
+		return providers.NewConjurClient(logger)
 	case "cloudflare_workers_kv":
-		return providers.NewCloudflareClient()
+		return providers.NewCloudflareClient(logger)
 	case "cloudflare_workers_secrets":
-		return providers.NewCloudflareSecretsClient()
+		return providers.NewCloudflareSecretsClient(logger)
 	case "1password":
-		return providers.NewOnePassword()
+		return providers.NewOnePassword(logger)
 	case "gopass":
-		return providers.NewGopass()
+		return providers.NewGopass(logger)
 	case "lastpass":
-		return providers.NewLastPass()
+		return providers.NewLastPass(logger)
 	case "github":
-		return providers.NewGitHub()
+		return providers.NewGitHub(logger)
 	default:
 		return nil, fmt.Errorf("provider '%s' does not exist", name)
 	}

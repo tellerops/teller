@@ -34,6 +34,7 @@ func TestOnePassword(t *testing.T) {
 	client.EXPECT().GetItemByTitle(gomock.Eq(pathmap), gomock.Any()).Return(&outlist, nil).AnyTimes()
 	s := OnePassword{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	AssertProvider(t, &s, true)
 }
@@ -45,6 +46,7 @@ func TestOnePasswordFailures(t *testing.T) {
 	client.EXPECT().GetItemByTitle(gomock.Any(), gomock.Any()).Return(nil, errors.New("error")).AnyTimes()
 	s := OnePassword{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	_, err := s.Get(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc"})
 	assert.NotNil(t, err)

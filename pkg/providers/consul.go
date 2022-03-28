@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/consul/api"
 
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/utils"
 )
 
@@ -18,16 +19,17 @@ type ConsulClient interface {
 
 type Consul struct {
 	client ConsulClient
+	logger logging.Logger
 }
 
-func NewConsul() (core.Provider, error) {
+func NewConsul(logger logging.Logger) (core.Provider, error) {
 	df := api.DefaultConfig()
 	client, err := api.NewClient(df)
 	if err != nil {
 		return nil, err
 	}
 	kv := client.KV()
-	return &Consul{client: kv}, nil
+	return &Consul{client: kv, logger: logger}, nil
 }
 
 func (a *Consul) Name() string {
@@ -35,6 +37,7 @@ func (a *Consul) Name() string {
 }
 
 func (a *Consul) Put(p core.KeyPath, val string) error {
+	a.logger.WithField("path", p.Path).Debug("put value")
 	_, err := a.client.Put(&api.KVPair{
 		Key:   p.Path,
 		Value: []byte(val),
@@ -77,6 +80,7 @@ func (a *Consul) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	if kv == nil {
+		a.logger.WithField("path", p.Path).Debug("kv is empty")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -94,11 +98,13 @@ func (a *Consul) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (a *Consul) getSecrets(kp core.KeyPath) (api.KVPairs, error) {
+	a.logger.WithField("path", kp.Path).Debug("get all keys under a prefix")
 	kvs, _, err := a.client.List(kp.Path, nil)
 	return kvs, err
 }
 
 func (a *Consul) getSecret(kp core.KeyPath) (*api.KVPair, error) {
+	a.logger.WithField("path", kp.Path).Debug("get value")
 	kv, _, err := a.client.Get(kp.Path, nil)
 	if err != nil {
 		return nil, err

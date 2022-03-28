@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/utils"
 )
 
@@ -92,11 +93,13 @@ func (d *DotEnvReader) Delete(p string) error {
 
 type Dotenv struct {
 	client DotEnvClient
+	logger logging.Logger
 }
 
-func NewDotenv() (core.Provider, error) {
+func NewDotenv(logger logging.Logger) (core.Provider, error) {
 	return &Dotenv{
 		client: &DotEnvReader{},
+		logger: logger,
 	}, nil
 }
 
@@ -112,13 +115,16 @@ func (a *Dotenv) Put(p core.KeyPath, val string) error {
 func (a *Dotenv) PutMapping(kp core.KeyPath, m map[string]string) error {
 	exists, err := a.client.Exists(kp.Path)
 	if err != nil {
+		a.logger.WithField("path", kp.Path).Debug("secret path not exists")
 		return err
 	}
 
 	if !exists {
+		a.logger.WithField("path", kp.Path).Debug("set secret")
 		return a.client.Write(kp.Path, m)
 	}
 
+	a.logger.WithField("path", kp.Path).Debug("read secret")
 	// get a fresh copy of a hash
 	secrets, err := a.client.Read(kp.Path)
 	if err != nil {
@@ -126,10 +132,12 @@ func (a *Dotenv) PutMapping(kp core.KeyPath, m map[string]string) error {
 	}
 
 	secrets = utils.Merge(secrets, m)
+	a.logger.WithField("path", kp.Path).Debug("merge and write secrets to path")
 	return a.client.Write(kp.Path, secrets)
 }
 
 func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
+	a.logger.WithField("path", p.Path).Debug("read secret")
 	kvs, err := a.client.Read(p.Path)
 	if err != nil {
 		return nil, err
@@ -143,6 +151,7 @@ func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 }
 
 func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) {
+	a.logger.WithField("path", p.Path).Debug("read secret")
 	kvs, err := a.client.Read(p.Path)
 	if err != nil {
 		return nil, err
@@ -151,6 +160,7 @@ func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	k := p.EffectiveKey()
 	val, ok := kvs[k]
 	if !ok {
+		a.logger.WithFields(map[string]interface{}{"path": p.Path, "key": k}).Debug("key not found")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -160,6 +170,7 @@ func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *Dotenv) Delete(kp core.KeyPath) error {
+	a.logger.WithField("path", kp.Path).Debug("read secret")
 	kvs, err := a.client.Read(kp.Path)
 	if err != nil {
 		return err
@@ -183,13 +194,16 @@ func (a *Dotenv) Delete(kp core.KeyPath) error {
 func (a *Dotenv) DeleteMapping(kp core.KeyPath) error {
 	exists, err := a.client.Exists(kp.Path)
 	if err != nil {
+		a.logger.WithField("path", kp.Path).Debug("secret path not exists")
 		return err
 	}
 
 	if !exists {
 		// already deleted
+		a.logger.WithField("path", kp.Path).Debug("secret already deleted")
 		return nil
 	}
 
+	a.logger.WithField("path", kp.Path).Debug("delete key")
 	return a.client.Delete(kp.Path)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	smtypes "github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/utils"
 )
 
@@ -24,6 +25,7 @@ type AWSSecretsManagerClient interface {
 
 type AWSSecretsManager struct {
 	client                                    AWSSecretsManagerClient
+	logger                                    logging.Logger
 	deletionDisableRecoveryWindow             bool
 	treatSecretMarkedForDeletionAsNonExisting bool
 	deletionRecoveryWindowInDays              int64
@@ -31,7 +33,7 @@ type AWSSecretsManager struct {
 
 const defaultDeletionRecoveryWindowInDays = 7
 
-func NewAWSSecretsManager() (core.Provider, error) {
+func NewAWSSecretsManager(logger logging.Logger) (core.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		return nil, err
@@ -40,9 +42,10 @@ func NewAWSSecretsManager() (core.Provider, error) {
 	client := secretsmanager.NewFromConfig(cfg)
 
 	return &AWSSecretsManager{
-		client:                                    client,
-		deletionRecoveryWindowInDays:              defaultDeletionRecoveryWindowInDays,
-		deletionDisableRecoveryWindow:             false,
+		client:                        client,
+		logger:                        logger,
+		deletionRecoveryWindowInDays:  defaultDeletionRecoveryWindowInDays,
+		deletionDisableRecoveryWindow: false,
 		treatSecretMarkedForDeletionAsNonExisting: true,
 	}, nil
 }
@@ -88,11 +91,13 @@ func (a *AWSSecretsManager) PutMapping(kp core.KeyPath, m map[string]string) err
 	ctx := context.Background()
 	if secretAlreadyExist {
 		// secret already exist - put new value
+		a.logger.WithField("path", kp.Path).Debug("secret already exists, update the existing one")
 		_, err = a.client.PutSecretValue(ctx, &secretsmanager.PutSecretValueInput{SecretId: &kp.Path, SecretString: &secretString})
 		return err
 	}
 
 	// create secret
+	a.logger.WithField("path", kp.Path).Debug("create secret")
 	_, err = a.client.CreateSecret(ctx, &secretsmanager.CreateSecretInput{Name: &kp.Path, SecretString: &secretString})
 	if err != nil {
 		return err
@@ -110,6 +115,7 @@ func (a *AWSSecretsManager) Get(kp core.KeyPath) (*core.EnvEntry, error) {
 	k := kp.EffectiveKey()
 	val, ok := kvs[k]
 	if !ok {
+		a.logger.WithField("key", k).Debug("key not found in kvs secrets")
 		ent := kp.Missing()
 		return &ent, nil
 	}
@@ -138,6 +144,7 @@ func (a *AWSSecretsManager) Delete(kp core.KeyPath) error {
 
 	secretString := string(secretBytes)
 	ctx := context.Background()
+	a.logger.WithField("path", kp.Path).Debug("put secret value")
 	_, err = a.client.PutSecretValue(ctx, &secretsmanager.PutSecretValueInput{SecretId: &kp.Path, SecretString: &secretString})
 	return err
 }
@@ -150,10 +157,12 @@ func (a *AWSSecretsManager) DeleteMapping(kp core.KeyPath) error {
 
 	if kvs == nil {
 		// already deleted
+		a.logger.WithField("path", kp.Path).Debug("already deleted")
 		return nil
 	}
 
 	ctx := context.Background()
+	a.logger.WithField("path", kp.Path).Debug("delete secret")
 	_, err = a.client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
 		SecretId:                   &kp.Path,
 		RecoveryWindowInDays:       a.deletionRecoveryWindowInDays,
@@ -164,6 +173,7 @@ func (a *AWSSecretsManager) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error) {
+	a.logger.WithField("path", kp.Path).Debug("get secret value")
 	res, err := a.client.GetSecretValue(context.Background(), &secretsmanager.GetSecretValueInput{SecretId: &kp.Path})
 
 	var (

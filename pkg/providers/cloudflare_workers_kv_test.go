@@ -36,6 +36,7 @@ func TestCloudflareWorkersKV(t *testing.T) {
 
 	s := Cloudflare{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	AssertProvider(t, &s, true)
 }
@@ -47,6 +48,7 @@ func TestCloudflareReadWorkersKVFailures(t *testing.T) {
 	client.EXPECT().ReadWorkersKV(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("error")).AnyTimes()
 	s := Cloudflare{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	_, err := s.Get(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc"})
 	_, missingLookupKeyError := s.Get(core.KeyPath{Field: "", Env: "", Path: "settings/{{stage}}/billing-svc"})
@@ -62,6 +64,7 @@ func TestCloudflareListWorkersKVsFailures(t *testing.T) {
 	client.EXPECT().ListWorkersKVs(gomock.Any(), gomock.Any()).Return(cloudflare.ListStorageKeysResponse{}, errors.New("error")).AnyTimes()
 	s := Cloudflare{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	_, err := s.GetMapping(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc"})
 	assert.NotNil(t, err)

@@ -33,6 +33,7 @@ func TestDoppler(t *testing.T) {
 	s := Doppler{
 		client: client,
 		config: models.ScopedOptions{},
+		logger: GetTestLogger(),
 	}
 	AssertProvider(t, &s, true)
 }

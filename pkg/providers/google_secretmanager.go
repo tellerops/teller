@@ -9,6 +9,7 @@ import (
 
 	"github.com/googleapis/gax-go/v2"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 type GoogleSMClient interface {
@@ -16,14 +17,15 @@ type GoogleSMClient interface {
 }
 type GoogleSecretManager struct {
 	client GoogleSMClient
+	logger logging.Logger
 }
 
-func NewGoogleSecretManager() (core.Provider, error) {
+func NewGoogleSecretManager(logger logging.Logger) (core.Provider, error) {
 	client, err := secretmanager.NewClient(context.TODO())
 	if err != nil {
 		return nil, err
 	}
-	return &GoogleSecretManager{client: client}, nil
+	return &GoogleSecretManager{client: client, logger: logger}, nil
 }
 
 func (a *GoogleSecretManager) Name() string {
@@ -63,6 +65,7 @@ func (a *GoogleSecretManager) getSecret(kp core.KeyPath) (string, error) {
 	r := secretmanagerpb.AccessSecretVersionRequest{
 		Name: kp.Path,
 	}
+	a.logger.WithField("path", r.Name).Debug("get secret")
 
 	secret, err := a.client.AccessSecretVersion(context.TODO(), &r)
 	if err != nil {

@@ -37,6 +37,7 @@ func TestConsul(t *testing.T) {
 	client.EXPECT().List(gomock.Eq(pathmap), gomock.Any()).Return(outlist, nil, nil).AnyTimes()
 	s := Consul{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	AssertProvider(t, &s, true)
 }
@@ -49,6 +50,7 @@ func TestConsulFailures(t *testing.T) {
 	client.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil, errors.New("error")).AnyTimes()
 	s := Consul{
 		client: client,
+		logger: GetTestLogger(),
 	}
 	_, err := s.Get(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc"})
 	assert.NotNil(t, err)

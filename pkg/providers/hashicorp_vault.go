@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/vault/api"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 )
 
 type HashicorpClient interface {
@@ -14,9 +15,10 @@ type HashicorpClient interface {
 }
 type HashicorpVault struct {
 	client HashicorpClient
+	logger logging.Logger
 }
 
-func NewHashicorpVault() (core.Provider, error) {
+func NewHashicorpVault(logger logging.Logger) (core.Provider, error) {
 	conf := api.DefaultConfig()
 	err := conf.ReadEnvironment()
 	if err != nil {
@@ -29,7 +31,7 @@ func NewHashicorpVault() (core.Provider, error) {
 		return nil, err
 	}
 
-	return &HashicorpVault{client: client.Logical()}, nil
+	return &HashicorpVault{client: client.Logical(), logger: logger}, nil
 }
 
 func (h *HashicorpVault) Name() string {
@@ -65,6 +67,7 @@ func (h *HashicorpVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	if secret == nil {
+		h.logger.WithField("path", p.Path).Debug("secret is empty")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -79,10 +82,12 @@ func (h *HashicorpVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	k := data[p.Env]
 	if p.Field != "" {
+		h.logger.WithField("path", p.Path).Debug("`env` attribute not found in returned data. take `field` attribute")
 		k = data[p.Field]
 	}
 
 	if k == nil {
+		h.logger.WithField("path", p.Path).Debug("key not found")
 		ent := p.Missing()
 		return &ent, nil
 	}
@@ -94,13 +99,16 @@ func (h *HashicorpVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 func (h *HashicorpVault) Put(p core.KeyPath, val string) error {
 	k := p.Env
 	if p.Field != "" {
+		h.logger.WithField("path", p.Path).Debug("`env` attribute not configured. take `field` attribute")
 		k = p.Field
 	}
 	m := map[string]string{k: val}
+	h.logger.WithField("path", p.Path).Debug("write secret")
 	_, err := h.client.Write(p.Path, map[string]interface{}{"data": m})
 	return err
 }
 func (h *HashicorpVault) PutMapping(p core.KeyPath, m map[string]string) error {
+	h.logger.WithField("path", p.Path).Debug("write secret")
 	_, err := h.client.Write(p.Path, map[string]interface{}{"data": m})
 	return err
 }
@@ -114,6 +122,7 @@ func (h *HashicorpVault) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (h *HashicorpVault) getSecret(kp core.KeyPath) (*api.Secret, error) {
+	h.logger.WithField("path", kp.Path).Debug("read secret")
 	secret, err := h.client.Read(kp.Path)
 	if err != nil {
 		return nil, err
