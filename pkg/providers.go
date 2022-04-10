@@ -26,6 +26,7 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		"Etcd":                        "etcd",
 		"Consul":                      "consul",
 		".env":                        "dotenv",
+		"Secret containing file":      "secretfile",
 		"Vercel":                      "vercel",
 		"Azure Key Vault":             "azure_keyvault",
 		"Doppler":                     "doppler",
@@ -58,6 +59,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 		return providers.NewConsul(logger)
 	case "dotenv":
 		return providers.NewDotenv(logger)
+	case "secretfile":
+		return providers.NewSecretFile(logger)
 	case "vercel":
 		return providers.NewVercel(logger)
 	case "azure_keyvault":

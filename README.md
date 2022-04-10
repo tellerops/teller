@@ -736,6 +736,33 @@ dotenv:
     MG_KEY:
       path: ~/my-dot-env.env
 ```
+## Secret files (i.e. mounted docker secrets)
+
+### Authentication
+
+No need. You'll be pointing to a one or more `/run/secrets/*` files mounted into container.
+
+### Features
+
+* Sync - `yes`
+* Mapping - `yes`
+* Modes - `read`
+* Key format 
+  * `env` - env key like
+
+
+### Example Config
+
+You can specify secrets mount directory (usually `/run/secrets`) or map individual secret to env variable name.
+
+```yaml
+dotenv:
+  env_sync:
+    path: /run/secrets
+  env:
+    FOO_SECRET:
+      path: /run/secrets/foo_secret
+```
 
 ## Doppler
 

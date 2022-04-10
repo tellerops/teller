@@ -131,6 +131,15 @@ providers:
         path: ~/my-dot-env.env
 {{end}}
 
+{{- if index .ProviderKeys "secretfile" }}
+  secretfile:
+    env_sync:
+      path: /run/secrets
+    env:
+      FOO_BAR:
+        path: /run/secrets/foo_bar
+{{end}}
+
 {{- if index .ProviderKeys "azure_keyvault" }}
   # you can mix and match many files
   azure_keyvault:
