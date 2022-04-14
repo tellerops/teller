@@ -25,6 +25,7 @@ brews:
     tap:
       owner: spectralops
       name: homebrew-tap
+      token: "{{ .Env.GORELEASER_GITHUB_TOKEN }}"
     description: A secret manager for developers - never leave your terminal for secrets
     homepage:  https://github.com/spectralops/teller
     license: "Apache 2.0"
