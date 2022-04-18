@@ -99,8 +99,8 @@ func (a DriftedEntriesBySource) Less(i, j int) bool { return a[i].Source.Source 
 
 type EntriesByProvider []EnvEntry
 
-func (a EntriesByProvider) Len() int           { return len(a) }
-func (a EntriesByProvider) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a EntriesByProvider) Len() int      { return len(a) }
+func (a EntriesByProvider) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a EntriesByProvider) Less(i, j int) bool {
 	firstProviderName := strings.ToLower(a[i].ProviderName)
 	secondProviderName := strings.ToLower(a[j].ProviderName)
