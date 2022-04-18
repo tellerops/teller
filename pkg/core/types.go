@@ -95,6 +95,12 @@ func (a DriftedEntriesBySource) Len() int           { return len(a) }
 func (a DriftedEntriesBySource) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a DriftedEntriesBySource) Less(i, j int) bool { return a[i].Source.Source < a[j].Source.Source }
 
+type EntriesByProvider []EnvEntry
+
+func (a EntriesByProvider) Len() int           { return len(a) }
+func (a EntriesByProvider) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a EntriesByProvider) Less(i, j int) bool { return a[i].ProviderName < a[j].ProviderName }
+
 type EntriesByKey []EnvEntry
 
 func (a EntriesByKey) Len() int           { return len(a) }

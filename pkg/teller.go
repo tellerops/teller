@@ -482,6 +482,10 @@ func (tl *Teller) Collect() error {
 	return nil
 }
 
+func (tl *Teller) SortByProviderName() {
+	sort.Sort(core.EntriesByProvider(tl.Entries))
+}
+
 func (tl *Teller) Drift(providerNames []string) []core.DriftedEntry {
 	sources := map[string]core.EnvEntry{}
 	targets := map[string][]core.EnvEntry{}
