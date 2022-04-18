@@ -1,5 +1,7 @@
 package core
 
+import "strings"
+
 type Severity string
 
 const (
@@ -99,7 +101,14 @@ type EntriesByProvider []EnvEntry
 
 func (a EntriesByProvider) Len() int           { return len(a) }
 func (a EntriesByProvider) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a EntriesByProvider) Less(i, j int) bool { return a[i].ProviderName < a[j].ProviderName }
+func (a EntriesByProvider) Less(i, j int) bool {
+	firstProviderName := strings.ToLower(a[i].ProviderName)
+	secondProviderName := strings.ToLower(a[j].ProviderName)
+	if firstProviderName != secondProviderName {
+		return firstProviderName < secondProviderName
+	}
+	return a[i].Key < a[j].Key
+}
 
 type EntriesByKey []EnvEntry
 
