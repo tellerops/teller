@@ -258,8 +258,7 @@ func main() {
 		}
 		fmt.Print(out)
 
-	case "show":
-		teller.SortByProviderName()
+	case "show":		
 		teller.PrintEnvKeys()
 
 	case "scan":

@@ -86,6 +86,7 @@ func (tl *Teller) execCmd(cmd string, cmdArgs []string, withRedaction bool) erro
 }
 
 func (tl *Teller) PrintEnvKeys() {
+	tl.SortByProviderName()
 	tl.Porcelain.PrintContext(tl.Config.Project, tl.Config.LoadedFrom)
 	tl.Porcelain.VSpace(1)
 	tl.Porcelain.PrintEntries(tl.Entries)
