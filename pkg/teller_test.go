@@ -286,7 +286,7 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 
 func TestTellerEntriesOutputSort(t *testing.T) {
 	var b bytes.Buffer
-	
+
 	entries := []core.EnvEntry{}
 
 	tl := Teller{
