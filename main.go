@@ -258,7 +258,7 @@ func main() {
 		}
 		fmt.Print(out)
 
-	case "show":		
+	case "show":
 		teller.PrintEnvKeys()
 
 	case "scan":
