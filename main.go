@@ -20,7 +20,7 @@ var CLI struct {
 	} `cmd help:"Run a command"`
 
 	Version struct {
-	} `cmd short:"v" help:"Teller version"`
+	} `cmd aliases:"v" help:"Teller version"`
 
 	New struct {
 	} `cmd help:"Create a new teller configuration file"`
