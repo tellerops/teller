@@ -284,6 +284,48 @@ func TestTellerPorcelainNonInteractive(t *testing.T) {
 
 }
 
+func TestTellerEntriesOutputSort(t *testing.T) {
+	var b bytes.Buffer
+
+	entries := []core.EnvEntry{}
+
+	tl := Teller{
+		Logger:  getLogger(),
+		Entries: entries,
+		Porcelain: &Porcelain{
+			Out: &b,
+		},
+		Config: &TellerFile{
+			Project:    "test-project",
+			LoadedFrom: "nowhere",
+		},
+	}
+
+	tl.Entries = append(tl.Entries, core.EnvEntry{
+		IsFound: true,
+		Key:     "c", Value: "c", ProviderName: "test-provider", ResolvedPath: "path/kv",
+	})
+	tl.Entries = append(tl.Entries, core.EnvEntry{
+		IsFound: true,
+		Key:     "a", Value: "a", ProviderName: "test-provider", ResolvedPath: "path/kv",
+	})
+	tl.Entries = append(tl.Entries, core.EnvEntry{
+		IsFound: true,
+		Key:     "b", Value: "b", ProviderName: "test-provider", ResolvedPath: "path/kv",
+	})
+	tl.Entries = append(tl.Entries, core.EnvEntry{
+		IsFound: true,
+		Key:     "k", Value: "v", ProviderName: "alpha", ResolvedPath: "path/kv",
+	})
+	tl.Entries = append(tl.Entries, core.EnvEntry{
+		IsFound: true,
+		Key:     "k", Value: "v", ProviderName: "BETA", ResolvedPath: "path/kv",
+	})
+
+	tl.PrintEnvKeys()
+	assert.Equal(t, b.String(), "-*- teller: loaded variables for test-project using nowhere -*-\n\n[alpha path/kv] k = v*****\n[BETA path/kv] k = v*****\n[test-provider path/kv] a = a*****\n[test-provider path/kv] b = b*****\n[test-provider path/kv] c = c*****\n")
+}
+
 func TestTellerDrift(t *testing.T) {
 	tl := Teller{
 		Logger: getLogger(),

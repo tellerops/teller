@@ -86,6 +86,7 @@ func (tl *Teller) execCmd(cmd string, cmdArgs []string, withRedaction bool) erro
 }
 
 func (tl *Teller) PrintEnvKeys() {
+	tl.sortByProviderName()
 	tl.Porcelain.PrintContext(tl.Config.Project, tl.Config.LoadedFrom)
 	tl.Porcelain.VSpace(1)
 	tl.Porcelain.PrintEntries(tl.Entries)
@@ -480,6 +481,10 @@ func (tl *Teller) Collect() error {
 	tl.Entries = entries
 	tl.Redactor = NewRedactor(entries)
 	return nil
+}
+
+func (tl *Teller) sortByProviderName() {
+	sort.Sort(core.EntriesByProvider(tl.Entries))
 }
 
 func (tl *Teller) Drift(providerNames []string) []core.DriftedEntry {
