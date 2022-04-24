@@ -24,7 +24,7 @@ func TestKetPass(t *testing.T) {
 	kpmap := p.KeyPath(core.KeyPath{Field: "MG_KEY", Path: "settings/{{stage}}/billing-svc/all", Decrypt: true})
 	ents, err := k.GetMapping(kpmap)
 	assert.Nil(t, err)
-	assert.Equal(t, len(ents), 7)
+	assert.Equal(t, len(ents), 4)
 }
 
 func TestKeypassFailures(t *testing.T) {
