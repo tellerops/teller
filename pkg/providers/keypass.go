@@ -81,7 +81,8 @@ func (k *KeyPass) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	for path, entry := range k.data { //nolint
 		// get entries that start with the given path
 		if strings.HasPrefix(path, p.Path) {
-			if p.Source == "all-fields" {
+			if p.Source == "" {
+				// getting all entries fields
 				for _, field := range keyPathFields {
 					val := entry.Get(field).Value.Content
 					// skip on empty field
@@ -95,8 +96,18 @@ func (k *KeyPass) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 					results = append(results, p.FoundWithKey(fmt.Sprintf("%s/%s", path, strings.ToLower(field)), val))
 				}
 			} else {
-				val := entry.Get("Password").Value.Content
-				results = append(results, p.FoundWithKey(path, val))
+				fieldContent := entry.Get(p.Source)
+				if fieldContent == nil {
+					k.logger.WithFields(map[string]interface{}{
+						"source": p.Source,
+						"path":   path,
+					}).Debug("field not found")
+					continue
+				}
+				val := fieldContent.Value.Content
+				if val != "" {
+					results = append(results, p.FoundWithKey(path, val))
+				}
 			}
 		}
 	}

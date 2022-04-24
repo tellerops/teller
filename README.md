@@ -1084,8 +1084,8 @@ requires the following environment variables to be set:
 providers:
   keypass:
     env_sync:
-    path: redis/config
-    # source: Optional, by default, return password field. To get all entry fields set 'all-fields
+      path: redis/config
+      # source: Optional, all fields is the default. Supported fields: Notes, Title, Password, URL, UserName
     env:
       ETC_DSN:
         path: redis/config/foobar

@@ -19,7 +19,12 @@ func TestKetPass(t *testing.T) {
 
 	k, err := NewKeyPass(GetTestLogger())
 	assert.Nil(t, err)
-	AssertProvider(t, k, true)
+	AssertProvider(t, k, false)
+	p := core.NewPopulate(map[string]string{"stage": "prod"})
+	kpmap := p.KeyPath(core.KeyPath{Field: "MG_KEY", Path: "settings/{{stage}}/billing-svc/all", Decrypt: true})
+	ents, err := k.GetMapping(kpmap)
+	assert.Nil(t, err)
+	assert.Equal(t, len(ents), 7)
 }
 
 func TestKeypassFailures(t *testing.T) {
