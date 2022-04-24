@@ -5,7 +5,7 @@ Adding a new Teller provider is very easy, but you still need to know where to s
 
 ## Provider implementation
 
-1. Copy the file [example.go](pkg/providers/example.go) from [pkg/providers/example.go](../pkg/providers/example.go) and make sure to implement all the required behaviors. The [example.go](../pkg/providers/example.go) file is a skeleton for adding a new provider, it contains stubs for an interface which declares the required functionality that any provider must have.
+1. Copy the file [example.go](../examples/providers/example.go) from [examples/providers/example.go](../examples/providers/example.go) and make sure to implement all the required behaviors. The [example.go](../examples/providers/example.go) file is a skeleton for adding a new provider, it contains stubs for an interface which declares the required functionality that any provider must have.
 2. Go to [pkg/providers.go](../pkg/providers.go) and add your provider name to the `ProviderHumanToMachine` HashMap (this function maps between the provider display name and internal name).
 ```go
 func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
