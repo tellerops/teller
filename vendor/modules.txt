@@ -97,6 +97,13 @@ github.com/Microsoft/hcsshim/internal/vmcompute
 github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
+# github.com/aead/argon2 v0.0.0-20180111183520-a87724528b07
+## explicit
+github.com/aead/argon2
+# github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da
+## explicit
+github.com/aead/chacha20
+github.com/aead/chacha20/chacha
 # github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 ## explicit
 github.com/alecthomas/assert
@@ -536,6 +543,11 @@ github.com/stretchr/testify/assert
 ## explicit; go 1.13
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
+# github.com/tobischo/gokeepasslib/v3 v3.2.5
+## explicit; go 1.14
+github.com/tobischo/gokeepasslib/v3
+github.com/tobischo/gokeepasslib/v3/crypto
+github.com/tobischo/gokeepasslib/v3/wrappers
 # github.com/uber/jaeger-client-go v2.25.0+incompatible
 ## explicit
 github.com/uber/jaeger-client-go
@@ -654,8 +666,6 @@ golang.org/x/crypto/ssh/terminal
 # golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17
 ## explicit; go 1.18
 golang.org/x/exp/constraints
-# golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57
-## explicit; go 1.17
 # golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 ## explicit; go 1.17
 golang.org/x/net/context

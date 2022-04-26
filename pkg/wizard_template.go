@@ -229,4 +229,21 @@ providers:
         path: owner/github-repo
 
 {{end}}
+
+{{- if index .ProviderKeys "keypass" }}
+
+  # Configure via environment variables for integration:
+  # KEYPASS_PASSWORD: KeyPass password
+  # KEYPASS_DB_PATH: Path to DB file
+
+  keypass:
+    env_sync:
+      path: redis/config
+      # source: Optional, all fields is the default. Supported fields: Notes, Title, Password, URL, UserName
+    env:
+      ETC_DSN:
+        path: redis/config/foobar
+        # source: Optional, Password is the default. Supported fields: Notes, Title, Password, URL, UserName
+
+{{end}}
 `
