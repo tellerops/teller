@@ -1094,6 +1094,7 @@ That allows us to keep two important points:
 
 ## Developer Guide
 
+* [Add new provider](./doc/new-provider.md)
 * Quick testing as you code: `make lint && make test`
 * Checking your work before PR, run also integration tests: `make integration`
 
