@@ -246,4 +246,15 @@ providers:
         # source: Optional, Password is the default. Supported fields: Notes, Title, Password, URL, UserName
 
 {{end}}
+
+{{- if index .ProviderKeys "filesystem" }}
+
+  filesystem:
+    env_sync:
+      path: redis/config
+    env:
+      ETC_DSN:
+        path: redis/config/foobar
+
+{{end}}
 `
