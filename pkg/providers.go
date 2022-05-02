@@ -37,10 +37,11 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		"LastPass":                    "lastpass",
 		"GitHub":                      "github",
 		"KeyPass":                     "keypass",
+		"FileSystem":                  "filesystem",
 	}
 }
 
-func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
+func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) { //nolint
 	logger := logging.GetRoot().WithField("provider_name", name)
 	switch name {
 	case "hashicorp_vault":
@@ -81,6 +82,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 		return providers.NewGitHub(logger)
 	case "keypass":
 		return providers.NewKeyPass(logger)
+	case "filesystem":
+		return providers.NewFileSystem(logger)
 	default:
 		return nil, fmt.Errorf("provider '%s' does not exist", name)
 	}
