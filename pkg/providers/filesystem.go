@@ -63,7 +63,7 @@ func (f *FileSystem) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 					f.logger.WithError(err).WithField("path", p.Path).Debug("file not found in path")
 					return nil
 				}
-				findings = append(findings, p.FoundWithKey(strings.Replace(osPathname, fmt.Sprintf("%s/", p.Path), "", 1), string(content)))
+				findings = append(findings, p.FoundWithKey(strings.Replace(path.Clean(osPathname), fmt.Sprintf("%s/", p.Path), "", 1), string(content)))
 			}
 			return nil
 		},
@@ -99,7 +99,7 @@ func (f *FileSystem) Delete(kp core.KeyPath) error {
 	return os.Remove(deletePath)
 }
 
-// DeleteMapping will delete the given path recessively
+// DeleteMapping will delete the given path
 func (f *FileSystem) DeleteMapping(kp core.KeyPath) error {
 	return fmt.Errorf("provider mapping %s does not implement delete yet", f.Name())
 }
@@ -130,5 +130,7 @@ func (f *FileSystem) readFile(filePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return bytes.TrimSuffix(content, []byte("\n")), nil
+	content = bytes.TrimSuffix(content, []byte("\n"))
+	content = bytes.TrimSuffix(content, []byte("\r\n"))
+	return content, nil
 }
