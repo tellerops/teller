@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/karrick/godirwalk"
 	"github.com/spectralops/teller/pkg/core"
@@ -57,14 +58,21 @@ func (f *FileSystem) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	findings := []core.EnvEntry{}
 	err := godirwalk.Walk(f.getFilePath(p.Path), &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
-			if de.IsRegular() {
-				content, err := f.readFile(osPathname)
-				if err != nil {
-					f.logger.WithError(err).WithField("path", p.Path).Debug("file not found in path")
-					return nil
-				}
-				findings = append(findings, p.FoundWithKey(strings.Replace(path.Clean(osPathname), fmt.Sprintf("%s/", p.Path), "", 1), string(content)))
+
+			if !de.IsRegular() || strings.HasPrefix(de.Name(), ".") {
+				return nil
 			}
+			content, err := f.readFile(osPathname)
+			if err != nil {
+				f.logger.WithError(err).WithField("path", p.Path).Debug("file not found in path")
+				return nil
+			}
+
+			if !f.IsText(content) {
+				return nil
+			}
+			findings = append(findings, p.FoundWithKey(strings.Replace(path.Clean(osPathname), fmt.Sprintf("%s/", p.Path), "", 1), string(content)))
+
 			return nil
 		},
 		Unsorted: true,
@@ -133,4 +141,20 @@ func (f *FileSystem) readFile(filePath string) ([]byte, error) {
 	content = bytes.TrimSuffix(content, []byte("\n"))
 	content = bytes.TrimSuffix(content, []byte("\r\n"))
 	return content, nil
+}
+
+func (f *FileSystem) IsText(s []byte) bool {
+	const max = 1024
+	if len(s) > max {
+		s = s[0:max]
+	}
+	for i, c := range string(s) {
+		if i+utf8.UTFMax > len(s) {
+			break
+		}
+		if c == 0xFFFD || c < ' ' && c != '\n' && c != '\t' && c != '\f' {
+			return false
+		}
+	}
+	return true
 }
