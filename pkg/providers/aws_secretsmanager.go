@@ -54,6 +54,10 @@ func (a *AWSSecretsManager) Name() string {
 	return "aws_secretsmanager"
 }
 
+func (a *AWSSecretsManager) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (a *AWSSecretsManager) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	kvs, err := a.getSecret(p)
 	if err != nil {

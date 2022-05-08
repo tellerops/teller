@@ -38,6 +38,10 @@ func (g *Gopass) Name() string {
 	return "gopass"
 }
 
+func (g *Gopass) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (g *Gopass) Put(p core.KeyPath, val string) error {
 	secret, err := g.getSecret(p.Path)
 	if err != nil {

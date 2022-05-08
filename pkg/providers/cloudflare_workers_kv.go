@@ -41,7 +41,9 @@ func NewCloudflareClient(logger logging.Logger) (core.Provider, error) {
 func (c *Cloudflare) Name() string {
 	return "cloudflare_workers_kv"
 }
-
+func (c *Cloudflare) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
 func (c *Cloudflare) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", c.Name())
 }

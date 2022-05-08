@@ -42,6 +42,9 @@ func NewDoppler(logger logging.Logger) (core.Provider, error) {
 func (h *Doppler) Name() string {
 	return "doppler"
 }
+func (h *Doppler) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
 
 func (h *Doppler) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", h.Name())

@@ -32,6 +32,10 @@ func (a *GoogleSecretManager) Name() string {
 	return "google_secretmanager"
 }
 
+func (a *GoogleSecretManager) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }

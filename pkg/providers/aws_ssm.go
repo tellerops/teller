@@ -33,6 +33,10 @@ func (a *AWSSSM) Name() string {
 	return "aws_ssm"
 }
 
+func (a *AWSSSM) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (a *AWSSSM) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }

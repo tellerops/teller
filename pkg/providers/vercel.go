@@ -77,6 +77,10 @@ func (ve *Vercel) Name() string {
 	return "vercel"
 }
 
+func (ve *Vercel) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (ve *Vercel) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	secret, err := ve.getSecret(p)
 	if err != nil {

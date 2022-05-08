@@ -68,6 +68,11 @@ func (im *InMemProvider) ProviderHumanToMachine() map[string]string {
 func (im *InMemProvider) Name() string {
 	return "inmem"
 }
+
+func (im *InMemProvider) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func NewInMemProvider(alwaysError bool) (Providers, error) {
 	return &InMemProvider{
 		inmem: map[string]string{

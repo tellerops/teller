@@ -36,6 +36,9 @@ func (a *Consul) Name() string {
 	return "consul"
 }
 
+func (a *Consul) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
 func (a *Consul) Put(p core.KeyPath, val string) error {
 	a.logger.WithField("path", p.Path).Debug("put value")
 	_, err := a.client.Put(&api.KVPair{

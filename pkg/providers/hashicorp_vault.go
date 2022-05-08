@@ -38,6 +38,10 @@ func (h *HashicorpVault) Name() string {
 	return "hashicorp_vault"
 }
 
+func (h *HashicorpVault) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (h *HashicorpVault) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	secret, err := h.getSecret(p)
 	if err != nil {

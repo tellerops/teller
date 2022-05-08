@@ -42,6 +42,9 @@ func NewCloudflareSecretsClient(logger logging.Logger) (core.Provider, error) {
 func (c *CloudflareSecrets) Name() string {
 	return "cloudflare_workers_secret"
 }
+func (c *CloudflareSecrets) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
 
 func (c *CloudflareSecrets) Put(p core.KeyPath, val string) error {
 

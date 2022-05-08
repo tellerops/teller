@@ -46,6 +46,9 @@ func NewEtcd(logger logging.Logger) (core.Provider, error) {
 func (a *Etcd) Name() string {
 	return "etcd"
 }
+func (a *Etcd) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
 
 func (a *Etcd) Put(p core.KeyPath, val string) error {
 	a.logger.WithField("path", p.Path).Debug("create key")

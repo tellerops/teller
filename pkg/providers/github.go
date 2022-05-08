@@ -54,6 +54,10 @@ func (g *GitHub) Name() string {
 	return "GitHub"
 }
 
+func (g *GitHub) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (g *GitHub) Put(p core.KeyPath, val string) error {
 
 	owner, repoName, err := g.parsePathToOwnerAndRepo(p)

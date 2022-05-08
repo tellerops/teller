@@ -64,6 +64,10 @@ func (k *KeyPass) Name() string {
 	return "KeyPass"
 }
 
+func (k *KeyPass) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 // Put will create a new single entry
 func (k *KeyPass) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", k.Name())

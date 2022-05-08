@@ -106,6 +106,9 @@ func NewDotenv(logger logging.Logger) (core.Provider, error) {
 func (a *Dotenv) Name() string {
 	return "dotenv"
 }
+func (a *Dotenv) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
 
 func (a *Dotenv) Put(p core.KeyPath, val string) error {
 	k := p.EffectiveKey()

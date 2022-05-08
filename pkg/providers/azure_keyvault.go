@@ -39,6 +39,9 @@ func NewAzureKeyVault(logger logging.Logger) (core.Provider, error) {
 func (a *AzureKeyVault) Name() string {
 	return "azure_keyvault"
 }
+func (a *AzureKeyVault) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
 func (a *AzureKeyVault) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", a.Name())
 }

@@ -44,6 +44,10 @@ func (l *LastPass) Name() string {
 	return "lastpass"
 }
 
+func (l *LastPass) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (l *LastPass) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", l.Name())
 }

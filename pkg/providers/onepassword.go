@@ -32,6 +32,10 @@ func (o *OnePassword) Name() string {
 	return "1password"
 }
 
+func (o *OnePassword) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (o *OnePassword) Put(p core.KeyPath, val string) error {
 
 	item, err := o.getItemByTitle(p)

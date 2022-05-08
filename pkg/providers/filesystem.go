@@ -35,6 +35,10 @@ func (f *FileSystem) Name() string {
 	return "FileSystem"
 }
 
+func (f *FileSystem) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 // Put will create a new single entry
 func (f *FileSystem) Put(p core.KeyPath, val string) error {
 	return f.writeFile(f.getFilePath(p.Path), val)

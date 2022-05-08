@@ -49,6 +49,9 @@ func NewConjurClient(logger logging.Logger) (core.Provider, error) {
 func (c *CyberArkConjur) Name() string {
 	return "cyberark_conjur"
 }
+func (c *CyberArkConjur) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
 
 func (c *CyberArkConjur) Put(p core.KeyPath, val string) error {
 	err := c.putSecret(p, val)

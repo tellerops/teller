@@ -31,6 +31,10 @@ func (h *Heroku) Name() string {
 	return "heroku"
 }
 
+func (h *Heroku) Meta() core.MetaInfo {
+	return core.MetaInfo{}
+}
+
 func (h *Heroku) Put(p core.KeyPath, val string) error {
 	k := p.EffectiveKey()
 	h.logger.WithField("path", p.Path).Debug("put variable")
