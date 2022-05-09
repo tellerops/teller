@@ -37,7 +37,8 @@ func NewAzureKeyVault(logger logging.Logger) (core.Provider, error) {
 
 	var authorizer autorest.Authorizer
 	var err error
-	if os.Getenv("AZURE_CLI") == "1" {
+
+	if _, ok := os.LookupEnv("AZURE_CLI"); ok {
 		authorizer, err = kvauth.NewAuthorizerFromCLI()
 	} else {
 		authorizer, err = kvauth.NewAuthorizerFromEnvironment()
