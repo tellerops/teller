@@ -17,7 +17,7 @@ confirm: Are you sure you want to run on {{"{{stage}}"}}?
 # paths.
 #
 opts:
-  region: env:AWS_REGION    # you can get env variables with the 'env:' prefix
+  region: env:AWS_REGION    # you can get env variables with the 'env:' prefix, for default values if env not found use env:AWS_REGION:default:{DEFAULT_VALUE}
   stage: development
 
 
