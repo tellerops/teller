@@ -209,7 +209,8 @@ type OpMatrix struct {
 	Sync    bool
 	Mapping bool
 	Read    bool
-	Write   bool
+	Put     bool
+	Delete  bool
 }
 
 type Match struct {
