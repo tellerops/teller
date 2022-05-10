@@ -1206,9 +1206,19 @@ $ make lint
 
 To all [Contributors](https://github.com/spectralops/teller/graphs/contributors) - you make this happen, thanks!
 
+
 ### Code of conduct
 
 Teller follows [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md)
+
+
+## Some Extra Help
+
+We have 30 min slots for 1:1 Mon-Wed 14:00 (UTC +0) to help you get started,
+Feel free to [book a slot](https://calendly.com/spectralops-teller/30min).
+
+
+You can also join our [Slack](https://join.slack.com/t/slack-s2i7069/shared_invite/zt-18m9lah12-b3tlbh2YEPEuTt5Z2FIslw) community and share your feedback and questions.
 
 
 # Copyright
