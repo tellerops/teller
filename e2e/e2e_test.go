@@ -118,10 +118,10 @@ func TestE2E(t *testing.T) {
 
 func replaceFolderName(stdout, stderr, workingDirectory string) (string, string) {
 	stdout = strings.ReplaceAll(stdout, workingDirectory, replaceToStaticPath)
-	stderr = strings.ReplaceAll(stdout, workingDirectory, replaceToStaticPath)
+	stderr = strings.ReplaceAll(stderr, workingDirectory, replaceToStaticPath)
 	shortFolderPath := workingDirectory[0:13]
 	stdout = strings.ReplaceAll(stdout, shortFolderPath, replaceToShortStaticPath)
-	stderr = strings.ReplaceAll(stdout, shortFolderPath, replaceToShortStaticPath)
+	stderr = strings.ReplaceAll(stderr, shortFolderPath, replaceToShortStaticPath)
 
 	return stdout, stderr
 }
