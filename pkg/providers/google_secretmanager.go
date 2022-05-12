@@ -147,8 +147,8 @@ func (a *GoogleSecretManager) getSecrets(path string) ([]secretmanagerpb.Secret,
 		if err != nil {
 			return nil, err
 		}
-
-		entries = append(entries, *resp)
+		secret := *resp
+		entries = append(entries, secret)
 	}
 	return entries, nil
 }
