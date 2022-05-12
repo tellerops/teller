@@ -693,7 +693,7 @@ You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your enviro
 
 * Sync - `no`
 * Mapping - `yes`
-* Modes - `read+delete`, [write: accepting PR](https://github.com/spectralops/teller)
+* Modes - `read+write+delete`
 * Key format 
   * `env` - path based, needs to include a version
   * `env_sync` - your project's path (gets the secrets latest version)
@@ -704,6 +704,8 @@ You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your enviro
 
 ```yaml
 google_secretmanager:
+  env_sync:
+    path: projects/44882
   env:
     MG_KEY:
       # need to supply the relevant version (versions/1)

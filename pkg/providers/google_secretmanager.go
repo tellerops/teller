@@ -19,6 +19,7 @@ type GoogleSMClient interface {
 	AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
 	DestroySecretVersion(ctx context.Context, req *secretmanagerpb.DestroySecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.SecretVersion, error)
 	ListSecrets(ctx context.Context, in *secretmanagerpb.ListSecretsRequest, opts ...gax.CallOption) *secretmanager.SecretIterator
+	AddSecretVersion(ctx context.Context, req *secretmanagerpb.AddSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.SecretVersion, error)
 }
 type GoogleSecretManager struct {
 	client GoogleSMClient
@@ -38,7 +39,16 @@ func (a *GoogleSecretManager) Name() string {
 }
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", a.Name())
+	i := strings.LastIndex(p.Path, "/versions/")
+	req := &secretmanagerpb.AddSecretVersionRequest{
+		Parent: p.Path[:i],
+		Payload: &secretmanagerpb.SecretPayload{
+			Data: []byte(val),
+		},
+	}
+
+	_, err := a.client.AddSecretVersion(context.TODO(), req)
+	return err
 }
 func (a *GoogleSecretManager) PutMapping(p core.KeyPath, m map[string]string) error {
 	return fmt.Errorf("provider %q does not implement write yet", a.Name())
@@ -102,13 +112,12 @@ func (a *GoogleSecretManager) getSecrets(kp core.KeyPath) ([]core.EnvEntry, erro
 		if err != nil {
 			return nil, err
 		}
-
 		path := resp.Name + "/versions/latest"
 		secret, err := a.getSecret(path)
 		if err != nil {
 			return nil, err
 		}
-		entries = append(entries, kp.FoundWithKey(strings.Split(resp.Name, "/")[3], secret))
+		entries = append(entries, kp.FoundWithKey(strings.TrimPrefix(resp.Name, kp.Path), secret))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 

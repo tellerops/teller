@@ -57,6 +57,26 @@ func (mr *MockGoogleSMClientMockRecorder) AccessSecretVersion(ctx, req interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AccessSecretVersion", reflect.TypeOf((*MockGoogleSMClient)(nil).AccessSecretVersion), varargs...)
 }
 
+// AddSecretVersion mocks base method.
+func (m *MockGoogleSMClient) AddSecretVersion(ctx context.Context, req *secretmanager0.AddSecretVersionRequest, opts ...gax.CallOption) (*secretmanager0.SecretVersion, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, req}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AddSecretVersion", varargs...)
+	ret0, _ := ret[0].(*secretmanager0.SecretVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddSecretVersion indicates an expected call of AddSecretVersion.
+func (mr *MockGoogleSMClientMockRecorder) AddSecretVersion(ctx, req interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, req}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSecretVersion", reflect.TypeOf((*MockGoogleSMClient)(nil).AddSecretVersion), varargs...)
+}
+
 // DestroySecretVersion mocks base method.
 func (m *MockGoogleSMClient) DestroySecretVersion(ctx context.Context, req *secretmanager0.DestroySecretVersionRequest, opts ...gax.CallOption) (*secretmanager0.SecretVersion, error) {
 	m.ctrl.T.Helper()
