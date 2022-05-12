@@ -34,7 +34,7 @@ init_snapshot:
     content: shazam
 expected_snapshot:
 replace_stdout_content:
-  - search: "matches in [0-9].[0-9]+ms"
+  - search: "matches in [0-9].[0-9]+(.*)"
     replace: matches in 1.000ms
 expected_stdout: |
   [high] settings/test/all/secret-b (1,0): found match for filesystem/secret-b (sh*****)
