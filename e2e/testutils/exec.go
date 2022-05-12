@@ -5,6 +5,9 @@ import (
 	"os/exec"
 )
 
+type DifferExec struct {
+}
+
 func ExecCmd(name string, arg []string, workingDirectory string) (stdout, stderr string, err error) {
 
 	var r []string
@@ -23,4 +26,23 @@ func ExecCmd(name string, arg []string, workingDirectory string) (stdout, stderr
 	err = cmd.Run()
 
 	return stdoutBuff.String(), stderrBuff.String(), err
+}
+
+func NewExecDiffer() Differ {
+	return &DifferExec{}
+}
+
+func (de *DifferExec) Diff(dir1, dir2 string, ignores []string) (string, error) {
+
+	flags := []string{"-qr"}
+	for _, ignore := range ignores {
+		flags = append(flags, "-x", ignore)
+	}
+
+	flags = append(flags, dir1)
+	flags = append(flags, dir2)
+	stdout, _, err := ExecCmd("diff", flags, "")
+
+	return stdout, err
+
 }

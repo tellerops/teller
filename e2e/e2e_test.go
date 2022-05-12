@@ -34,6 +34,9 @@ func TestE2E(t *testing.T) {
 	snapshotSuites, err := testutils.GetYmlSnapshotSuites(testsFolder)
 	assert.Nil(t, err)
 
+	// consider to replace `diff` command which is depended on OS to golang plugin.
+	// could't find something better
+	differ := testutils.NewExecDiffer()
 	// Loop on all test/*.yml files
 	for _, snapshot := range snapshotSuites {
 
@@ -76,11 +79,9 @@ func TestE2E(t *testing.T) {
 				err = snapshot.CreateSnapshotData(snapshot.ExpectedSnapshot, destSnapshotFolder)
 				assert.Nil(t, err)
 
-				// consider to replace `diff` command which is depended on OS to golang plugin.
-				// could't find something better
-				s, _, err := testutils.ExecCmd("diff", []string{"-qr", "-x", snapshot.ConfigFileName, destSnapshotFolder, snapshotFolder}, "")
+				diffResult, err := testutils.FolderDiff(differ, destSnapshotFolder, snapshotFolder, []string{snapshot.ConfigFileName})
 				if err != nil {
-					t.Fatalf("snapshot folder is not equal. err: %v", s)
+					t.Fatalf("snapshot folder is not equal. results: %v", diffResult)
 				}
 				assert.Nil(t, err)
 			}
