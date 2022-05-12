@@ -97,7 +97,6 @@ func TestE2E(t *testing.T) {
 			}
 		})
 	}
-
 	// loop on register suites (from *.go files)
 	for name, suite := range register.GetSuites() {
 		t.Run(name, func(t *testing.T) {
@@ -105,7 +104,6 @@ func TestE2E(t *testing.T) {
 			// creates temp dir for test path.
 			tempFolder, err := os.MkdirTemp(t.TempDir(), strings.ReplaceAll(name, " ", ""))
 			assert.Nil(t, err, "could not create temp folder")
-
 			defer os.RemoveAll(tempFolder)
 
 			// initialized test case
