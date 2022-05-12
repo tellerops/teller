@@ -66,13 +66,13 @@ func (a *GoogleSecretManager) GetMapping(kp core.KeyPath) ([]core.EnvEntry, erro
 
 	entries := []core.EnvEntry{}
 
-	for _, secret := range secrets {
-		path := fmt.Sprintf("%s/%s", secret.Name, "versions/latest")
+	for i, _ := range secrets {
+		path := fmt.Sprintf("%s/%s", secrets[i].Name, "versions/latest")
 		secretVal, err := a.getSecret(path)
 		if err != nil {
 			return nil, err
 		}
-		entries = append(entries, kp.FoundWithKey(strings.TrimPrefix(secret.Name, kp.Path), secretVal))
+		entries = append(entries, kp.FoundWithKey(strings.TrimPrefix(secrets[i].Name, kp.Path), secretVal))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 
@@ -118,7 +118,7 @@ func (a *GoogleSecretManager) deleteSecret(path string) error {
 	return err
 }
 
-func (a *GoogleSecretManager) addSecret(path string, val string) error {
+func (a *GoogleSecretManager) addSecret(path, val string) error {
 	req := &secretmanagerpb.AddSecretVersionRequest{
 		Parent: path,
 		Payload: &secretmanagerpb.SecretPayload{
