@@ -66,13 +66,14 @@ func (a *GoogleSecretManager) GetMapping(kp core.KeyPath) ([]core.EnvEntry, erro
 
 	entries := []core.EnvEntry{}
 
-	for i, _ := range secrets {
+	for i := range secrets {
 		path := fmt.Sprintf("%s/%s", secrets[i].Name, "versions/latest")
 		secretVal, err := a.getSecret(path)
 		if err != nil {
 			return nil, err
 		}
-		entries = append(entries, kp.FoundWithKey(strings.TrimPrefix(secrets[i].Name, kp.Path), secretVal))
+		key := strings.TrimPrefix(secrets[i].Name, kp.Path)
+		entries = append(entries, kp.FoundWithKey(key, secretVal))
 	}
 	sort.Sort(core.EntriesByKey(entries))
 
