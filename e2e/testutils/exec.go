@@ -39,8 +39,7 @@ func (de *DifferExec) Diff(dir1, dir2 string, ignores []string) (string, error) 
 		flags = append(flags, "-x", ignore)
 	}
 
-	flags = append(flags, dir1)
-	flags = append(flags, dir2)
+	flags = append(flags, dir1, dir2)
 	stdout, _, err := ExecCmd("diff", flags, "")
 
 	return stdout, err
