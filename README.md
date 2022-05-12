@@ -693,7 +693,7 @@ You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your enviro
 
 * Sync - `no`
 * Mapping - `yes`
-* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
+* Modes - `read+delete`, [write: accepting PR](https://github.com/spectralops/teller)
 * Key format 
   * `env` - path based, needs to include a version
   * `env_sync` - your project's path (gets the secrets latest version)
