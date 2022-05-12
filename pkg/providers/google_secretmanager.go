@@ -3,6 +3,8 @@ package providers
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
@@ -10,10 +12,13 @@ import (
 	"github.com/googleapis/gax-go/v2"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/logging"
+	"google.golang.org/api/iterator"
 )
 
 type GoogleSMClient interface {
 	AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
+	DestroySecretVersion(ctx context.Context, req *secretmanagerpb.DestroySecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.SecretVersion, error)
+	ListSecrets(ctx context.Context, in *secretmanagerpb.ListSecretsRequest, opts ...gax.CallOption) *secretmanager.SecretIterator
 }
 type GoogleSecretManager struct {
 	client GoogleSMClient
@@ -40,11 +45,11 @@ func (a *GoogleSecretManager) PutMapping(p core.KeyPath, m map[string]string) er
 }
 
 func (a *GoogleSecretManager) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
-	return nil, fmt.Errorf("does not support full env sync (path: %s)", kp.Path)
+	return a.getSecrets(kp)
 }
 
 func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
-	secret, err := a.getSecret(p)
+	secret, err := a.getSecret(p.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -54,16 +59,16 @@ func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *GoogleSecretManager) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return a.deleteSecret(kp)
 }
 
 func (a *GoogleSecretManager) DeleteMapping(kp core.KeyPath) error {
 	return fmt.Errorf("%s does not implement delete yet", a.Name())
 }
 
-func (a *GoogleSecretManager) getSecret(kp core.KeyPath) (string, error) {
+func (a *GoogleSecretManager) getSecret(path string) (string, error) {
 	r := secretmanagerpb.AccessSecretVersionRequest{
-		Name: kp.Path,
+		Name: path,
 	}
 	a.logger.WithField("path", r.Name).Debug("get secret")
 
@@ -72,4 +77,40 @@ func (a *GoogleSecretManager) getSecret(kp core.KeyPath) (string, error) {
 		return "", err
 	}
 	return string(secret.Payload.Data), nil
+}
+
+func (a *GoogleSecretManager) deleteSecret(kp core.KeyPath) error {
+	req := &secretmanagerpb.DestroySecretVersionRequest{
+		Name: kp.Path,
+	}
+	_, err := a.client.DestroySecretVersion(context.TODO(), req)
+	return err
+}
+
+func (a *GoogleSecretManager) getSecrets(kp core.KeyPath) ([]core.EnvEntry, error) {
+	req := &secretmanagerpb.ListSecretsRequest{
+		Parent: kp.Path,
+	}
+	entries := []core.EnvEntry{}
+	it := a.client.ListSecrets(context.TODO(), req)
+	for {
+		resp, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		path := resp.Name + "/versions/latest"
+		secret, err := a.getSecret(path)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, kp.FoundWithKey(strings.Split(resp.Name, "/")[3], secret))
+	}
+	sort.Sort(core.EntriesByKey(entries))
+
+	return entries, nil
 }

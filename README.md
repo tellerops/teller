@@ -696,6 +696,7 @@ You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your enviro
 * Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
 * Key format 
   * `env` - path based, needs to include a version
+  * `env_sync` - your project's path (gets the secrets latest version)
   * `decrypt` - available in this provider, will use KMS automatically
 
 
