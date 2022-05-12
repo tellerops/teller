@@ -1,0 +1,135 @@
+package e2e
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"testing"
+
+	"github.com/spectralops/teller/e2e/register"
+	_ "github.com/spectralops/teller/e2e/tests"
+	"github.com/spectralops/teller/e2e/testutils"
+	"github.com/stretchr/testify/assert"
+)
+
+const (
+	replaceToStaticPath     = "DYNAMIC-FULL-PATH"
+	removeBinaryPlaceholder = "<binary-path>"
+	testsFolder             = "tests"
+)
+
+func TestE2E(t *testing.T) {
+	t.Parallel()
+
+	// validate given binary path
+	binaryPath, err := getBinaryPath()
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
+
+	snapshotSuites, err := testutils.GetYmlSnapshotSuites(testsFolder)
+	assert.Nil(t, err)
+
+	// Loop on all test/*.yml files
+	for _, snapshot := range snapshotSuites {
+
+		t.Run(snapshot.Name, func(t *testing.T) {
+
+			// create a temp folder for the test
+			tempFolder, err := os.MkdirTemp(t.TempDir(), strings.ReplaceAll(snapshot.Name, " ", ""))
+			// descrive the base snapshot data of the test
+			snapshotFolder := filepath.Join(tempFolder, "snapshot")
+			assert.Nil(t, err, "could not create temp folder")
+			defer os.RemoveAll(tempFolder)
+
+			if len(snapshot.InitSnapshot) > 0 {
+				err = snapshot.CreateSnapshotData(snapshot.InitSnapshot, snapshotFolder)
+				assert.Nil(t, err)
+			}
+
+			if snapshot.ConfigFileName != "" {
+				err = snapshot.CrateConfig(snapshotFolder)
+				assert.Nil(t, err)
+			}
+
+			flagsCommand := strings.TrimPrefix(snapshot.Command, removeBinaryPlaceholder)
+			stdout, stderr, err := testutils.ExecCmd(binaryPath, strings.Split(flagsCommand, " "), snapshotFolder)
+			assert.Nil(t, err, stderr)
+
+			// In case the stdout/stderr include the dynamic folder path, we want to replace with static-content for better snapshot text compare
+			stdout, stderr = replaceFolderName(stdout, stderr, snapshotFolder)
+
+			if snapshot.ExpectedStdOut != "" {
+				assert.Equal(t, snapshot.ExpectedStdOut, stdout)
+			}
+
+			if snapshot.ExpectedStdErr != "" {
+				assert.Equal(t, snapshot.ExpectedStdErr, stderr)
+			}
+
+			if len(snapshot.ExpectedSnapshot) > 0 {
+				destSnapshotFolder := filepath.Join(tempFolder, "dest")
+				err = snapshot.CreateSnapshotData(snapshot.ExpectedSnapshot, destSnapshotFolder)
+				assert.Nil(t, err)
+
+				// consider to replace `diff` command which is depended on OS to golang plugin.
+				// could't find something better
+				s, _, err := testutils.ExecCmd("diff", []string{"-qr", "-x", snapshot.ConfigFileName, destSnapshotFolder, snapshotFolder}, "")
+				if err != nil {
+					t.Fatalf("snapshot folder is not equal. err: %v", s)
+				}
+				assert.Nil(t, err)
+			}
+		})
+	}
+
+	// loop on register suites (from *.go files)
+	for name, suite := range register.GetSuites() {
+		t.Run(name, func(t *testing.T) {
+
+			// creates temp dir for test path.
+			tempFolder, err := os.MkdirTemp(t.TempDir(), strings.ReplaceAll(name, " ", ""))
+			assert.Nil(t, err, "could not create temp folder")
+
+			defer os.RemoveAll(tempFolder)
+
+			// initialized test case
+			testInstance := suite(tempFolder)
+
+			err = testInstance.SetupTest()
+			assert.Nil(t, err)
+
+			// get Teller flags command
+			flags := testInstance.GetFlags()
+
+			stdout, stderr, err := testutils.ExecCmd(binaryPath, flags, tempFolder)
+			assert.Nil(t, err)
+
+			stdout, stderr = replaceFolderName(stdout, stderr, tempFolder)
+			err = testInstance.Check(stdout, stderr)
+			assert.Nil(t, err)
+		})
+	}
+}
+
+func replaceFolderName(stdout, stderr, workingDirectory string) (string, string) {
+	return strings.ReplaceAll(stdout, workingDirectory, replaceToStaticPath), strings.ReplaceAll(stderr, workingDirectory, replaceToStaticPath)
+}
+
+func getBinaryPath() (string, error) {
+	binaryPath, isExists := os.LookupEnv("BINARY_PATH")
+	if !isExists {
+		return "", errors.New("missing `BINARY_PATH`")
+	}
+
+	info, err := os.Stat(binaryPath)
+	errors.Is(err, os.ErrNotExist)
+
+	if err != nil || info.IsDir() {
+		return "", fmt.Errorf("%s not found", binaryPath)
+	}
+	return binaryPath, nil
+}

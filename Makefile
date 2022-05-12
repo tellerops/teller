@@ -36,6 +36,12 @@ deps:
 release:
 	goreleaser --rm-dist
 
+build:
+	go build -ldflags "-s -w -X main.version=0.0.0 -X main.commit=0000000000000000000000000000000000000000 -X main.date=2022-01-01"
+
+e2e: build
+	BINARY_PATH="$(shell pwd)/teller" go test -v ./e2e
+	
 coverage:
 	go test ./pkg/... -coverprofile=coverage.out
 	go tool cover -func=coverage.out
