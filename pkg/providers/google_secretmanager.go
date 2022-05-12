@@ -40,22 +40,43 @@ func (a *GoogleSecretManager) Name() string {
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
 	i := strings.LastIndex(p.Path, "/versions/")
-	req := &secretmanagerpb.AddSecretVersionRequest{
-		Parent: p.Path[:i],
-		Payload: &secretmanagerpb.SecretPayload{
-			Data: []byte(val),
-		},
+	if i == -1 {
+		return fmt.Errorf("secret version is missing: %v", p.Path)
 	}
 
-	_, err := a.client.AddSecretVersion(context.TODO(), req)
-	return err
+	return a.addSecret(p.Path[:i], val)
 }
 func (a *GoogleSecretManager) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", a.Name())
+	for k, v := range m {
+		path := fmt.Sprintf("%v/secrets/%v", p.Path, k)
+		err := a.addSecret(path, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (a *GoogleSecretManager) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
-	return a.getSecrets(kp)
+	secrets, err := a.getSecrets(kp.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := []core.EnvEntry{}
+
+	for _, secret := range secrets {
+		path := fmt.Sprintf("%s/%s", secret.Name, "versions/latest")
+		secretVal, err := a.getSecret(path)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, kp.FoundWithKey(strings.TrimPrefix(secret.Name, kp.Path), secretVal))
+	}
+	sort.Sort(core.EntriesByKey(entries))
+
+	return entries, nil
 }
 
 func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
@@ -69,7 +90,7 @@ func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *GoogleSecretManager) Delete(kp core.KeyPath) error {
-	return a.deleteSecret(kp)
+	return a.deleteSecret(kp.Path)
 }
 
 func (a *GoogleSecretManager) DeleteMapping(kp core.KeyPath) error {
@@ -89,19 +110,32 @@ func (a *GoogleSecretManager) getSecret(path string) (string, error) {
 	return string(secret.Payload.Data), nil
 }
 
-func (a *GoogleSecretManager) deleteSecret(kp core.KeyPath) error {
+func (a *GoogleSecretManager) deleteSecret(path string) error {
 	req := &secretmanagerpb.DestroySecretVersionRequest{
-		Name: kp.Path,
+		Name: path,
 	}
 	_, err := a.client.DestroySecretVersion(context.TODO(), req)
 	return err
 }
 
-func (a *GoogleSecretManager) getSecrets(kp core.KeyPath) ([]core.EnvEntry, error) {
-	req := &secretmanagerpb.ListSecretsRequest{
-		Parent: kp.Path,
+func (a *GoogleSecretManager) addSecret(path string, val string) error {
+	req := &secretmanagerpb.AddSecretVersionRequest{
+		Parent: path,
+		Payload: &secretmanagerpb.SecretPayload{
+			Data: []byte(val),
+		},
 	}
-	entries := []core.EnvEntry{}
+
+	_, err := a.client.AddSecretVersion(context.TODO(), req)
+	return err
+}
+
+func (a *GoogleSecretManager) getSecrets(path string) ([]secretmanagerpb.Secret, error) {
+	req := &secretmanagerpb.ListSecretsRequest{
+		Parent: path,
+	}
+	entries := []secretmanagerpb.Secret{}
+
 	it := a.client.ListSecrets(context.TODO(), req)
 	for {
 		resp, err := it.Next()
@@ -112,14 +146,8 @@ func (a *GoogleSecretManager) getSecrets(kp core.KeyPath) ([]core.EnvEntry, erro
 		if err != nil {
 			return nil, err
 		}
-		path := resp.Name + "/versions/latest"
-		secret, err := a.getSecret(path)
-		if err != nil {
-			return nil, err
-		}
-		entries = append(entries, kp.FoundWithKey(strings.TrimPrefix(resp.Name, kp.Path), secret))
-	}
-	sort.Sort(core.EntriesByKey(entries))
 
+		entries = append(entries, *resp)
+	}
 	return entries, nil
 }
