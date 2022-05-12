@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	replaceToStaticPath     = "DYNAMIC-FULL-PATH"
-	removeBinaryPlaceholder = "<binary-path>"
-	testsFolder             = "tests"
+	replaceToStaticPath      = "DYNAMIC-FULL-PATH"
+	replaceToShortStaticPath = "DYNAMIC-SHORT-PATH"
+	removeBinaryPlaceholder  = "<binary-path>"
+	testsFolder              = "tests"
 )
 
 func TestE2E(t *testing.T) {
@@ -116,7 +117,13 @@ func TestE2E(t *testing.T) {
 }
 
 func replaceFolderName(stdout, stderr, workingDirectory string) (string, string) {
-	return strings.ReplaceAll(stdout, workingDirectory, replaceToStaticPath), strings.ReplaceAll(stderr, workingDirectory, replaceToStaticPath)
+	stdout = strings.ReplaceAll(stdout, workingDirectory, replaceToStaticPath)
+	stderr = strings.ReplaceAll(stdout, workingDirectory, replaceToStaticPath)
+	shortFolderPath := workingDirectory[0:13]
+	stdout = strings.ReplaceAll(stdout, shortFolderPath, replaceToShortStaticPath)
+	stderr = strings.ReplaceAll(stdout, shortFolderPath, replaceToShortStaticPath)
+
+	return stdout, stderr
 }
 
 func getBinaryPath() (string, error) {

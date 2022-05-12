@@ -34,10 +34,10 @@ expected_snapshot:
 expected_stdout: |
   -*- teller: loaded variables for test using .teller.yml -*-
   
-  [filesystem /var/folders/...tings/test/bar] BAR = sh*****
-  [filesystem /var/folders/...tings/test/foo] FOO = sh*****
-  [filesystem /var/folders/...tings/test/all] secret-a = ma*****
-  [filesystem /var/folders/...tings/test/all] secret-b = sh*****
-  [filesystem /var/folders/...tings/test/all] secret-c = sh*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/bar] BAR = sh*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/foo] FOO = sh*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/all] secret-a = ma*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/all] secret-b = sh*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/all] secret-c = sh*****
 
 expected_stderr: 
