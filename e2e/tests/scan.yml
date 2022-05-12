@@ -1,0 +1,52 @@
+---
+name: scan entries
+command: <binary-path> scan
+config_file_name: .teller.yml
+config_content: >
+  project: test
+
+  providers:
+    filesystem:
+      env_sync:
+        path: {{.Folder}}/settings/test/all
+      env:
+        FOO:
+          path: {{.Folder}}/settings/test/foo
+          severity: low
+        BAR:
+          path: {{.Folder}}/settings/test/bar
+          severity: medium
+init_snapshot:
+  - path: settings/test
+    file_name: foo
+    content: shazam
+  - path: settings/test
+    file_name: bar
+    content: shazam
+  - path: settings/test
+    file_name: file
+    content: content
+  - path: settings/test/all
+    file_name: secret-a
+    content: mailman
+  - path: settings/test/all
+    file_name: secret-b
+    content: shazam
+expected_snapshot:
+replace_stdout_content:
+  - search: "matches in [0-9].[0-9]+ms"
+    replace: matches in 1.000ms
+expected_stdout: |
+  [high] settings/test/all/secret-b (1,0): found match for filesystem/secret-b (sh*****)
+  [low] settings/test/all/secret-b (1,0): found match for filesystem/FOO (sh*****)
+  [medium] settings/test/all/secret-b (1,0): found match for filesystem/BAR (sh*****)
+  [high] settings/test/all/secret-a (1,0): found match for filesystem/secret-a (ma*****)
+  [high] settings/test/foo (1,0): found match for filesystem/secret-b (sh*****)
+  [low] settings/test/foo (1,0): found match for filesystem/FOO (sh*****)
+  [medium] settings/test/foo (1,0): found match for filesystem/BAR (sh*****)
+  [high] settings/test/bar (1,0): found match for filesystem/secret-b (sh*****)
+  [low] settings/test/bar (1,0): found match for filesystem/FOO (sh*****)
+  [medium] settings/test/bar (1,0): found match for filesystem/BAR (sh*****)
+
+  Scanning for 4 entries: found 10 matches in 1.000ms
+expected_stderr: 

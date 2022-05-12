@@ -24,6 +24,7 @@ The simple and fast way is based on `yml` file configuration. All you need to do
 | `init_snapshot.path`          | Create file in path.
 | `init_snapshot.file_name`     | File name.
 | `init_snapshot.content`       | File content.
+| `replace_stdout_content`      | Replace dynamic stdout content to static. for example, replace current timestemp to static text.
 | `expected_snapshot`           | Compare the init_snapshot folder with the expected snapshot content. If empty, this compare check will be ignored.
 | `expected_snapshot.path`      | Create file in path.
 | `expected_snapshot.file_name` | File name.
