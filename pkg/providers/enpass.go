@@ -66,8 +66,12 @@ func (e *Enpass) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 }
 
 func (e *Enpass) Get(p core.KeyPath) (*core.EnvEntry, error) {
-	value, err := e.getEntry(p)
+	c, err := e.getEntry(p)
 
+	if err != nil {
+		return nil, err
+	}
+	value, err := c.Decrypt()
 	if err != nil {
 		return nil, err
 	}
@@ -83,12 +87,12 @@ func (e *Enpass) DeleteMapping(kp core.KeyPath) error {
 	return fmt.Errorf("%s does not implement delete yet", e.Name())
 }
 
-func (e *Enpass) getEntry(p core.KeyPath) (string, error) {
+func (e *Enpass) getEntry(p core.KeyPath) (*enpass.Card, error) {
 	entry, err := e.client.GetEntry(p.Path, []string{p.Env}, true)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return entry.Decrypt()
+	return entry, err
 }
 
 func (e *Enpass) getEntries(p core.KeyPath) (map[string]string, error) {
@@ -99,11 +103,13 @@ func (e *Enpass) getEntries(p core.KeyPath) (map[string]string, error) {
 
 	entries := map[string]string{}
 	for _, entry := range res {
-		value, err := entry.Decrypt()
-		if err != nil {
-			return nil, err
+		if !entry.IsTrashed() && !entry.IsDeleted() {
+			value, err := entry.Decrypt()
+			if err != nil {
+				return nil, err
+			}
+			entries[fmt.Sprintf("%v/%v", entry.UUID, entry.Title)] = value
 		}
-		entries[fmt.Sprintf("%v/%v", entry.UUID, entry.Title)] = value
 	}
 	return entries, nil
 }
