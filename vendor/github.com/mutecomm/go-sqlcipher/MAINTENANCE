@@ -1,0 +1,90 @@
+To maintain this code properly, the following three repositories have to be
+tracked for changes (maintenance details below):
+
+- https://github.com/mattn/go-sqlite
+- https://github.com/sqlcipher/sqlcipher
+- https://github.com/libtom/libtomcrypt
+
+
+Update code from https://github.com/mattn/go-sqlite3
+----------------------------------------------------
+
+Current HEAD: cf7286f069c3ef596efcc87781a4653a2e7607bd
+
+Track files:
+
+error.go
+error_test.go
+sqlite3.go (dead code and extension loading removed, sqlcipher pragmas added)
+sqlite3_other.go
+sqlite3_test.go (adjust path)
+sqlite3_windows.go
+_example/simple/simple.go
+sqlite3_test/sqltest.go
+
+
+Update code from https://github.com/sqlcipher/sqlcipher
+-------------------------------------------------------
+
+Current release: v3.4.2
+
+Execute:
+./configure
+make
+
+Track files:
+sqlite3.h
+sqlite3.c
+
+
+Update code from https://github.com/libtom/libtomcrypt
+------------------------------------------------------
+
+Current HEAD: bd7933cc2b43ebe7c4349614c6cf1271251ebee4
+
+Track header files:
+
+tomcrypt_argchk.h
+tomcrypt_cfg.h
+tomcrypt_cipher.h
+tomcrypt_custom.h (modified)
+tomcrypt.h
+tomcrypt_hash.h
+tomcrypt_mac.h
+tomcrypt_macros.h
+tomcrypt_math.h
+tomcrypt_misc.h
+tomcrypt_pkcs.h
+tomcrypt_pk.h
+tomcrypt_prng.h
+
+Track C files:
+
+aes.c (modified include "aes_tab.h" instead of "aes_tab.c")
+aes_tab.c (renamed to aes_tab.h)
+burn_stack.c
+cbc_decrypt.c
+cbc_done.c
+cbc_encrypt.c
+cbc_start.c
+crypt_argchk.c
+crypt_cipher_descriptor.c
+crypt_cipher_is_valid.c
+crypt_find_cipher.c
+crypt_find_hash.c
+crypt_hash_descriptor.c
+crypt_hash_is_valid.c
+crypt_prng_descriptor.c
+crypt_register_cipher.c
+crypt_register_hash.c
+crypt_register_prng.c
+fortuna.c
+hash_memory.c
+hmac_done.c
+hmac_init.c
+hmac_memory.c
+hmac_process.c
+pkcs_5_2.c
+sha1.c
+sha256.c
+zeromem.c

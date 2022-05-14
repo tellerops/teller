@@ -17,6 +17,7 @@ mocks:
 	mockgen -source pkg/providers/onepassword.go -destination pkg/providers/mock_providers/onepassword_mock.go
 	mockgen -source pkg/providers/gopass.go -destination pkg/providers/mock_providers/gopass_mock.go
 	mockgen -source pkg/providers/github.go -destination pkg/providers/mock_providers/github_mock.go
+	mockgen -source pkg/providers/enpass.go -destination pkg/providers/mock_providers/enpass_mock.go
 readme:
 	yarn readme
 lint:

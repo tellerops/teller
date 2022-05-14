@@ -1,0 +1,7 @@
+language: go
+go: 1.12
+before_install:
+  - go get github.com/frankbraun/gocheck
+  - go get -t github.com/mutecomm/go-sqlcipher
+script:
+  - gocheck -g -c -e _example -e sqlite3_test

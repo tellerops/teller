@@ -35,6 +35,7 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		"1Password":                   "1password",
 		"Gopass":                      "gopass",
 		"LastPass":                    "lastpass",
+		"Enpass":                      "enpass",
 		"GitHub":                      "github",
 		"KeyPass":                     "keypass",
 		"FileSystem":                  "filesystem",
@@ -60,6 +61,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) { //n
 		return providers.NewConsul(logger)
 	case "dotenv":
 		return providers.NewDotenv(logger)
+	case "enpass":
+		return providers.NewEnpass(logger)
 	case "vercel":
 		return providers.NewVercel(logger)
 	case "azure_keyvault":
