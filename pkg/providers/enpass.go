@@ -16,6 +16,10 @@ type EnpassClient interface {
 	GetEntries(cardType string, filters []string) ([]enpass.Card, error)
 }
 
+type EnpassCard interface {
+	Decrypt() (string, error)
+}
+
 type Enpass struct {
 	client EnpassClient
 	logger logging.Logger
@@ -87,7 +91,7 @@ func (e *Enpass) DeleteMapping(kp core.KeyPath) error {
 	return fmt.Errorf("%s does not implement delete yet", e.Name())
 }
 
-func (e *Enpass) getEntry(p core.KeyPath) (*enpass.Card, error) {
+func (e *Enpass) getEntry(p core.KeyPath) (EnpassCard, error) {
 	entry, err := e.client.GetEntry(p.Path, []string{p.Env}, true)
 	if err != nil {
 		return nil, err
@@ -102,13 +106,13 @@ func (e *Enpass) getEntries(p core.KeyPath) (map[string]string, error) {
 	}
 
 	entries := map[string]string{}
-	for _, entry := range res {
-		if !entry.IsTrashed() && !entry.IsDeleted() {
-			value, err := entry.Decrypt()
+	for i := range res {
+		if !res[i].IsTrashed() && !res[i].IsDeleted() {
+			value, err := res[i].Decrypt()
 			if err != nil {
 				return nil, err
 			}
-			entries[fmt.Sprintf("%v/%v", entry.UUID, entry.Title)] = value
+			entries[fmt.Sprintf("%v/%v", res[i].UUID, res[i].Title)] = value
 		}
 	}
 	return entries, nil
