@@ -580,7 +580,12 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 				return fmt.Errorf("there is no specific key mapping to map to for provider '%v'", pname)
 			}
 
-			for k, v := range kvmap {
+			keys := make([]string, 0, len(kvmap))
+			for k := range kvmap {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
 				// get the kvp for specific mapping
 				ok := false
 				var kvp core.KeyPath
@@ -595,7 +600,7 @@ func (tl *Teller) Put(kvmap map[string]string, providerNames []string, sync bool
 				if ok {
 					kvpResolved := tl.Populate.KeyPath(kvp.WithEnv(k))
 					logger.Trace("calling Put provider function")
-					err := provider.Put(kvpResolved, v)
+					err := provider.Put(kvpResolved, kvmap[k])
 					if err != nil {
 						return fmt.Errorf("cannot put %v in provider %v: %v", k, pname, err)
 					}

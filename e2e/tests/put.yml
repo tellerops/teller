@@ -47,7 +47,7 @@ expected_snapshot:
     file_name: secret-c
     content: shazam-1
 expected_stdout: |
-  Put FOO (DYNAMIC-FULL-PATH/settings/test/foo) in filesystem: OK.
   Put BAR (DYNAMIC-FULL-PATH/settings/test/bar) in filesystem: OK.
+  Put FOO (DYNAMIC-FULL-PATH/settings/test/foo) in filesystem: OK.
 
 expected_stderr: 
