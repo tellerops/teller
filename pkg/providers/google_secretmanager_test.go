@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"github.com/alecthomas/assert"
 	"github.com/golang/mock/gomock"
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
@@ -24,10 +25,34 @@ func TestGoogleSM(t *testing.T) {
 	out := &secretmanagerpb.AccessSecretVersionResponse{
 		Payload: sec,
 	}
+	outDelete := &secretmanagerpb.SecretVersion{
+		Name: string(sec.Data),
+	}
+	outAdd := &secretmanagerpb.SecretVersion{
+		Name: string(sec.Data),
+	}
+	outList := &secretmanager.SecretIterator{
+		Response: string(sec.Data),
+	}
 	in := secretmanagerpb.AccessSecretVersionRequest{
 		Name: path,
 	}
+	inDelete := secretmanagerpb.DestroySecretVersionRequest{
+		Name: path,
+	}
+	inList := secretmanagerpb.ListSecretsRequest{
+		Parent: path,
+	}
+	inAdd := secretmanagerpb.AddSecretVersionRequest{
+		Parent: path,
+		Payload: &secretmanagerpb.SecretPayload{
+			Data: []byte("some value"),
+		},
+	}
 	client.EXPECT().AccessSecretVersion(gomock.Any(), gomock.Eq(&in)).Return(out, nil).AnyTimes()
+	client.EXPECT().DestroySecretVersion(gomock.Any(), gomock.Eq(&inDelete)).Return(outDelete, nil).AnyTimes()
+	client.EXPECT().ListSecrets(gomock.Any(), gomock.Eq(&inList)).Return(outList).AnyTimes()
+	client.EXPECT().AddSecretVersion(gomock.Any(), gomock.Eq(&inAdd)).Return(outAdd, nil).AnyTimes()
 	s := GoogleSecretManager{
 		client: client,
 		logger: GetTestLogger(),
