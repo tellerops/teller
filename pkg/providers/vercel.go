@@ -78,7 +78,26 @@ func (ve *Vercel) Name() string {
 }
 
 func (ve *Vercel) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Vercel",
+		Authentication: "Requires an API key populated in your environment in: `VERCEL_TOKEN`.",
+		ConfigTemplate: `
+  # requires an API token in: VERCEL_TOKEN 
+  vercel:
+	# sync a complete environment
+    env_sync:
+      path: drakula-demo
+
+	# # pick and choose variables
+	# env:
+	#	  JVM_OPTS:
+	#      path: drakula-demo
+`,
+		Ops: core.OpMatrix{
+			Get:        true,
+			GetMapping: true,
+		},
+	}
 }
 
 func (ve *Vercel) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

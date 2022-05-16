@@ -206,11 +206,12 @@ type MetaInfo struct {
 	Ops            OpMatrix
 }
 type OpMatrix struct {
-	Sync    bool
-	Mapping bool
-	Read    bool
-	Put     bool
-	Delete  bool
+	Delete        bool
+	DeleteMapping bool
+	Put           bool
+	PutMapping    bool
+	Get           bool
+	GetMapping    bool
 }
 
 type Match struct {

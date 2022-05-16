@@ -33,7 +33,35 @@ func (o *OnePassword) Name() string {
 }
 
 func (o *OnePassword) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description: "1Password",
+		Authentication: `
+To integrate with the 1Password API, you should have system-to-system secret management running in your infrastructure/localhost [more details here](https://support.1password.com/connect-deploy-docker/).
+
+Requires the following environment variables to be set:
+` + "`OP_CONNECT_HOST`" + ` - The hostname of the 1Password Connect API	
+` + "`OP_CONNECT_TOKEN`" + ` - The API token to be used to authenticate the client to a 1Password Connect API.
+`,
+		ConfigTemplate: `,
+  # Configure via environment variables:
+  # OP_CONNECT_HOST
+  # OP_CONNECT_TOKEN
+  1password:
+    env_sync:
+        path: # Key title
+        source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
+    env:
+      FOO_BAR:
+        path: # Key title
+        source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
+        field: # The secret field to get. notesPlain, {label key}, password etc.
+`,
+		Ops: core.OpMatrix{
+			Put:        true,
+			GetMapping: true,
+			Get:        true,
+		},
+	}
 }
 
 func (o *OnePassword) Put(p core.KeyPath, val string) error {
