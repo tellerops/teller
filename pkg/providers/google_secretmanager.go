@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -39,12 +40,9 @@ func (a *GoogleSecretManager) Name() string {
 }
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
-	i := strings.LastIndex(p.Path, "/versions/")
-	if i == -1 {
-		return fmt.Errorf("secret version is missing: %v", p.Path)
-	}
-
-	return a.addSecret(p.Path[:i], val)
+	reg := regexp.MustCompile(`(?i)\/versions\/\d+$`)
+	res := reg.ReplaceAllString(p.Path, "")
+	return a.addSecret(res, val)
 }
 func (a *GoogleSecretManager) PutMapping(p core.KeyPath, m map[string]string) error {
 	for k, v := range m {
