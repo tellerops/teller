@@ -8,7 +8,7 @@ import (
 
 const (
 	populateFromEnvironment = "env:"
-	populateWithDefault     = ":default:"
+	populateWithDefault     = ","
 )
 
 type Opts map[string]string
@@ -58,13 +58,14 @@ func (p *Populate) KeyPath(kp KeyPath) KeyPath {
 }
 
 // parseDefaultValue returns that field name and the default value if `populateWithDefault` was found
-// Example 1: FOO:default:BAR -> the function return FOO, BAR
+// Example 1: FOO,BAR -> the function return FOO, BAR
 // Example 2: FOO -> the function return FOO, "" (empty value)
 func (p *Populate) parseDefaultValue(evar string) (key, defaultValue string) {
+
 	if strings.Contains(evar, populateWithDefault) {
-		data := strings.Split(evar, populateWithDefault)
-		if len(data) == 2 { //nolint
-			return data[0], data[1]
+		data := strings.SplitN(evar, populateWithDefault, 2) //nolint
+		if len(data) == 2 {                                  //nolint
+			return data[0], strings.TrimSpace(data[1])
 		}
 	}
 	return evar, ""

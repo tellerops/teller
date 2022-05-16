@@ -8,7 +8,7 @@ import (
 )
 
 func TestPopulatePath(t *testing.T) {
-	p := NewPopulate(map[string]string{"foo": "bar", "teller-env": "env:TELLER_TEST_FOO", "teller-env-default": "env:TELLER_TEST_DEFAULT:default:default-value"})
+	p := NewPopulate(map[string]string{"foo": "bar", "teller-env": "env:TELLER_TEST_FOO", "teller-env-default": "env:TELLER_TEST_DEFAULT,default-value"})
 
 	os.Setenv("TELLER_TEST_FOO", "test-foo")
 	assert.Equal(t, p.FindAndReplace("foo/{{foo}}/qux/{{foo}}"), "foo/bar/qux/bar")
@@ -64,8 +64,8 @@ func TestPopulateDefaultValue(t *testing.T) {
 	assert.Equal(t, key, "TELLER_TEST_FOO")
 	assert.Equal(t, value, "")
 
-	key, value = p.parseDefaultValue("TELLER_TEST_FOO:default:default-value")
+	key, value = p.parseDefaultValue("TELLER_TEST_FOO, default,,value")
 	assert.Equal(t, key, "TELLER_TEST_FOO")
-	assert.Equal(t, value, "default-value")
+	assert.Equal(t, value, "default,,value")
 
 }
