@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"testing"
@@ -61,10 +62,19 @@ func TestE2E(t *testing.T) {
 
 			flagsCommand := strings.TrimPrefix(snapshot.Command, removeBinaryPlaceholder)
 			stdout, stderr, err := testutils.ExecCmd(binaryPath, strings.Split(flagsCommand, " "), snapshotFolder)
-			assert.Nil(t, err, stderr)
+			if stdout == "" {
+				assert.Nil(t, err, stderr)
+			}
 
 			// In case the stdout/stderr include the dynamic folder path, we want to replace with static-content for better snapshot text compare
 			stdout, stderr = replaceFolderName(stdout, stderr, snapshotFolder)
+
+			if len(snapshot.ReplaceStdOutContent) > 0 {
+				for _, r := range snapshot.ReplaceStdOutContent {
+					var re = regexp.MustCompile(r.Search)
+					stdout = re.ReplaceAllString(stdout, r.Replace)
+				}
+			}
 
 			if snapshot.ExpectedStdOut != "" {
 				assert.Equal(t, snapshot.ExpectedStdOut, stdout)
@@ -87,7 +97,6 @@ func TestE2E(t *testing.T) {
 			}
 		})
 	}
-
 	// loop on register suites (from *.go files)
 	for name, suite := range register.GetSuites() {
 		t.Run(name, func(t *testing.T) {
@@ -95,7 +104,6 @@ func TestE2E(t *testing.T) {
 			// creates temp dir for test path.
 			tempFolder, err := os.MkdirTemp(t.TempDir(), strings.ReplaceAll(name, " ", ""))
 			assert.Nil(t, err, "could not create temp folder")
-
 			defer os.RemoveAll(tempFolder)
 
 			// initialized test case
