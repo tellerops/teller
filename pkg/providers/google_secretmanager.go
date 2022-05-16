@@ -40,7 +40,7 @@ func (a *GoogleSecretManager) Name() string {
 }
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
-	reg := regexp.MustCompile(`(?i)\/versions\/\d+$`)
+	reg := regexp.MustCompile(`(?i)/versions/\d+$`)
 	res := reg.ReplaceAllString(p.Path, "")
 	return a.addSecret(res, val)
 }
