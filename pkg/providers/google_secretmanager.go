@@ -33,7 +33,20 @@ func (a *GoogleSecretManager) Name() string {
 }
 
 func (a *GoogleSecretManager) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Google Secret Manager",
+		Authentication: "You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your environment to your relevant `account.json` that you get from Google.",
+		ConfigTemplate: `
+  # GOOGLE_APPLICATION_CREDENTIALS=foobar.json
+  # https://cloud.google.com/secret-manager/docs/reference/libraries#setting_up_authentication
+  google_secretmanager:
+    env:
+      FOO_GOOG:
+        # need to supply the relevant version (versions/1)
+        path: projects/123/secrets/FOO_GOOG/versions/1
+`,
+		Ops: core.OpMatrix{Get: true},
+	}
 }
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {

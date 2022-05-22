@@ -50,7 +50,20 @@ func (c *CyberArkConjur) Name() string {
 	return "cyberark_conjur"
 }
 func (c *CyberArkConjur) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "CyberArk Conjure",
+		Authentication: "Requires a username and API key populated in your environment:\n* `CONJUR_AUTHN_LOGIN`\n* `CONJUR_AUTHN_API_KEY`",
+		ConfigTemplate: `
+  # https://conjur.org
+  # set CONJUR_AUTHN_LOGIN and CONJUR_AUTHN_API_KEY env vars
+  # set .conjurrc file in user's home directory
+  cyberark_conjur:
+    env:
+      FOO_BAR:
+        path: /secrets/foo/bar
+`,
+		Ops: core.OpMatrix{Get: true, Put: true},
+	}
 }
 
 func (c *CyberArkConjur) Put(p core.KeyPath, val string) error {

@@ -55,7 +55,22 @@ func (g *GitHub) Name() string {
 }
 
 func (g *GitHub) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Github",
+		Authentication: "Requires `GITHUB_AUTH_TOKEN`",
+		ConfigTemplate: `
+  # Configure via environment variables for integration:
+  # GITHUB_AUTH_TOKEN: GitHub token
+
+  github:
+    env_sync:
+       path: owner/github-repo
+    env:
+      script-value:
+        path: owner/github-repo
+`,
+		Ops: core.OpMatrix{Put: true, PutMapping: true, Delete: true, DeleteMapping: true},
+	}
 }
 
 func (g *GitHub) Put(p core.KeyPath, val string) error {

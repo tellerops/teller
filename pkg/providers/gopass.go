@@ -39,7 +39,20 @@ func (g *Gopass) Name() string {
 }
 
 func (g *Gopass) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "gopass",
+		Authentication: "Configuration is environment based, as defined by client standard. See variables [here](https://github.com/gopasspw/gopass/blob/master/docs/config.md).",
+		ConfigTemplate: `
+  # Override default configuration: https://github.com/gopasspw/gopass/blob/master/docs/config.md
+  gopass:
+    env_sync:
+      path: foo
+    env:
+      ETC_DSN:
+        path: foo/bar
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+	}
 }
 
 func (g *Gopass) Put(p core.KeyPath, val string) error {

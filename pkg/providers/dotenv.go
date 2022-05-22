@@ -107,7 +107,20 @@ func (a *Dotenv) Name() string {
 	return "dotenv"
 }
 func (a *Dotenv) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    ".env",
+		Authentication: "",
+		ConfigTemplate: `
+  # you can mix and match many files
+  dotenv:
+    env_sync:
+      path: ~/my-dot-env.env
+    env:
+      FOO_BAR:
+        path: ~/my-dot-env.env
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true, DeleteMapping: true},
+	}
 }
 
 func (a *Dotenv) Put(p core.KeyPath, val string) error {

@@ -39,7 +39,23 @@ func (h *HashicorpVault) Name() string {
 }
 
 func (h *HashicorpVault) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Hashicorp Vault",
+		Authentication: "Configuration is environment based, as defined by client standard. See variables [here](https://github.com/hashicorp/vault/blob/api/v1.0.4/api/client.go#L28).",
+		ConfigTemplate: `
+  # configure only from environment
+  # https://github.com/hashicorp/vault/blob/api/v1.0.4/api/client.go#L28
+  # this vars should not go through to the executing cmd
+  hashicorp_vault:
+    env_sync:
+      path: secret/data/{{"{{stage}}"}}/billing/web/env
+    env:
+      SMTP_PASS:
+        path: secret/data/{{"{{stage}}"}}/wordpress
+        field: smtp
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+	}
 }
 
 func (h *HashicorpVault) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

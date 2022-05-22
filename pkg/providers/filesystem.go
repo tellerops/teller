@@ -36,7 +36,19 @@ func (f *FileSystem) Name() string {
 }
 
 func (f *FileSystem) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "File system",
+		Authentication: "",
+		ConfigTemplate: `
+  filesystem:
+    env_sync:
+      path: redis/config
+    env:
+      ETC_DSN:
+        path: redis/config/foobar
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true},
+	}
 }
 
 // Put will create a new single entry

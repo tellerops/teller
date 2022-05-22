@@ -37,7 +37,21 @@ func (a *Consul) Name() string {
 }
 
 func (a *Consul) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Consul",
+		Authentication: "If you have the Consul CLI working and configured, there's no special action to take.\nConfiguration is environment based, as defined by client standard. See variables [here](https://github.com/hashicorp/consul/blob/master/api/api.go#L28).",
+		ConfigTemplate: `
+  # Configure via environment:
+  # CONSUL_HTTP_ADDR
+  consul:
+    env_sync:
+      path: redis/config
+    env:
+      ETC_DSN:
+        path: redis/config/foobar
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+	}
 }
 func (a *Consul) Put(p core.KeyPath, val string) error {
 	a.logger.WithField("path", p.Path).Debug("put value")

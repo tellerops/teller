@@ -43,7 +43,25 @@ func (c *CloudflareSecrets) Name() string {
 	return "cloudflare_workers_secret"
 }
 func (c *CloudflareSecrets) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Cloudflare Workers Secrets",
+		Authentication: "requires the following environment variables to be set:\n`CLOUDFLARE_API_KEY`: Your Cloudflare api key.\n`CLOUDFLARE_API_EMAIL`: Your email associated with the api key.\n`CLOUDFLARE_ACCOUNT_ID`: Your account ID.\n",
+		ConfigTemplate: `
+  # Configure via environment variables for integration:
+  # CLOUDFLARE_API_KEY: Your Cloudflare api key.
+  # CLOUDFLARE_API_EMAIL: Your email associated with the api key.
+  # CLOUDFLARE_ACCOUNT_ID: Your account ID.
+
+  cloudflare_workers_secrets:
+    env_sync:
+      source: # Mandatory: script field
+    env:
+      script-value:
+        path: foo-secret
+        source: # Mandatory: script field
+		`,
+		Ops: core.OpMatrix{Put: true, PutMapping: true, Delete: true},
+	}
 }
 
 func (c *CloudflareSecrets) Put(p core.KeyPath, val string) error {

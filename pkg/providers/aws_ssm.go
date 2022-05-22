@@ -34,7 +34,19 @@ func (a *AWSSSM) Name() string {
 }
 
 func (a *AWSSSM) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "AWS Secrets Manager",
+		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment",
+		ConfigTemplate: `
+  # configure only from environment
+  aws_ssm:
+    env:
+      FOO_BAR:
+        path: /prod/foobar
+        decrypt: true
+		`,
+		Ops: core.OpMatrix{Get: true},
+	}
 }
 
 func (a *AWSSSM) Put(p core.KeyPath, val string) error {

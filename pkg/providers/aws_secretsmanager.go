@@ -55,7 +55,21 @@ func (a *AWSSecretsManager) Name() string {
 }
 
 func (a *AWSSecretsManager) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "AWS Secrets Manager",
+		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment",
+		ConfigTemplate: `
+  # configure only from environment
+  aws_secretsmanager:
+    env_sync:
+      path: prod/foo/bar
+    env:
+      FOO_BAR:
+        path: prod/foo/bar
+        field: SOME_KEY
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true, DeleteMapping: true},
+	}
 }
 
 func (a *AWSSecretsManager) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

@@ -40,7 +40,20 @@ func (a *AzureKeyVault) Name() string {
 	return "azure_keyvault"
 }
 func (a *AzureKeyVault) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Azure Key Vault",
+		Authentication: "TODO(XXX)",
+		ConfigTemplate: `
+  # you can mix and match many files
+  azure_keyvault:
+    env_sync:
+      path: azure
+    env:
+      FOO_BAR:
+        path: foobar
+		`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true},
+	}
 }
 func (a *AzureKeyVault) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", a.Name())

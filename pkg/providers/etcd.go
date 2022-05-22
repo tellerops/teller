@@ -47,7 +47,25 @@ func (a *Etcd) Name() string {
 	return "etcd"
 }
 func (a *Etcd) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Etcd",
+		Authentication: "These environment variables need to be populated\n* `ETCDCTL_ENDPOINTS`\nFor TLS:\n* `ETCDCTL_CA_FILE`\n* `ETCDCTL_CERT_FILE`\n* `ETCDCTL_KEY_FILE`",
+		ConfigTemplate: `
+  # Configure via environment:
+  # ETCDCTL_ENDPOINTS
+  # tls:
+  # ETCDCTL_CA_FILE
+  # ETCDCTL_CERT_FILE
+  # ETCDCTL_KEY_FILE
+  etcd:
+    env_sync:
+      path: /prod/foo
+    env:
+      ETC_DSN:
+        path: /prod/foo/bar
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+	}
 }
 
 func (a *Etcd) Put(p core.KeyPath, val string) error {

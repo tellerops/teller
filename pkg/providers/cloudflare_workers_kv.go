@@ -42,7 +42,14 @@ func (c *Cloudflare) Name() string {
 	return "cloudflare_workers_kv"
 }
 func (c *Cloudflare) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description:    "Cloudflare Workers K/V",
+		Authentication: "requires the following environment variables to be set:\n`CLOUDFLARE_API_KEY`: Your Cloudflare api key.\n`CLOUDFLARE_API_EMAIL`: Your email associated with the api key.\n`CLOUDFLARE_ACCOUNT_ID`: Your account ID.\n",
+		ConfigTemplate: `
+		TODO(XXX): Missing
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true},
+	}
 }
 func (c *Cloudflare) Put(p core.KeyPath, val string) error {
 	return fmt.Errorf("provider %q does not implement write yet", c.Name())
