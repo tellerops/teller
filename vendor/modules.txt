@@ -460,6 +460,9 @@ github.com/karrick/godirwalk
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 ## explicit
 github.com/kballard/go-shellquote
+# github.com/lox/go-touchid v0.0.0-20170712105233-619cc8e578d0
+## explicit
+github.com/lox/go-touchid
 # github.com/mattn/go-colorable v0.1.11
 ## explicit; go 1.13
 github.com/mattn/go-colorable

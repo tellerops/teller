@@ -8,6 +8,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/spectralops/teller/pkg"
 	"github.com/spectralops/teller/pkg/logging"
+	"github.com/spectralops/teller/pkg/tfa"
 )
 
 var CLI struct {
@@ -83,6 +84,10 @@ var CLI struct {
 		Path      string   `optional name:"path" help:"Take literal path and not from config"`
 		AllKeys   bool     `optional name:"all-keys" help:"Deletes all keys for a given path. Applicable only when used together with the 'path' flag"`
 	} `cmd help:"Delete a secret"`
+
+	Init2FA struct {
+		Disable bool `optional name:"disable" help:"Disable 2fa flow"`
+	} `cmd name:"2fa" help:"Setup 2fa flow"`
 }
 
 var (
@@ -102,12 +107,42 @@ func main() {
 	}
 	logger.SetLevel(defaultLogLevel)
 
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		logger.WithError(err).Fatal("could not get home directory dir")
+	}
+
+	tfAuthentication := tfa.NewTwoFactorAuthentication(logger, []string{
+		fmt.Sprintf("%s/.teller/2fa", homeDir),
+		"/etc/.teller/2fa",
+	})
+
+	// Ignore 2fa validation if the command type is `init-2fa`, and the value is disabled is false.
+	// if the user wants disable the 2fa, he must run it with Sudo permissions
+	if !CLI.Init2FA.Disable {
+		err = tfAuthentication.Prompt(fmt.Sprintf("teller %s", ctx.Command()))
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+	}
+
 	// below commands don't require a tellerfile
 	//nolint
 	switch ctx.Command() {
 	case "version":
 		fmt.Printf("Teller %v\n", version)
 		fmt.Printf("Revision %v, date: %v\n", commit, date)
+		os.Exit(0)
+	case "2fa":
+		if CLI.Init2FA.Disable {
+			// todo:: need to delete 2fa file
+			err = tfAuthentication.Disable()
+		} else {
+			err = tfAuthentication.Enable()
+		}
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
 		os.Exit(0)
 	}
 

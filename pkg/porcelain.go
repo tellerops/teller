@@ -74,6 +74,36 @@ func (p *Porcelain) StartWizard() (*core.WizardAnswers, error) {
 	return &answers, nil
 }
 
+func (p *Porcelain) StartTwoFAWizard(types map[string]string, paths []string) (*core.TfaWizardAnswers, error) {
+
+	var qs = []*survey.Question{
+		{
+			Name: "type",
+			Prompt: &survey.Select{
+				Message: "Choose the 2fa type",
+				Options: lo.Keys(types),
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "path",
+			Prompt: &survey.Select{
+				Message: "Select configuration path",
+				Options: paths,
+			},
+			Validate: survey.Required,
+		},
+	}
+
+	answers := core.TfaWizardAnswers{}
+	err := survey.Ask(qs, &answers)
+	if err != nil {
+		return nil, err
+	}
+
+	return &answers, nil
+
+}
 func (p *Porcelain) DidCreateNewFile(fname string) {
 	green := color.New(color.FgGreen).SprintFunc()
 	fmt.Fprintf(p.Out, "Created file: %v\n", green(fname))

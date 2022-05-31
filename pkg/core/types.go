@@ -30,6 +30,11 @@ type WizardAnswers struct {
 	Confirm      bool
 }
 
+type TfaWizardAnswers struct {
+	Type string
+	Path string
+}
+
 func (k *KeyPath) EffectiveKey() string {
 	key := k.Env
 	if k.Field != "" {
