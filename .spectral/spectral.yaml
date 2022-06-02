@@ -1,0 +1,26 @@
+# Spectral
+# 
+# Here's a result run of the initial configuration, placed in '.spectral/'
+#
+# $ spectral
+#
+# [sample] ------------- summary -------------
+# [sample] AWS0001 - No AWS secrets in python files.
+# sp
+# - /../spectral/src/sp.py (AKIA223)
+# [sample] total 8 byte(s), 1 file(s), 1 match(es) in 14ms
+#
+#
+
+match_ignores:
+    ignores:
+    - rule_id: SENF033
+      path: pkg/providers/mock_providers/keypass.kdbx
+    - rule_id: SENF073
+      path: fixtures/sync/source.env
+    - rule_id: SENF073
+      path: fixtures/mirror-drift/source.env
+    - rule_id: SENF073
+      path: fixtures/sync/target2.env
+    - rule_id: SENF073
+      path: fixtures/mirror-drift/target.env
