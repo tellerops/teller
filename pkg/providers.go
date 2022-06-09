@@ -18,7 +18,7 @@ type BuiltinProviders struct {
 }
 
 func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
-	providers := map[string]string{
+	providerList := map[string]string{
 		"Heroku":                      "heroku",
 		"Vault by Hashicorp":          "hashicorp_vault",
 		"AWS SSM (aka paramstore)":    "aws_ssm",
@@ -42,10 +42,10 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 	}
 
 	if runtime.GOOS == "darwin" {
-		providers["Mac Keychain"] = "mac_keychain"
+		providerList["Mac Keychain"] = "mac_keychain" //nolint
 	}
 
-	return providers
+	return providerList
 
 }
 
