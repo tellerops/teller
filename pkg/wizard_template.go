@@ -257,4 +257,18 @@ providers:
         path: redis/config/foobar
 
 {{end}}
+
+{{- if index .ProviderKeys "mac_keychain" }}
+
+  # path's should be a json with the following attribute: service, account, label and accessGroup
+  # In get/delete the result of the attributes query need to be a single entity. When using mapping option, multiple entities can be returned 
+
+  mac_keychain:
+    env_sync:
+      path: '{"service": "my-service", "account": "my-account"}'
+    env:
+      ETC_DSN:
+        path: '{"service": "my-service", "account": "my-account","label": "label", "accessGroup": "access-group"}'
+
+{{end}}
 `

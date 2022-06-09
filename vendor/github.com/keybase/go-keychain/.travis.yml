@@ -1,0 +1,20 @@
+language: go
+
+os:
+    - osx
+    - linux
+
+before_install:
+  - go get golang.org/x/lint/golint
+
+script:
+  - go vet ./...
+  - golint ./...
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.43.0
+  - golangci-lint run
+  - go test -tags skipsecretserviceintegrationtests ./...
+
+go:
+  - 1.15.x
+  - 1.16.x
+  - 1.17.x

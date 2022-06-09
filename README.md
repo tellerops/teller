@@ -1157,6 +1157,34 @@ providers:
         path: bar
 ```
 
+## Mac Keychain
+
+Path's should be a JSON with the following attributes:
+```json
+{
+  "service": "my-service",
+  "account": "my-account",
+  "label": "label",
+  "accessGroup": "access-group"
+}
+```
+### Features
+
+* Sync - `no`
+* Mapping - `yes`
+* Modes - `read+write+delete`
+
+### Example Config
+
+```yaml
+providers:
+  mac_keychain:
+      env_sync:
+        path: '{"service": "my-service", "account": "my-account"}'
+      env:
+        ETC_DSN:
+          path: '{"service": "my-service", "account": "my-account","label": "label", "accessGroup": "access-group"}'
+```
 
 # Semantics
 

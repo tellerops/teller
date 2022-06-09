@@ -460,6 +460,9 @@ github.com/karrick/godirwalk
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 ## explicit
 github.com/kballard/go-shellquote
+# github.com/keybase/go-keychain v0.0.0-20220506172723-c18928ccd7f2
+## explicit; go 1.17
+github.com/keybase/go-keychain
 # github.com/mattn/go-colorable v0.1.11
 ## explicit; go 1.13
 github.com/mattn/go-colorable
