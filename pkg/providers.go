@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/logging"
@@ -17,7 +18,7 @@ type BuiltinProviders struct {
 }
 
 func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
-	return map[string]string{
+	providers := map[string]string{
 		"Heroku":                      "heroku",
 		"Vault by Hashicorp":          "hashicorp_vault",
 		"AWS SSM (aka paramstore)":    "aws_ssm",
@@ -38,8 +39,14 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		"GitHub":                      "github",
 		"KeyPass":                     "keypass",
 		"FileSystem":                  "filesystem",
-		"Mac Keychain":                "mac_keychain",
 	}
+
+	if runtime.GOOS == "darwin" {
+		providers["Mac Keychain"] = "mac_keychain"
+	}
+
+	return providers
+
 }
 
 func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) { //nolint

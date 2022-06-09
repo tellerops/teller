@@ -1,10 +1,13 @@
+//go:build darwin
+// +build darwin
+
 package providers
 
 import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/keybase/go-keychain"
+	keychain "github.com/keybase/go-keychain"
 	"github.com/spectralops/teller/pkg/core"
 
 	"github.com/spectralops/teller/pkg/logging"
