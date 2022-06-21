@@ -187,13 +187,17 @@ func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error
 			return nil, fmt.Errorf("data not found at %q", kp.Path)
 		}
 
-		var secret map[string]string
+		var secret map[string]interface{}
 		err = json.Unmarshal([]byte(*res.SecretString), &secret)
 		if err != nil {
 			return nil, err
 		}
 
-		return secret, nil
+		stringParse := map[string]string{}
+		for k, v := range secret {
+			stringParse[k] = fmt.Sprintf("%v", v)
+		}
+		return stringParse, nil
 	case errors.As(err, &resNotFoundErr):
 		// doesn't exist - do not treat as an error
 		return nil, nil
