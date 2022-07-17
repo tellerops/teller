@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
@@ -32,6 +33,7 @@ type AWSSecretsManager struct {
 }
 
 const defaultDeletionRecoveryWindowInDays = 7
+const versionSplit = ","
 
 func NewAWSSecretsManager(logger logging.Logger) (core.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(context.Background())
@@ -174,7 +176,20 @@ func (a *AWSSecretsManager) DeleteMapping(kp core.KeyPath) error {
 
 func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error) {
 	a.logger.WithField("path", kp.Path).Debug("get secret value")
-	res, err := a.client.GetSecretValue(context.Background(), &secretsmanager.GetSecretValueInput{SecretId: &kp.Path})
+	valueInput := secretsmanager.GetSecretValueInput{SecretId: &kp.Path}
+
+	splitVersion := strings.Split(kp.Path, versionSplit)
+	//nolint:gomnd
+	if len(splitVersion) == 2 {
+		a.logger.WithFields(map[string]interface{}{
+			"path":    splitVersion[0],
+			"version": splitVersion[1],
+		}).Debug("add version")
+		valueInput.SecretId = &splitVersion[0]
+		valueInput.VersionId = &splitVersion[1]
+	}
+
+	res, err := a.client.GetSecretValue(context.Background(), &valueInput)
 
 	var (
 		resNotFoundErr *smtypes.ResourceNotFoundException

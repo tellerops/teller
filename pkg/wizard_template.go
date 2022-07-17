@@ -67,6 +67,7 @@ providers:
 
 {{- if index .ProviderKeys "aws_secretsmanager" }}
   # configure only from environment
+  # filter secret versioning by adding comma separating in path value (path: prod/foo/bar,<VERSION>).
   aws_secretsmanager:
     env_sync:
       path: prod/foo/bar
