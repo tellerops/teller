@@ -49,7 +49,7 @@ func NewTeller(tlrfile *TellerFile, cmd []string, redact bool, logger logging.Lo
 		Cmd:        cmd,
 		Providers:  &BuiltinProviders{},
 		Populate:   core.NewPopulate(tlrfile.Opts),
-		Porcelain:  &Porcelain{Out: os.Stdout},
+		Porcelain:  &Porcelain{Out: os.Stderr},
 		Templating: &Templating{},
 		Redactor:   &Redactor{},
 		Logger:     logger,
