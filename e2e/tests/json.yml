@@ -31,7 +31,7 @@ init_snapshot:
     file_name: secret-c
     content: shazam-1
 expected_snapshot:
-expected_stdout: >-
+expected_stderr: >-
   {
     "BAR": "shazam",
     "FOO": "shazam",
@@ -39,4 +39,4 @@ expected_stdout: >-
     "secret-b": "shazam",
     "secret-c": "shazam-1"
   }
-expected_stderr: 
+expected_stdout: 

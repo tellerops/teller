@@ -36,7 +36,7 @@ expected_snapshot:
 replace_stdout_content:
   - search: "matches in [0-9].[0-9]+(.*)"
     replace: matches in 1.000ms
-expected_stdout: |
+expected_stderr: |
   [high] settings/test/all/secret-a (1,0): found match for filesystem/secret-a (ma*****)
   [high] settings/test/all/secret-b (1,0): found match for filesystem/secret-b (sh*****)
   [low] settings/test/all/secret-b (1,0): found match for filesystem/FOO (sh*****)
@@ -49,4 +49,4 @@ expected_stdout: |
   [medium] settings/test/foo (1,0): found match for filesystem/BAR (sh*****)
 
   Scanning for 4 entries: found 10 matches in 1.000ms
-expected_stderr: 
+expected_stdout: 
