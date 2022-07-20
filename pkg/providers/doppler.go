@@ -45,7 +45,10 @@ func (h *Doppler) Name() string {
 	return "doppler"
 }
 func (h *Doppler) Meta() core.MetaInfo {
-	return core.MetaInfo{}
+	return core.MetaInfo{
+		Description: "Doppler",
+		Ops:         core.OpMatrix{Get: true},
+	}
 }
 
 func (h *Doppler) Put(p core.KeyPath, val string) error {

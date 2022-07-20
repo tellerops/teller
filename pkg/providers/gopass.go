@@ -40,7 +40,7 @@ func (g *Gopass) Name() string {
 
 func (g *Gopass) Meta() core.MetaInfo {
 	return core.MetaInfo{
-		Description:    "gopass",
+		Description:    "Gopass",
 		Authentication: "Configuration is environment based, as defined by client standard. See variables [here](https://github.com/gopasspw/gopass/blob/master/docs/config.md).",
 		ConfigTemplate: `
   # Override default configuration: https://github.com/gopasspw/gopass/blob/master/docs/config.md

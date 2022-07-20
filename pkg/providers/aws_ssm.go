@@ -35,7 +35,7 @@ func (a *AWSSSM) Name() string {
 
 func (a *AWSSSM) Meta() core.MetaInfo {
 	return core.MetaInfo{
-		Description:    "AWS Secrets Manager",
+		Description:    "AWS SSM (aka paramstore)",
 		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment",
 		ConfigTemplate: `
   # configure only from environment

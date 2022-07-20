@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -28,6 +29,8 @@ func (p *Porcelain) StartWizard() (*core.WizardAnswers, error) {
 
 	providers := BuiltinProviders{}
 	providerNames := providers.ProviderHumanToMachine()
+	displayProviders := lo.Keys(providerNames)
+	sort.Strings(displayProviders)
 	// the questions to ask
 	var qs = []*survey.Question{
 		{
@@ -43,7 +46,7 @@ func (p *Porcelain) StartWizard() (*core.WizardAnswers, error) {
 			Prompt: &survey.MultiSelect{
 				Message:  "Select your secret providers",
 				PageSize: 10,
-				Options:  lo.Keys(providerNames),
+				Options:  displayProviders,
 			},
 		},
 		{
