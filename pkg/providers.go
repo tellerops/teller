@@ -45,57 +45,24 @@ func activeProviders(p *BuiltinProviders) []core.Provider {
 
 func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 	activeProviders := activeProviders(p)
-	m := make(map[string]string)
+	descriptionToNameMap := make(map[string]string)
 	for _, provider := range activeProviders {
-		m[provider.Meta().Description] = provider.Name()
+		descriptionToNameMap[provider.Meta().Description] = provider.Name()
 	}
-	return m
+	return descriptionToNameMap
 }
 
 func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) { //nolint
-	logger := logging.GetRoot().WithField("provider_name", name)
-	switch name {
-	case "hashicorp_vault":
-		return providers.NewHashicorpVault(logger)
-	case "aws_ssm":
-		return providers.NewAWSSSM(logger)
-	case "aws_secretsmanager":
-		return providers.NewAWSSecretsManager(logger)
-	case "heroku":
-		return providers.NewHeroku(logger)
-	case "google_secretmanager":
-		return providers.NewGoogleSecretManager(logger)
-	case "etcd":
-		return providers.NewEtcd(logger)
-	case "consul":
-		return providers.NewConsul(logger)
-	case "dotenv":
-		return providers.NewDotenv(logger)
-	case "vercel":
-		return providers.NewVercel(logger)
-	case "azure_keyvault":
-		return providers.NewAzureKeyVault(logger)
-	case "doppler":
-		return providers.NewDoppler(logger)
-	case "cyberark_conjur":
-		return providers.NewConjurClient(logger)
-	case "cloudflare_workers_kv":
-		return providers.NewCloudflareClient(logger)
-	case "cloudflare_workers_secrets":
-		return providers.NewCloudflareSecretsClient(logger)
-	case "1password":
-		return providers.NewOnePassword(logger)
-	case "gopass":
-		return providers.NewGopass(logger)
-	case "lastpass":
-		return providers.NewLastPass(logger)
-	case "github":
-		return providers.NewGitHub(logger)
-	case "keypass":
-		return providers.NewKeyPass(logger)
-	case "filesystem":
-		return providers.NewFileSystem(logger)
-	default:
-		return nil, fmt.Errorf("provider '%s' does not exist", name)
+	providerByName := make(map[string]core.Provider)
+	activeProviders := activeProviders(p)
+	for _, provider := range activeProviders {
+		providerByName[provider.Name()] = provider
 	}
+	if _, ok := providerByName[name]; ok {
+		logger := logging.GetRoot().WithField("provider_name", name)
+		return providerByName[name].Init(logger)
+	}
+
+	return nil, fmt.Errorf("provider '%s' does not exist", name)
+
 }

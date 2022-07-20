@@ -1,6 +1,10 @@
 package core
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/spectralops/teller/pkg/logging"
+)
 
 type Severity string
 
@@ -197,6 +201,7 @@ type Provider interface {
 
 	Delete(p KeyPath) error
 	DeleteMapping(p KeyPath) error
+	Init(logger logging.Logger) (Provider, error)
 }
 
 type MetaInfo struct {

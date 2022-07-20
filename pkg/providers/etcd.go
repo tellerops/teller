@@ -29,7 +29,7 @@ type Etcd struct {
 	logger logging.Logger
 }
 
-func NewEtcd(logger logging.Logger) (core.Provider, error) {
+func (a *Etcd) Init(logger logging.Logger) (core.Provider, error) {
 	epstring := os.Getenv("ETCDCTL_ENDPOINTS")
 	if epstring == "" {
 		return nil, fmt.Errorf("cannot find ETCDCTL_ENDPOINTS for etcd")

@@ -20,7 +20,7 @@ type AzureKeyVault struct {
 	vaultName string
 }
 
-func NewAzureKeyVault(logger logging.Logger) (core.Provider, error) {
+func (a *AzureKeyVault) Init(logger logging.Logger) (core.Provider, error) {
 	vaultName := os.Getenv("KVAULT_NAME")
 	if vaultName == "" {
 		return nil, fmt.Errorf("cannot find KVAULT_NAME for azure key vault")

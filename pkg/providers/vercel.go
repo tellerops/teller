@@ -65,7 +65,7 @@ const VERCEL_API_BASE = "https://api.vercel.com/"
 //nolint: golint
 const PROJECTS_ENDPOINT = "/projects"
 
-func NewVercel(logger logging.Logger) (core.Provider, error) {
+func (a *Vercel) Init(logger logging.Logger) (core.Provider, error) {
 	vercelToken := os.Getenv("VERCEL_TOKEN")
 	if vercelToken == "" {
 		return nil, fmt.Errorf("please set VERCEL_TOKEN")

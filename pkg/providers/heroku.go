@@ -20,7 +20,7 @@ type Heroku struct {
 	logger logging.Logger
 }
 
-func NewHeroku(logger logging.Logger) (core.Provider, error) {
+func (a *Heroku) Init(logger logging.Logger) (core.Provider, error) {
 	heroku.DefaultTransport.BearerToken = os.Getenv("HEROKU_API_KEY")
 
 	svc := heroku.NewService(heroku.DefaultClient)

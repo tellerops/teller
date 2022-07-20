@@ -30,7 +30,7 @@ type Doppler struct {
 	config models.ScopedOptions
 }
 
-func NewDoppler(logger logging.Logger) (core.Provider, error) {
+func (a *Doppler) Init(logger logging.Logger) (core.Provider, error) {
 	configuration.Setup()
 	configuration.LoadConfig()
 

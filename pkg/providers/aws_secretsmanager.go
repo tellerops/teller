@@ -33,7 +33,7 @@ type AWSSecretsManager struct {
 
 const defaultDeletionRecoveryWindowInDays = 7
 
-func NewAWSSecretsManager(logger logging.Logger) (core.Provider, error) {
+func (a *AWSSecretsManager) Init(logger logging.Logger) (core.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		return nil, err

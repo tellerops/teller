@@ -22,7 +22,7 @@ type Consul struct {
 	logger logging.Logger
 }
 
-func NewConsul(logger logging.Logger) (core.Provider, error) {
+func (a *Consul) Init(logger logging.Logger) (core.Provider, error) {
 	df := api.DefaultConfig()
 	client, err := api.NewClient(df)
 	if err != nil {

@@ -17,7 +17,7 @@ func TestKetPass(t *testing.T) {
 
 	os.Setenv("KEYPASS_DB_PATH", path.Join(path.Dir(filename), "mock_providers", "keypass.kdbx"))
 
-	k, err := NewKeyPass(GetTestLogger())
+	k, err := (&KeyPass{}).Init(GetTestLogger())
 	assert.Nil(t, err)
 	AssertProvider(t, k, false)
 	p := core.NewPopulate(map[string]string{"stage": "prod"})
@@ -34,7 +34,7 @@ func TestKeypassFailures(t *testing.T) {
 
 	os.Setenv("KEYPASS_DB_PATH", path.Join(path.Dir(filename), "mock_providers", "keypass.kdbx"))
 
-	k, _ := NewKeyPass(GetTestLogger())
+	k, _ := (&KeyPass{}).Init(GetTestLogger())
 	_, err := k.Get(core.KeyPath{Env: "NOT_EXISTS", Path: "settings"})
 	assert.NotNil(t, err)
 

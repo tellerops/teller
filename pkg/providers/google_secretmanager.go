@@ -20,7 +20,7 @@ type GoogleSecretManager struct {
 	logger logging.Logger
 }
 
-func NewGoogleSecretManager(logger logging.Logger) (core.Provider, error) {
+func (a *GoogleSecretManager) Init(logger logging.Logger) (core.Provider, error) {
 	client, err := secretmanager.NewClient(context.TODO())
 	if err != nil {
 		return nil, err

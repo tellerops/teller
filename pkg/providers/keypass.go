@@ -23,8 +23,7 @@ type KeyPass struct {
 }
 
 // NewKeyPass creates new provider instance
-func NewKeyPass(logger logging.Logger) (core.Provider, error) {
-
+func (a *KeyPass) Init(logger logging.Logger) (core.Provider, error) {
 	password := os.Getenv("KEYPASS_PASSWORD")
 	if password == "" {
 		return nil, errors.New("missing `KEYPASS_PASSWORD`")

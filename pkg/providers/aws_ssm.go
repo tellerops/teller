@@ -18,7 +18,7 @@ type AWSSSM struct {
 	logger logging.Logger
 }
 
-func NewAWSSSM(logger logging.Logger) (core.Provider, error) {
+func (a *AWSSSM) Init(logger logging.Logger) (core.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		return nil, err

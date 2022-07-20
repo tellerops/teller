@@ -22,8 +22,7 @@ type LastPass struct {
 	logger   logging.Logger
 }
 
-func NewLastPass(logger logging.Logger) (core.Provider, error) {
-
+func (a *LastPass) Init(logger logging.Logger) (core.Provider, error) {
 	username := os.Getenv("LASTPASS_USERNAME")
 	masterPassword := os.Getenv("LASTPASS_PASSWORD")
 

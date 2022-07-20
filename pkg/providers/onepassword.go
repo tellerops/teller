@@ -19,8 +19,7 @@ type OnePassword struct {
 	logger logging.Logger
 }
 
-func NewOnePassword(logger logging.Logger) (core.Provider, error) {
-
+func (a *OnePassword) Init(logger logging.Logger) (core.Provider, error) {
 	client, err := connect.NewClientFromEnvironment()
 	if err != nil {
 		return nil, err

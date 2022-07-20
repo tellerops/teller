@@ -22,8 +22,7 @@ type FileSystem struct {
 }
 
 // NewFileSystem creates new provider instance
-func NewFileSystem(logger logging.Logger) (core.Provider, error) {
-
+func (a *FileSystem) Init(logger logging.Logger) (core.Provider, error) {
 	return &FileSystem{
 		logger:        logger,
 		rootDirectory: "",

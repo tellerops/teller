@@ -23,7 +23,7 @@ type Cloudflare struct {
 	logger logging.Logger
 }
 
-func NewCloudflareClient(logger logging.Logger) (core.Provider, error) {
+func (a *Cloudflare) Init(logger logging.Logger) (core.Provider, error) {
 	api, err := cloudflare.New(
 		os.Getenv("CLOUDFLARE_API_KEY"),
 		os.Getenv("CLOUDFLARE_API_EMAIL"),

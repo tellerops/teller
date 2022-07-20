@@ -27,7 +27,7 @@ type CyberArkConjur struct {
 	logger logging.Logger
 }
 
-func NewConjurClient(logger logging.Logger) (core.Provider, error) {
+func (a *CyberArkConjur) Init(logger logging.Logger) (core.Provider, error) {
 	config, err := conjurapi.LoadConfig()
 	if err != nil {
 		return nil, err

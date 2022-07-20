@@ -34,8 +34,7 @@ type GitHub struct {
 }
 
 // NewGitHub create new GitHub provider
-func NewGitHub(logger logging.Logger) (core.Provider, error) {
-
+func (a *GitHub) Init(logger logging.Logger) (core.Provider, error) {
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
 	if token == "" {
 		return nil, errors.New("missing `GITHUB_AUTH_TOKEN`")

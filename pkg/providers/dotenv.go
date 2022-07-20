@@ -96,7 +96,7 @@ type Dotenv struct {
 	logger logging.Logger
 }
 
-func NewDotenv(logger logging.Logger) (core.Provider, error) {
+func (a *Dotenv) Init(logger logging.Logger) (core.Provider, error) {
 	return &Dotenv{
 		client: &DotEnvReader{},
 		logger: logger,

@@ -24,8 +24,7 @@ type Gopass struct {
 	logger logging.Logger
 }
 
-func NewGopass(logger logging.Logger) (core.Provider, error) {
-
+func (a *Gopass) Init(logger logging.Logger) (core.Provider, error) {
 	ctx := context.Background()
 	gp, err := api.New(ctx)
 	if err != nil {
