@@ -4,7 +4,7 @@ command: <binary-path> scan
 config_file_name: .teller.yml
 config_content: >
   project: test
-
+  
   providers:
     filesystem:
       env_sync:
@@ -33,7 +33,7 @@ init_snapshot:
     file_name: secret-b
     content: shazam
 expected_snapshot:
-replace_stdout_content:
+replace_stderr_content:
   - search: "matches in [0-9].[0-9]+(.*)"
     replace: matches in 1.000ms
 expected_stderr: |

@@ -75,6 +75,12 @@ func TestE2E(t *testing.T) {
 					stdout = re.ReplaceAllString(stdout, r.Replace)
 				}
 			}
+			if len(snapshot.ReplaceStdErrContent) > 0 {
+				for _, r := range snapshot.ReplaceStdErrContent {
+					var re = regexp.MustCompile(r.Search)
+					stderr = re.ReplaceAllString(stderr, r.Replace)
+				}
+			}
 
 			if snapshot.ExpectedStdOut != "" {
 				assert.Equal(t, snapshot.ExpectedStdOut, stdout)

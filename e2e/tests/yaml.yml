@@ -31,11 +31,11 @@ init_snapshot:
     file_name: secret-c
     content: shazam-1
 expected_snapshot:
-expected_stderr: |
+expected_stdout: |
   BAR: shazam
   FOO: shazam
   secret-a: mailman
   secret-b: shazam
   secret-c: shazam-1
 
-expected_stdout: 
+expected_stderr: 

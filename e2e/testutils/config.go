@@ -11,15 +11,16 @@ import (
 )
 
 type SnapshotSuite struct {
-	Name                 string                 `yaml:"name,omitempty"`
-	Command              string                 `yaml:"command,omitempty"`
-	ConfigFileName       string                 `yaml:"config_file_name,omitempty"`
-	Config               string                 `yaml:"config_content,omitempty"`
-	InitSnapshot         []SnapshotData         `yaml:"init_snapshot,omitempty"`
-	ExpectedSnapshot     []SnapshotData         `yaml:"expected_snapshot,omitempty"`
-	ExpectedStdOut       string                 `yaml:"expected_stdout,omitempty"`
-	ExpectedStdErr       string                 `yaml:"expected_stderr,omitempty"`
-	ReplaceStdOutContent []ReplaceStdOutContent `yaml:"replace_stdout_content,omitempty"`
+	Name                 string              `yaml:"name,omitempty"`
+	Command              string              `yaml:"command,omitempty"`
+	ConfigFileName       string              `yaml:"config_file_name,omitempty"`
+	Config               string              `yaml:"config_content,omitempty"`
+	InitSnapshot         []SnapshotData      `yaml:"init_snapshot,omitempty"`
+	ExpectedSnapshot     []SnapshotData      `yaml:"expected_snapshot,omitempty"`
+	ExpectedStdOut       string              `yaml:"expected_stdout,omitempty"`
+	ExpectedStdErr       string              `yaml:"expected_stderr,omitempty"`
+	ReplaceStdOutContent []ReplaceStdContent `yaml:"replace_stdout_content,omitempty"`
+	ReplaceStdErrContent []ReplaceStdContent `yaml:"replace_stderr_content,omitempty"`
 }
 
 type SnapshotData struct {
@@ -28,7 +29,7 @@ type SnapshotData struct {
 	Content  string `yaml:"content"`
 }
 
-type ReplaceStdOutContent struct {
+type ReplaceStdContent struct {
 	Search  string `yaml:"search"`
 	Replace string `yaml:"replace"`
 }
