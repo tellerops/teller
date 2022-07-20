@@ -23,7 +23,7 @@ const (
 	testsFolder              = "tests"
 )
 
-func TestE2E(t *testing.T) {
+func TestE2E(t *testing.T) { //nolint
 	t.Parallel()
 
 	// validate given binary path
