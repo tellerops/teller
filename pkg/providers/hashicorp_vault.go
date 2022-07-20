@@ -129,7 +129,7 @@ func (h *HashicorpVault) getSecret(kp core.KeyPath) (*api.Secret, error) {
 	}
 
 	if secret == nil || len(secret.Data) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("secret not found in path: %s", kp.Path)
 	}
 
 	if len(secret.Warnings) > 0 {
