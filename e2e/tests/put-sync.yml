@@ -52,7 +52,7 @@ expected_snapshot:
   - path: settings/test/all
     file_name: key-2
     content: key-2-content
-expected_stdout: |
+expected_stderr: |
   Synced filesystem (DYNAMIC-FULL-PATH/settings/test/all): OK.
 
-expected_stderr: 
+expected_stdout: 

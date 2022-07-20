@@ -31,7 +31,7 @@ init_snapshot:
     file_name: secret-c
     content: shazam-1
 expected_snapshot:
-expected_stdout: |
+expected_stderr: |
   -*- teller: loaded variables for test using .teller.yml -*-
   
   [filesystem DYNAMIC-SHORT-PATH...tings/test/bar] BAR = sh*****
@@ -40,4 +40,4 @@ expected_stdout: |
   [filesystem DYNAMIC-SHORT-PATH...tings/test/all] secret-b = sh*****
   [filesystem DYNAMIC-SHORT-PATH...tings/test/all] secret-c = sh*****
 
-expected_stderr: 
+expected_stdout: 

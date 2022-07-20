@@ -15,9 +15,9 @@ init_snapshot:
     file_name: foo
     content: shazam
 expected_snapshot:
-expected_stdout: |
+expected_stderr: |
   -*- teller: loaded variables for test using .custom-teller.yml -*-
   
   [filesystem DYNAMIC-SHORT-PATH...tings/test/foo] FOO = sh*****
 
-expected_stderr: 
+expected_stdout: 

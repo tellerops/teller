@@ -41,8 +41,8 @@ expected_snapshot:
     file_name: secret-c
     content: shazam-1
 
-expected_stdout: |
+expected_stderr: |
   Delete FOO (DYNAMIC-FULL-PATH/settings/test/foo) in filesystem: OK.
   Delete BAR (DYNAMIC-FULL-PATH/settings/test/bar) in filesystem: OK.
 
-expected_stderr: 
+expected_stdout: 

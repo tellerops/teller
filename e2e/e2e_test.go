@@ -23,7 +23,7 @@ const (
 	testsFolder              = "tests"
 )
 
-func TestE2E(t *testing.T) {
+func TestE2E(t *testing.T) { //nolint
 	t.Parallel()
 
 	// validate given binary path
@@ -73,6 +73,12 @@ func TestE2E(t *testing.T) {
 				for _, r := range snapshot.ReplaceStdOutContent {
 					var re = regexp.MustCompile(r.Search)
 					stdout = re.ReplaceAllString(stdout, r.Replace)
+				}
+			}
+			if len(snapshot.ReplaceStdErrContent) > 0 {
+				for _, r := range snapshot.ReplaceStdErrContent {
+					var re = regexp.MustCompile(r.Search)
+					stderr = re.ReplaceAllString(stderr, r.Replace)
 				}
 			}
 

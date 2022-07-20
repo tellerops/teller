@@ -4,7 +4,7 @@ command: <binary-path> scan
 config_file_name: .teller.yml
 config_content: >
   project: test
-
+  
   providers:
     filesystem:
       env_sync:
@@ -47,6 +47,5 @@ expected_stdout: |
   [high] settings/test/foo (1,0): found match for filesystem/secret-b (sh*****)
   [low] settings/test/foo (1,0): found match for filesystem/FOO (sh*****)
   [medium] settings/test/foo (1,0): found match for filesystem/BAR (sh*****)
-
   Scanning for 4 entries: found 10 matches in 1.000ms
 expected_stderr: 
