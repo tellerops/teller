@@ -84,6 +84,19 @@ func NewInMemProvider(alwaysError bool) (Providers, error) {
 	}, nil
 
 }
+
+func (a *InMemProvider) Init(logger logging.Logger) (core.Provider, error) {
+	return &InMemProvider{
+		inmem: map[string]string{
+			"prod/billing/FOO":          "foo_shazam",
+			"prod/billing/MG_KEY":       "mg_shazam",
+			"prod/billing/BEFORE_REMAP": "test_env_remap",
+		},
+		alwaysError: false,
+	}, nil
+
+}
+
 func (im *InMemProvider) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	if im.alwaysError {
 		return nil, errors.New("error")

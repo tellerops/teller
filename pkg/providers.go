@@ -16,7 +16,7 @@ type Providers interface {
 type BuiltinProviders struct {
 }
 
-func activeProviders(p *BuiltinProviders) []core.Provider {
+func ActiveProviders(p *BuiltinProviders) []core.Provider {
 	providers := []core.Provider{
 		&providers.Heroku{},
 		&providers.HashicorpVault{},
@@ -44,7 +44,7 @@ func activeProviders(p *BuiltinProviders) []core.Provider {
 }
 
 func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
-	activeProviders := activeProviders(p)
+	activeProviders := ActiveProviders(p)
 	descriptionToNameMap := make(map[string]string)
 	for _, provider := range activeProviders {
 		descriptionToNameMap[provider.Meta().Description] = provider.Name()
@@ -54,7 +54,7 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 
 func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) { //nolint
 	providerByName := make(map[string]core.Provider)
-	activeProviders := activeProviders(p)
+	activeProviders := ActiveProviders(p)
 	for _, provider := range activeProviders {
 		providerByName[provider.Name()] = provider
 	}

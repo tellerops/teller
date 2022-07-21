@@ -18,22 +18,6 @@ type HashicorpVault struct {
 	logger logging.Logger
 }
 
-func NewHashicorpVault(logger logging.Logger) (core.Provider, error) {
-	conf := api.DefaultConfig()
-	err := conf.ReadEnvironment()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := api.NewClient(conf)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &HashicorpVault{client: client.Logical(), logger: logger}, nil
-}
-
 func (a *HashicorpVault) Init(logger logging.Logger) (core.Provider, error) {
 	conf := api.DefaultConfig()
 	err := conf.ReadEnvironment()
