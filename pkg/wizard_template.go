@@ -17,7 +17,7 @@ confirm: Are you sure you want to run on {{"{{stage}}"}}?
 # paths.
 #
 opts:
-  region: env:AWS_REGION    # you can get env variables with the 'env:' prefix
+  region: env:AWS_REGION    # you can get env variables with the 'env:' prefix, for default values if env not found use comma. Example: env:AWS_REGION,{DEFAULT_VALUE}
   stage: development
 
 
@@ -67,6 +67,7 @@ providers:
 
 {{- if index .ProviderKeys "aws_secretsmanager" }}
   # configure only from environment
+  # filter secret versioning by adding comma separating in path value (path: prod/foo/bar,<VERSION>).
   aws_secretsmanager:
     env_sync:
       path: prod/foo/bar

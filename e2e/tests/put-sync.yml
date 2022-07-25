@@ -1,0 +1,58 @@
+---
+name: Put with --sync flag
+command: <binary-path> put key-1=key-1-content key-2=key-2-content --providers filesystem --sync
+config_file_name: .teller.yml
+config_content: >
+  project: test
+
+  providers:
+    filesystem:
+      env_sync:
+        path: {{.Folder}}/settings/test/all
+      env:
+        FOO:
+          path: {{.Folder}}/settings/test/foo
+        BAR:
+          path: {{.Folder}}/settings/test/bar
+init_snapshot:
+  - path: settings/test
+    file_name: foo
+    content: shazam
+  - path: settings/test
+    file_name: bar
+    content: shazam
+  - path: settings/test/all
+    file_name: secret-a
+    content: mailman
+  - path: settings/test/all
+    file_name: secret-b
+    content: shazam
+  - path: settings/test/all
+    file_name: secret-c
+    content: shazam-1
+expected_snapshot:
+  - path: settings/test
+    file_name: foo
+    content: shazam
+  - path: settings/test
+    file_name: bar
+    content: shazam
+  - path: settings/test/all
+    file_name: secret-a
+    content: mailman
+  - path: settings/test/all
+    file_name: secret-b
+    content: shazam
+  - path: settings/test/all
+    file_name: secret-c
+    content: shazam-1
+  - path: settings/test/all
+    file_name: key-1
+    content: key-1-content
+  - path: settings/test/all
+    file_name: key-2
+    content: key-2-content
+expected_stderr: |
+  Synced filesystem (DYNAMIC-FULL-PATH/settings/test/all): OK.
+
+expected_stdout: 

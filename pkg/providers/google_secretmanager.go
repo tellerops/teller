@@ -3,6 +3,9 @@ package providers
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"sort"
+	"strings"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
@@ -10,10 +13,14 @@ import (
 	"github.com/googleapis/gax-go/v2"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/logging"
+	"google.golang.org/api/iterator"
 )
 
 type GoogleSMClient interface {
 	AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error)
+	DestroySecretVersion(ctx context.Context, req *secretmanagerpb.DestroySecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.SecretVersion, error)
+	ListSecrets(ctx context.Context, in *secretmanagerpb.ListSecretsRequest, opts ...gax.CallOption) *secretmanager.SecretIterator
+	AddSecretVersion(ctx context.Context, req *secretmanagerpb.AddSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.SecretVersion, error)
 }
 type GoogleSecretManager struct {
 	client GoogleSMClient
@@ -36,7 +43,7 @@ func init() {
         # need to supply the relevant version (versions/1)
         path: projects/123/secrets/FOO_GOOG/versions/1
 `,
-		Ops: core.OpMatrix{Get: true},
+		Ops: core.OpMatrix{Get: true, Put: true, Delete: true},
 	}
 
 	RegisterProvider(metaInfo, NewGoogleSecretManager)
@@ -51,18 +58,46 @@ func NewGoogleSecretManager(logger logging.Logger) (core.Provider, error) {
 }
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", GoogleSecretManagerName)
+	reg := regexp.MustCompile(`(?i)/versions/\d+$`)
+	res := reg.ReplaceAllString(p.Path, "")
+	return a.addSecret(res, val)
 }
 func (a *GoogleSecretManager) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", GoogleSecretManagerName)
+	for k, v := range m {
+		path := fmt.Sprintf("%v/secrets/%v", p.Path, k)
+		err := a.addSecret(path, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (a *GoogleSecretManager) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
-	return nil, fmt.Errorf("does not support full env sync (path: %s)", kp.Path)
+	secrets, err := a.getSecrets(kp.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := []core.EnvEntry{}
+
+	for _, val := range secrets {
+		path := fmt.Sprintf("%s/%s", val, "versions/latest")
+		secretVal, err := a.getSecret(path)
+		if err != nil {
+			return nil, err
+		}
+		key := strings.TrimPrefix(val, kp.Path)
+		entries = append(entries, kp.FoundWithKey(key, secretVal))
+	}
+	sort.Sort(core.EntriesByKey(entries))
+
+	return entries, nil
 }
 
 func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
-	secret, err := a.getSecret(p)
+	secret, err := a.getSecret(p.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -72,16 +107,16 @@ func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *GoogleSecretManager) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", GoogleSecretManagerName)
+	return a.deleteSecret(kp.Path)
 }
 
 func (a *GoogleSecretManager) DeleteMapping(kp core.KeyPath) error {
 	return fmt.Errorf("%s does not implement delete yet", GoogleSecretManagerName)
 }
 
-func (a *GoogleSecretManager) getSecret(kp core.KeyPath) (string, error) {
+func (a *GoogleSecretManager) getSecret(path string) (string, error) {
 	r := secretmanagerpb.AccessSecretVersionRequest{
-		Name: kp.Path,
+		Name: path,
 	}
 	a.logger.WithField("path", r.Name).Debug("get secret")
 
@@ -90,4 +125,45 @@ func (a *GoogleSecretManager) getSecret(kp core.KeyPath) (string, error) {
 		return "", err
 	}
 	return string(secret.Payload.Data), nil
+}
+
+func (a *GoogleSecretManager) deleteSecret(path string) error {
+	req := &secretmanagerpb.DestroySecretVersionRequest{
+		Name: path,
+	}
+	_, err := a.client.DestroySecretVersion(context.TODO(), req)
+	return err
+}
+
+func (a *GoogleSecretManager) addSecret(path, val string) error {
+	req := &secretmanagerpb.AddSecretVersionRequest{
+		Parent: path,
+		Payload: &secretmanagerpb.SecretPayload{
+			Data: []byte(val),
+		},
+	}
+
+	_, err := a.client.AddSecretVersion(context.TODO(), req)
+	return err
+}
+
+func (a *GoogleSecretManager) getSecrets(path string) ([]string, error) {
+	req := &secretmanagerpb.ListSecretsRequest{
+		Parent: path,
+	}
+	entries := []string{}
+
+	it := a.client.ListSecrets(context.TODO(), req)
+	for {
+		resp, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, resp.Name)
+	}
+	return entries, nil
 }

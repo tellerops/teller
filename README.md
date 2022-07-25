@@ -691,11 +691,12 @@ You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your enviro
 
 ### Features
 
-* Sync - `no`
+* Sync - `yes`
 * Mapping - `yes`
-* Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
+* Modes - `read+write+delete`
 * Key format 
   * `env` - path based, needs to include a version
+  * `env_sync` - your project's path (gets the secrets latest version), when using --sync a new secret version will be created
   * `decrypt` - available in this provider, will use KMS automatically
 
 
@@ -703,6 +704,9 @@ You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your enviro
 
 ```yaml
 google_secretmanager:
+  env_sync:
+    # secrets version is not relevant here since we are getting the latest version
+    path: projects/44882
   env:
     MG_KEY:
       # need to supply the relevant version (versions/1)
@@ -1124,6 +1128,35 @@ providers:
       ETC_DSN:
         path: /folder/bar
 ```
+
+## Azure
+
+### Authentication
+
+Two options for getting Azure authentication are available:
+1. Standard Azure [environment variable](https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authorization). (Enable by default)
+2. For get credentials via [az client](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) add `AZURE_CLI=1` to your environment variable
+
+Then set your vault-name by specific as environment variable: `KVAULT_NAME`
+
+### Features
+
+* Sync - `yes`
+* Mapping - `yes`
+* Modes - `read+write+delete`
+
+### Example Config
+
+```yaml
+providers:
+  azure_keyvault:
+    env_sync:
+      path: azure
+    env:
+      FOO:
+        path: bar
+```
+
 
 # Semantics
 

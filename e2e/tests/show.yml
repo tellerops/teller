@@ -1,0 +1,43 @@
+---
+name: Show entries
+command: <binary-path> show 
+config_file_name: .teller.yml
+config_content: >
+  project: test
+
+  providers:
+    filesystem:
+      env_sync:
+        path: {{.Folder}}/settings/test/all
+      env:
+        FOO:
+          path: {{.Folder}}/settings/test/foo
+        BAR:
+          path: {{.Folder}}/settings/test/bar
+init_snapshot:
+  - path: settings/test
+    file_name: foo
+    content: shazam
+  - path: settings/test
+    file_name: bar
+    content: shazam
+  - path: settings/test/all
+    file_name: secret-a
+    content: mailman
+  - path: settings/test/all
+    file_name: secret-b
+    content: shazam
+  - path: settings/test/all
+    file_name: secret-c
+    content: shazam-1
+expected_snapshot:
+expected_stderr: |
+  -*- teller: loaded variables for test using .teller.yml -*-
+  
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/bar] BAR = sh*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/foo] FOO = sh*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/all] secret-a = ma*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/all] secret-b = sh*****
+  [filesystem DYNAMIC-SHORT-PATH...tings/test/all] secret-c = sh*****
+
+expected_stdout: 

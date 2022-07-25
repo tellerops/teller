@@ -8,16 +8,25 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/keyvault"
 	kvauth "github.com/Azure/azure-sdk-for-go/services/keyvault/auth"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/logging"
 )
 
 const AzureVaultDomain = "vault.azure.net"
 
+type AzureKeyVaultClient interface {
+	SetSecret(ctx context.Context, vaultBaseURL string, secretName string, parameters keyvault.SecretSetParameters) (result keyvault.SecretBundle, err error)
+	GetSecret(ctx context.Context, vaultBaseURL string, secretName string, secretVersion string) (result keyvault.SecretBundle, err error)
+	GetSecrets(ctx context.Context, vaultBaseURL string, maxresults *int32) (result keyvault.SecretListResultPage, err error)
+	DeleteSecret(ctx context.Context, vaultBaseURL string, secretName string) (result keyvault.DeletedSecretBundle, err error)
+}
+
 type AzureKeyVault struct {
-	client    *keyvault.BaseClient
-	logger    logging.Logger
-	vaultName string
+	client       AzureKeyVaultClient
+	logger       logging.Logger
+	vaultName    string
+	vaultBaseURL string
 }
 
 const azureName = "azure_keyvault"
@@ -36,7 +45,7 @@ func init() {
       FOO_BAR:
         path: foobar
 		`,
-		Ops: core.OpMatrix{Get: true, GetMapping: true},
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true},
 	}
 	RegisterProvider(metaInfo, NewAzureKeyVault)
 }
@@ -47,28 +56,56 @@ func NewAzureKeyVault(logger logging.Logger) (core.Provider, error) {
 		return nil, fmt.Errorf("cannot find KVAULT_NAME for azure key vault")
 	}
 
-	authorizer, err := kvauth.NewAuthorizerFromEnvironment()
+	var authorizer autorest.Authorizer
+	var err error
+
+	if _, ok := os.LookupEnv("AZURE_CLI"); ok {
+		authorizer, err = kvauth.NewAuthorizerFromCLI()
+	} else {
+		authorizer, err = kvauth.NewAuthorizerFromEnvironment()
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	basicClient := keyvault.New()
 	basicClient.Authorizer = authorizer
-	return &AzureKeyVault{client: &basicClient, vaultName: vaultName, logger: logger}, nil
+	return &AzureKeyVault{client: &basicClient,
+		vaultName:    vaultName,
+		logger:       logger,
+		vaultBaseURL: "https://" + vaultName + "." + AzureVaultDomain,
+	}, nil
+}
+
+func (a *AzureKeyVault) Name() string {
+	return "azure_keyvault"
 }
 
 func (a *AzureKeyVault) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", azureName)
+	a.logger.WithField("path", p.Path).Debug("set secret")
+	_, err := a.client.SetSecret(context.TODO(), a.vaultBaseURL, p.Path, keyvault.SecretSetParameters{
+		Value: &val,
+	})
+	return err
 }
+
 func (a *AzureKeyVault) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", azureName)
+	for k, v := range m {
+		ap := p.SwitchPath(k)
+		err := a.Put(ap, v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
+
 func (a *AzureKeyVault) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 	r := []core.EnvEntry{}
 	ctx := context.Background()
-	vaultBaseURL := "https://" + a.vaultName + "." + AzureVaultDomain
-	a.logger.WithField("vault_base_url", vaultBaseURL).Debug("get secrets")
-	secretList, err := a.client.GetSecrets(ctx, vaultBaseURL, nil)
+	a.logger.WithField("vault_base_url", a.vaultBaseURL).Debug("get secrets")
+	secretList, err := a.client.GetSecrets(ctx, a.vaultBaseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +146,8 @@ func (a *AzureKeyVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *AzureKeyVault) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", azureName)
+	_, err := a.client.DeleteSecret(context.TODO(), a.vaultBaseURL, kp.Path)
+	return err
 }
 
 func (a *AzureKeyVault) DeleteMapping(kp core.KeyPath) error {
@@ -117,10 +155,9 @@ func (a *AzureKeyVault) DeleteMapping(kp core.KeyPath) error {
 }
 
 func (a *AzureKeyVault) getSecret(kp core.KeyPath) (keyvault.SecretBundle, error) {
-	vaultBaseURL := "https://" + a.vaultName + "." + AzureVaultDomain
 	a.logger.WithFields(map[string]interface{}{
-		"vault_base_url": vaultBaseURL,
+		"vault_base_url": a.vaultBaseURL,
 		"secret_name":    kp.Path,
 	}).Debug("get secret")
-	return a.client.GetSecret(context.Background(), vaultBaseURL, kp.Path, "")
+	return a.client.GetSecret(context.Background(), a.vaultBaseURL, kp.Path, "")
 }

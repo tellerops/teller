@@ -133,8 +133,12 @@ func (p *Porcelain) PrintMatches(matches []core.Match) {
 	green := color.New(color.FgGreen).SprintFunc()
 	white := color.New(color.FgWhite).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
-	//nolint
-	for _, m := range matches {
+
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].Path < matches[j].Path
+	})
+
+	for _, m := range matches { //nolint
 		sevcolor := white
 		if m.Entry.Severity == core.High {
 			sevcolor = red

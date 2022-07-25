@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
@@ -32,6 +33,7 @@ type AWSSecretsManager struct {
 }
 
 const defaultDeletionRecoveryWindowInDays = 7
+const versionSplit = ","
 
 func init() {
 	metaInfo := core.MetaInfo{
@@ -190,7 +192,20 @@ func (a *AWSSecretsManager) DeleteMapping(kp core.KeyPath) error {
 
 func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error) {
 	a.logger.WithField("path", kp.Path).Debug("get secret value")
-	res, err := a.client.GetSecretValue(context.Background(), &secretsmanager.GetSecretValueInput{SecretId: &kp.Path})
+	valueInput := secretsmanager.GetSecretValueInput{SecretId: &kp.Path}
+
+	splitVersion := strings.Split(kp.Path, versionSplit)
+	//nolint:gomnd
+	if len(splitVersion) == 2 {
+		a.logger.WithFields(map[string]interface{}{
+			"path":    splitVersion[0],
+			"version": splitVersion[1],
+		}).Debug("add version")
+		valueInput.SecretId = &splitVersion[0]
+		valueInput.VersionId = &splitVersion[1]
+	}
+
+	res, err := a.client.GetSecretValue(context.Background(), &valueInput)
 
 	var (
 		resNotFoundErr *smtypes.ResourceNotFoundException
@@ -203,13 +218,17 @@ func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error
 			return nil, fmt.Errorf("data not found at %q", kp.Path)
 		}
 
-		var secret map[string]string
+		var secret map[string]interface{}
 		err = json.Unmarshal([]byte(*res.SecretString), &secret)
 		if err != nil {
 			return nil, err
 		}
 
-		return secret, nil
+		stringParse := map[string]string{}
+		for k, v := range secret {
+			stringParse[k] = fmt.Sprintf("%v", v)
+		}
+		return stringParse, nil
 	case errors.As(err, &resNotFoundErr):
 		// doesn't exist - do not treat as an error
 		return nil, nil
