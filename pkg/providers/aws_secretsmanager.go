@@ -33,29 +33,9 @@ type AWSSecretsManager struct {
 
 const defaultDeletionRecoveryWindowInDays = 7
 
-func (a *AWSSecretsManager) Init(logger logging.Logger) (core.Provider, error) {
-	cfg, err := config.LoadDefaultConfig(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	client := secretsmanager.NewFromConfig(cfg)
-
-	return &AWSSecretsManager{
-		client:                        client,
-		logger:                        logger,
-		deletionRecoveryWindowInDays:  defaultDeletionRecoveryWindowInDays,
-		deletionDisableRecoveryWindow: false,
-		treatSecretMarkedForDeletionAsNonExisting: true,
-	}, nil
-}
-
-func (a *AWSSecretsManager) Name() string {
-	return "aws_secretsmanager"
-}
-
-func (a *AWSSecretsManager) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
+		Name:           "aws_secretsmanager",
 		Description:    "AWS Secrets Manager",
 		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment",
 		ConfigTemplate: `
@@ -70,6 +50,24 @@ func (a *AWSSecretsManager) Meta() core.MetaInfo {
 `,
 		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true, DeleteMapping: true},
 	}
+	RegisterProvider(metaInfo, NewAWSSecretsManager)
+}
+
+func NewAWSSecretsManager(logger logging.Logger) (core.Provider, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	client := secretsmanager.NewFromConfig(cfg)
+
+	return &AWSSecretsManager{
+		client:                        client,
+		logger:                        logger,
+		deletionRecoveryWindowInDays:  defaultDeletionRecoveryWindowInDays,
+		deletionDisableRecoveryWindow: false,
+		treatSecretMarkedForDeletionAsNonExisting: true,
+	}, nil
 }
 
 func (a *AWSSecretsManager) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

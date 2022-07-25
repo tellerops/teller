@@ -188,8 +188,6 @@ func (ee *EnvEntryLookup) EnvByKeyAndProvider(key, provider, dflt string) string
 }
 
 type Provider interface {
-	Name() string
-	Meta() MetaInfo
 	// in this case 'env' is empty, but EnvEntries are the value
 	GetMapping(p KeyPath) ([]EnvEntry, error)
 
@@ -201,11 +199,11 @@ type Provider interface {
 
 	Delete(p KeyPath) error
 	DeleteMapping(p KeyPath) error
-	Init(logger logging.Logger) (Provider, error)
 }
 
 type MetaInfo struct {
 	Description    string
+	Name           string
 	Authentication string
 	ConfigTemplate string
 	Ops            OpMatrix
@@ -225,4 +223,9 @@ type Match struct {
 	LineNumber int
 	MatchIndex int
 	Entry      EnvEntry
+}
+
+type RegisteredProvider struct {
+	Meta    MetaInfo
+	Builder func(logger logging.Logger) (Provider, error)
 }

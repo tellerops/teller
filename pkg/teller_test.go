@@ -14,6 +14,7 @@ import (
 	"github.com/alecthomas/assert"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/logging"
+	"github.com/spectralops/teller/pkg/providers"
 )
 
 // implements both Providers and Provider interface, for testing return only itself.
@@ -73,19 +74,22 @@ func (im *InMemProvider) Meta() core.MetaInfo {
 	return core.MetaInfo{}
 }
 
-func NewInMemProvider(alwaysError bool) (Providers, error) {
-	return &InMemProvider{
-		inmem: map[string]string{
-			"prod/billing/FOO":          "foo_shazam",
-			"prod/billing/MG_KEY":       "mg_shazam",
-			"prod/billing/BEFORE_REMAP": "test_env_remap",
-		},
-		alwaysError: alwaysError,
-	}, nil
+func init() {
+	inmemProviderMeta := core.MetaInfo{
+		Name:        "inmem-provider",
+		Description: "test-provider",
+	}
 
+	inmemProviderErrorMeta := core.MetaInfo{
+		Name:        "inmem-provider-error",
+		Description: "test-provider-error",
+	}
+
+	providers.RegisterProvider(inmemProviderMeta, NewInMemProvider)
+	providers.RegisterProvider(inmemProviderErrorMeta, NewInMemErrorProvider)
 }
 
-func (a *InMemProvider) Init(logger logging.Logger) (core.Provider, error) {
+func NewInMemProvider(logger logging.Logger) (core.Provider, error) {
 	return &InMemProvider{
 		inmem: map[string]string{
 			"prod/billing/FOO":          "foo_shazam",
@@ -93,6 +97,18 @@ func (a *InMemProvider) Init(logger logging.Logger) (core.Provider, error) {
 			"prod/billing/BEFORE_REMAP": "test_env_remap",
 		},
 		alwaysError: false,
+	}, nil
+
+}
+
+func NewInMemErrorProvider(logger logging.Logger) (core.Provider, error) {
+	return &InMemProvider{
+		inmem: map[string]string{
+			"prod/billing/FOO":          "foo_shazam",
+			"prod/billing/MG_KEY":       "mg_shazam",
+			"prod/billing/BEFORE_REMAP": "test_env_remap",
+		},
+		alwaysError: true,
 	}, nil
 
 }
@@ -164,10 +180,9 @@ func TestTellerExports(t *testing.T) {
 
 func TestTellerCollect(t *testing.T) {
 	var b bytes.Buffer
-	p, _ := NewInMemProvider(false)
 	tl := Teller{
 		Logger:    getLogger(),
-		Providers: p,
+		Providers: &BuiltinProviders{},
 		Porcelain: &Porcelain{
 			Out: &b,
 		},
@@ -176,7 +191,7 @@ func TestTellerCollect(t *testing.T) {
 			Project:    "test-project",
 			LoadedFrom: "nowhere",
 			Providers: map[string]MappingConfig{
-				"inmem": {
+				"inmem-provider": {
 					Env: &map[string]core.KeyPath{
 						"MG_KEY": {
 							Path: "{{stage}}/billing/MG_KEY",
@@ -195,20 +210,19 @@ func TestTellerCollect(t *testing.T) {
 	assert.Equal(t, tl.Entries[0].Key, "MG_KEY")
 	assert.Equal(t, tl.Entries[0].Value, "mg_shazam")
 	assert.Equal(t, tl.Entries[0].ResolvedPath, "prod/billing/MG_KEY")
-	assert.Equal(t, tl.Entries[0].ProviderName, "inmem")
+	assert.Equal(t, tl.Entries[0].ProviderName, "inmem-provider")
 
 	assert.Equal(t, tl.Entries[1].Key, "FOO_BAR")
 	assert.Equal(t, tl.Entries[1].Value, "foo_shazam")
 	assert.Equal(t, tl.Entries[1].ResolvedPath, "prod/billing/FOO")
-	assert.Equal(t, tl.Entries[1].ProviderName, "inmem")
+	assert.Equal(t, tl.Entries[1].ProviderName, "inmem-provider")
 }
 
 func TestTellerCollectWithSync(t *testing.T) {
 	var b bytes.Buffer
-	p, _ := NewInMemProvider(false)
 	tl := Teller{
 		Logger:    getLogger(),
-		Providers: p,
+		Providers: &BuiltinProviders{},
 		Porcelain: &Porcelain{
 			Out: &b,
 		},
@@ -217,7 +231,7 @@ func TestTellerCollectWithSync(t *testing.T) {
 			Project:    "test-project",
 			LoadedFrom: "nowhere",
 			Providers: map[string]MappingConfig{
-				"inmem": {
+				"inmem-provider": {
 					EnvMapping: &core.KeyPath{
 						Path: "{{stage}}/billing",
 						Remap: map[string]string{
@@ -234,24 +248,23 @@ func TestTellerCollectWithSync(t *testing.T) {
 	assert.Equal(t, tl.Entries[0].Key, "prod/billing/REMAPED")
 	assert.Equal(t, tl.Entries[0].Value, "test_env_remap")
 	assert.Equal(t, tl.Entries[0].ResolvedPath, "prod/billing")
-	assert.Equal(t, tl.Entries[0].ProviderName, "inmem")
+	assert.Equal(t, tl.Entries[0].ProviderName, "inmem-provider")
 
 	assert.Equal(t, tl.Entries[1].Key, "prod/billing/MG_KEY")
 	assert.Equal(t, tl.Entries[1].Value, "mg_shazam")
 	assert.Equal(t, tl.Entries[1].ResolvedPath, "prod/billing")
-	assert.Equal(t, tl.Entries[1].ProviderName, "inmem")
+	assert.Equal(t, tl.Entries[1].ProviderName, "inmem-provider")
 
 	assert.Equal(t, tl.Entries[2].Key, "prod/billing/FOO")
 	assert.Equal(t, tl.Entries[2].Value, "foo_shazam")
 	assert.Equal(t, tl.Entries[2].ResolvedPath, "prod/billing")
-	assert.Equal(t, tl.Entries[2].ProviderName, "inmem")
+	assert.Equal(t, tl.Entries[2].ProviderName, "inmem-provider")
 }
 func TestTellerCollectWithErrors(t *testing.T) {
 	var b bytes.Buffer
-	p, _ := NewInMemProvider(true)
 	tl := Teller{
 		Logger:    getLogger(),
-		Providers: p,
+		Providers: &BuiltinProviders{},
 		Porcelain: &Porcelain{
 			Out: &b,
 		},
@@ -260,7 +273,7 @@ func TestTellerCollectWithErrors(t *testing.T) {
 			Project:    "test-project",
 			LoadedFrom: "nowhere",
 			Providers: map[string]MappingConfig{
-				"inmem": {
+				"inmem-provider-error": {
 					EnvMapping: &core.KeyPath{
 						Path: "{{stage}}/billing",
 					},
@@ -531,7 +544,7 @@ func TestTellerDelete(t *testing.T) {
 			Project:    "test-project",
 			LoadedFrom: "nowhere",
 			Providers: map[string]MappingConfig{
-				"inmem": {
+				"inmem-provider": {
 					Env: &map[string]core.KeyPath{
 						"FOO": {
 							Path: "/sample/path",
@@ -548,7 +561,7 @@ func TestTellerDelete(t *testing.T) {
 	}
 
 	keysToDelete := []string{"FOO"}
-	err := tl.Delete(keysToDelete, []string{"inmem"}, "", false)
+	err := tl.Delete(keysToDelete, []string{"inmem-provider"}, "", false)
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(p.inmem), 1)
@@ -556,7 +569,7 @@ func TestTellerDelete(t *testing.T) {
 	assert.False(t, ok)
 
 	keysToDelete = []string{"BAR"}
-	err = tl.Delete(keysToDelete, []string{"inmem"}, "/sample/path", false)
+	err = tl.Delete(keysToDelete, []string{"inmem-provider"}, "/sample/path", false)
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(p.inmem), 0)
@@ -581,7 +594,7 @@ func TestTellerDeleteAll(t *testing.T) {
 			Project:    "test-project",
 			LoadedFrom: "nowhere",
 			Providers: map[string]MappingConfig{
-				"inmem": {
+				"inmem-provider": {
 					Env: &map[string]core.KeyPath{
 						"FOO": {
 							Path: "/sample/path",
@@ -597,7 +610,7 @@ func TestTellerDeleteAll(t *testing.T) {
 		},
 	}
 
-	err := tl.Delete([]string{}, []string{"inmem"}, "/sample/path", true)
+	err := tl.Delete([]string{}, []string{"inmem-provider"}, "/sample/path", true)
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(p.inmem), 0)

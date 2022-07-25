@@ -65,20 +65,10 @@ const VERCEL_API_BASE = "https://api.vercel.com/"
 //nolint: golint
 const PROJECTS_ENDPOINT = "/projects"
 
-func (a *Vercel) Init(logger logging.Logger) (core.Provider, error) {
-	vercelToken := os.Getenv("VERCEL_TOKEN")
-	if vercelToken == "" {
-		return nil, fmt.Errorf("please set VERCEL_TOKEN")
-	}
-	return &Vercel{client: NewVercelAPI(vercelToken), logger: logger}, nil
-}
+const VercelName = "vercel"
 
-func (ve *Vercel) Name() string {
-	return "vercel"
-}
-
-func (ve *Vercel) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description:    "Vercel",
 		Authentication: "Requires an API key populated in your environment in: `VERCEL_TOKEN`.",
 		ConfigTemplate: `
@@ -98,6 +88,16 @@ func (ve *Vercel) Meta() core.MetaInfo {
 			GetMapping: true,
 		},
 	}
+
+	RegisterProvider(metaInfo, NewVercel)
+}
+
+func NewVercel(logger logging.Logger) (core.Provider, error) {
+	vercelToken := os.Getenv("VERCEL_TOKEN")
+	if vercelToken == "" {
+		return nil, fmt.Errorf("please set VERCEL_TOKEN")
+	}
+	return &Vercel{client: NewVercelAPI(vercelToken), logger: logger}, nil
 }
 
 func (ve *Vercel) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -143,18 +143,18 @@ func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) { // nolint:dupl
 }
 
 func (ve *Vercel) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", ve.Name())
+	return fmt.Errorf("provider %q does not implement write yet", VercelName)
 }
 func (ve *Vercel) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", ve.Name())
+	return fmt.Errorf("provider %q does not implement write yet", VercelName)
 }
 
 func (ve *Vercel) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", ve.Name())
+	return fmt.Errorf("%s does not implement delete yet", VercelName)
 }
 
 func (ve *Vercel) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", ve.Name())
+	return fmt.Errorf("%s does not implement delete yet", VercelName)
 }
 
 func (ve *Vercel) getSecret(kp core.KeyPath) (map[string]*string, error) {

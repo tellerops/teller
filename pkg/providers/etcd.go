@@ -29,26 +29,12 @@ type Etcd struct {
 	logger logging.Logger
 }
 
-func (a *Etcd) Init(logger logging.Logger) (core.Provider, error) {
-	epstring := os.Getenv("ETCDCTL_ENDPOINTS")
-	if epstring == "" {
-		return nil, fmt.Errorf("cannot find ETCDCTL_ENDPOINTS for etcd")
-	}
+const EtcdName = "etcd"
 
-	eps := lo.Map(strings.Split(epstring, ","), func(s string, _ int) string { return strings.Trim(s, " ") })
-	client, err := newClient(eps)
-	if err != nil {
-		return nil, err
-	}
-	return &Etcd{client: client, logger: logger}, nil
-}
-
-func (a *Etcd) Name() string {
-	return "etcd"
-}
-func (a *Etcd) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description:    "Etcd",
+		Name:           EtcdName,
 		Authentication: "These environment variables need to be populated\n* `ETCDCTL_ENDPOINTS`\nFor TLS:\n* `ETCDCTL_CA_FILE`\n* `ETCDCTL_CERT_FILE`\n* `ETCDCTL_KEY_FILE`",
 		ConfigTemplate: `
   # Configure via environment:
@@ -66,6 +52,21 @@ func (a *Etcd) Meta() core.MetaInfo {
 `,
 		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
 	}
+	RegisterProvider(metaInfo, NewEtcd)
+}
+
+func NewEtcd(logger logging.Logger) (core.Provider, error) {
+	epstring := os.Getenv("ETCDCTL_ENDPOINTS")
+	if epstring == "" {
+		return nil, fmt.Errorf("cannot find ETCDCTL_ENDPOINTS for etcd")
+	}
+
+	eps := lo.Map(strings.Split(epstring, ","), func(s string, _ int) string { return strings.Trim(s, " ") })
+	client, err := newClient(eps)
+	if err != nil {
+		return nil, err
+	}
+	return &Etcd{client: client, logger: logger}, nil
 }
 
 func (a *Etcd) Put(p core.KeyPath, val string) error {
@@ -119,11 +120,11 @@ func (a *Etcd) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *Etcd) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", EtcdName)
 }
 
 func (a *Etcd) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", EtcdName)
 }
 
 func (a *Etcd) getSecret(kp core.KeyPath, opts ...clientv3.OpOption) ([]*spb.KeyValue, error) {

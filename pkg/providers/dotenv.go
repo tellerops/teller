@@ -96,20 +96,11 @@ type Dotenv struct {
 	logger logging.Logger
 }
 
-func (a *Dotenv) Init(logger logging.Logger) (core.Provider, error) {
-	return &Dotenv{
-		client: &DotEnvReader{},
-		logger: logger,
-	}, nil
-}
-
-func (a *Dotenv) Name() string {
-	return "dotenv"
-}
-func (a *Dotenv) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description:    ".env",
 		Authentication: "",
+		Name:           "dotenv",
 		ConfigTemplate: `
   # you can mix and match many files
   dotenv:
@@ -121,6 +112,15 @@ func (a *Dotenv) Meta() core.MetaInfo {
 `,
 		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true, DeleteMapping: true},
 	}
+
+	RegisterProvider(metaInfo, NewDotenv)
+}
+
+func NewDotenv(logger logging.Logger) (core.Provider, error) {
+	return &Dotenv{
+		client: &DotEnvReader{},
+		logger: logger,
+	}, nil
 }
 
 func (a *Dotenv) Put(p core.KeyPath, val string) error {

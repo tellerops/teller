@@ -12,7 +12,6 @@ import (
 
 	"github.com/karrick/godirwalk"
 	"github.com/spectralops/teller/pkg/core"
-
 	"github.com/spectralops/teller/pkg/logging"
 )
 
@@ -21,22 +20,12 @@ type FileSystem struct {
 	rootDirectory string
 }
 
-// NewFileSystem creates new provider instance
-func (a *FileSystem) Init(logger logging.Logger) (core.Provider, error) {
-	return &FileSystem{
-		logger:        logger,
-		rootDirectory: "",
-	}, nil
-}
+const FileSystemName = "FileSystem"
 
-// Name return the provider name
-func (f *FileSystem) Name() string {
-	return "FileSystem"
-}
-
-func (f *FileSystem) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description:    "File system",
+		Name:           FileSystemName,
 		Authentication: "",
 		ConfigTemplate: `
   filesystem:
@@ -48,6 +37,16 @@ func (f *FileSystem) Meta() core.MetaInfo {
 `,
 		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true},
 	}
+
+	RegisterProvider(metaInfo, NewFileSystem)
+}
+
+// NewFileSystem creates new provider instance
+func NewFileSystem(logger logging.Logger) (core.Provider, error) {
+	return &FileSystem{
+		logger:        logger,
+		rootDirectory: "",
+	}, nil
 }
 
 // Put will create a new single entry
@@ -124,7 +123,7 @@ func (f *FileSystem) Delete(kp core.KeyPath) error {
 
 // DeleteMapping will delete the given path
 func (f *FileSystem) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("provider mapping %s does not implement delete yet", f.Name())
+	return fmt.Errorf("provider mapping %s does not implement delete yet", FileSystemName)
 }
 
 func (f *FileSystem) getFilePath(p string) string {

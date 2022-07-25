@@ -20,7 +20,28 @@ type AzureKeyVault struct {
 	vaultName string
 }
 
-func (a *AzureKeyVault) Init(logger logging.Logger) (core.Provider, error) {
+const azureName = "azure_keyvault"
+
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "Azure Key Vault",
+		Name:           azureName,
+		Authentication: "TODO(XXX)",
+		ConfigTemplate: `
+  # you can mix and match many files
+  azure_keyvault:
+    env_sync:
+      path: azure
+    env:
+      FOO_BAR:
+        path: foobar
+		`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true},
+	}
+	RegisterProvider(metaInfo, NewAzureKeyVault)
+}
+
+func NewAzureKeyVault(logger logging.Logger) (core.Provider, error) {
 	vaultName := os.Getenv("KVAULT_NAME")
 	if vaultName == "" {
 		return nil, fmt.Errorf("cannot find KVAULT_NAME for azure key vault")
@@ -36,30 +57,11 @@ func (a *AzureKeyVault) Init(logger logging.Logger) (core.Provider, error) {
 	return &AzureKeyVault{client: &basicClient, vaultName: vaultName, logger: logger}, nil
 }
 
-func (a *AzureKeyVault) Name() string {
-	return "azure_keyvault"
-}
-func (a *AzureKeyVault) Meta() core.MetaInfo {
-	return core.MetaInfo{
-		Description:    "Azure Key Vault",
-		Authentication: "TODO(XXX)",
-		ConfigTemplate: `
-  # you can mix and match many files
-  azure_keyvault:
-    env_sync:
-      path: azure
-    env:
-      FOO_BAR:
-        path: foobar
-		`,
-		Ops: core.OpMatrix{Get: true, GetMapping: true},
-	}
-}
 func (a *AzureKeyVault) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", azureName)
 }
 func (a *AzureKeyVault) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", azureName)
 }
 func (a *AzureKeyVault) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 	r := []core.EnvEntry{}
@@ -107,11 +109,11 @@ func (a *AzureKeyVault) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *AzureKeyVault) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", azureName)
 }
 
 func (a *AzureKeyVault) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", azureName)
 }
 
 func (a *AzureKeyVault) getSecret(kp core.KeyPath) (keyvault.SecretBundle, error) {

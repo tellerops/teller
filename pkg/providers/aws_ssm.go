@@ -18,24 +18,12 @@ type AWSSSM struct {
 	logger logging.Logger
 }
 
-func (a *AWSSSM) Init(logger logging.Logger) (core.Provider, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		return nil, err
-	}
+const awsssmName = "aws_ssm"
 
-	client := ssm.NewFromConfig(cfg)
-
-	return &AWSSSM{client: client, logger: logger}, nil
-}
-
-func (a *AWSSSM) Name() string {
-	return "aws_ssm"
-}
-
-func (a *AWSSSM) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description:    "AWS SSM (aka paramstore)",
+		Name:           awsssmName,
 		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment",
 		ConfigTemplate: `
   # configure only from environment
@@ -47,13 +35,25 @@ func (a *AWSSSM) Meta() core.MetaInfo {
 		`,
 		Ops: core.OpMatrix{Get: true},
 	}
+	RegisterProvider(metaInfo, NewAWSSSM)
+}
+
+func NewAWSSSM(logger logging.Logger) (core.Provider, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	client := ssm.NewFromConfig(cfg)
+
+	return &AWSSSM{client: client, logger: logger}, nil
 }
 
 func (a *AWSSSM) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", awsssmName)
 }
 func (a *AWSSSM) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", awsssmName)
 }
 
 func (a *AWSSSM) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
@@ -61,11 +61,11 @@ func (a *AWSSSM) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
 }
 
 func (a *AWSSSM) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", awsssmName)
 }
 
 func (a *AWSSSM) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", awsssmName)
 }
 
 func (a *AWSSSM) Get(p core.KeyPath) (*core.EnvEntry, error) {

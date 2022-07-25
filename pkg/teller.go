@@ -19,6 +19,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/logging"
+	"github.com/spectralops/teller/pkg/providers"
 	"gopkg.in/yaml.v3"
 )
 
@@ -395,6 +396,7 @@ func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 	entries := []core.EnvEntry{}
 	conf, ok := tl.Config.Providers[pname]
 	p, err := tl.Providers.GetProvider(pname)
+	m, err := providers.ResolveProviderMeta(pname)
 	if err != nil && ok && conf.Kind != "" {
 		// ok, maybe same provider, with 'kind'?
 		p, err = tl.Providers.GetProvider(conf.Kind)
@@ -405,7 +407,7 @@ func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 		tl.Logger.Debug("provider not found in providers list with the name: %s or config kind: %s", pname, conf.Kind)
 		return nil, err
 	}
-	logger := tl.Logger.WithField("provider_name", p.Name())
+	logger := tl.Logger.WithField("provider_name", m.Name)
 	if conf.EnvMapping != nil {
 		es, err := p.GetMapping(tl.Populate.KeyPath(*conf.EnvMapping))
 		if err != nil {

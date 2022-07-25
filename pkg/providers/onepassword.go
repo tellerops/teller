@@ -19,21 +19,12 @@ type OnePassword struct {
 	logger logging.Logger
 }
 
-func (a *OnePassword) Init(logger logging.Logger) (core.Provider, error) {
-	client, err := connect.NewClientFromEnvironment()
-	if err != nil {
-		return nil, err
-	}
-	return &OnePassword{client: client, logger: logger}, nil
-}
+const OnePasswordName = "1password"
 
-func (o *OnePassword) Name() string {
-	return "1password"
-}
-
-func (o *OnePassword) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description: "1Password",
+		Name:        OnePasswordName,
 		Authentication: `
 To integrate with the 1Password API, you should have system-to-system secret management running in your infrastructure/localhost [more details here](https://support.1password.com/connect-deploy-docker/).
 
@@ -61,6 +52,16 @@ Requires the following environment variables to be set:
 			Get:        true,
 		},
 	}
+
+	RegisterProvider(metaInfo, NewOnePassword)
+}
+
+func NewOnePassword(logger logging.Logger) (core.Provider, error) {
+	client, err := connect.NewClientFromEnvironment()
+	if err != nil {
+		return nil, err
+	}
+	return &OnePassword{client: client, logger: logger}, nil
 }
 
 func (o *OnePassword) Put(p core.KeyPath, val string) error {
@@ -86,7 +87,7 @@ func (o *OnePassword) Put(p core.KeyPath, val string) error {
 }
 
 func (o *OnePassword) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write multiple keys", o.Name())
+	return fmt.Errorf("provider %q does not implement write multiple keys", OnePasswordName)
 }
 
 func (o *OnePassword) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -128,11 +129,11 @@ func (o *OnePassword) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (o *OnePassword) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", o.Name())
+	return fmt.Errorf("%s does not implement delete yet", OnePasswordName)
 }
 
 func (o *OnePassword) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", o.Name())
+	return fmt.Errorf("%s does not implement delete yet", OnePasswordName)
 }
 
 func (o *OnePassword) getItemByTitle(p core.KeyPath) (*onepassword.Item, error) {

@@ -22,23 +22,12 @@ type Consul struct {
 	logger logging.Logger
 }
 
-func (a *Consul) Init(logger logging.Logger) (core.Provider, error) {
-	df := api.DefaultConfig()
-	client, err := api.NewClient(df)
-	if err != nil {
-		return nil, err
-	}
-	kv := client.KV()
-	return &Consul{client: kv, logger: logger}, nil
-}
+const consulName = "consul"
 
-func (a *Consul) Name() string {
-	return "consul"
-}
-
-func (a *Consul) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInto := core.MetaInfo{
 		Description:    "Consul",
+		Name:           consulName,
 		Authentication: "If you have the Consul CLI working and configured, there's no special action to take.\nConfiguration is environment based, as defined by client standard. See variables [here](https://github.com/hashicorp/consul/blob/master/api/api.go#L28).",
 		ConfigTemplate: `
   # Configure via environment:
@@ -52,7 +41,19 @@ func (a *Consul) Meta() core.MetaInfo {
 `,
 		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
 	}
+	RegisterProvider(metaInto, NewConsul)
 }
+
+func NewConsul(logger logging.Logger) (core.Provider, error) {
+	df := api.DefaultConfig()
+	client, err := api.NewClient(df)
+	if err != nil {
+		return nil, err
+	}
+	kv := client.KV()
+	return &Consul{client: kv, logger: logger}, nil
+}
+
 func (a *Consul) Put(p core.KeyPath, val string) error {
 	a.logger.WithField("path", p.Path).Debug("put value")
 	_, err := a.client.Put(&api.KVPair{
@@ -93,7 +94,7 @@ func (a *Consul) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 func (a *Consul) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	kv, err := a.getSecret(p)
 	if err != nil {
-		return nil, fmt.Errorf("%v cannot get value: %v", a.Name(), err)
+		return nil, fmt.Errorf("%v cannot get value: %v", consulName, err)
 	}
 
 	if kv == nil {
@@ -107,11 +108,11 @@ func (a *Consul) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *Consul) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", consulName)
 }
 
 func (a *Consul) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", consulName)
 }
 
 func (a *Consul) getSecrets(kp core.KeyPath) (api.KVPairs, error) {

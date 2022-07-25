@@ -30,7 +30,19 @@ type Doppler struct {
 	config models.ScopedOptions
 }
 
-func (a *Doppler) Init(logger logging.Logger) (core.Provider, error) {
+const DopplerName = "doppler"
+
+func init() {
+	metaInfo := core.MetaInfo{
+		Description: "Doppler",
+		Name:        DopplerName,
+		Ops:         core.OpMatrix{Get: true},
+	}
+
+	RegisterProvider(metaInfo, NewDoppler)
+}
+
+func NewDoppler(logger logging.Logger) (core.Provider, error) {
 	configuration.Setup()
 	configuration.LoadConfig()
 
@@ -41,21 +53,11 @@ func (a *Doppler) Init(logger logging.Logger) (core.Provider, error) {
 	}, nil
 }
 
-func (h *Doppler) Name() string {
-	return "doppler"
-}
-func (h *Doppler) Meta() core.MetaInfo {
-	return core.MetaInfo{
-		Description: "Doppler",
-		Ops:         core.OpMatrix{Get: true},
-	}
-}
-
 func (h *Doppler) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", h.Name())
+	return fmt.Errorf("provider %q does not implement write yet", DopplerName)
 }
 func (h *Doppler) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", h.Name())
+	return fmt.Errorf("provider %q does not implement write yet", DopplerName)
 }
 
 func (h *Doppler) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -97,11 +99,11 @@ func (h *Doppler) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (h *Doppler) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", h.Name())
+	return fmt.Errorf("%s does not implement delete yet", DopplerName)
 }
 
 func (h *Doppler) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", h.Name())
+	return fmt.Errorf("%s does not implement delete yet", DopplerName)
 }
 
 func (h *Doppler) getConfig(config string) (map[string]models.ComputedSecret, error) {

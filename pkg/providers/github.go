@@ -34,29 +34,13 @@ type GitHub struct {
 }
 
 // NewGitHub create new GitHub provider
-func (a *GitHub) Init(logger logging.Logger) (core.Provider, error) {
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
-	if token == "" {
-		return nil, errors.New("missing `GITHUB_AUTH_TOKEN`")
-	}
+const GithubName = "GitHub"
 
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	tc := oauth2.NewClient(context.TODO(), ts)
-	client := github.NewClient(tc)
-
-	return &GitHub{clientActions: client.Actions, logger: logger}, nil
-}
-
-func (g *GitHub) Name() string {
-	return "GitHub"
-}
-
-func (g *GitHub) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description:    "Github",
 		Authentication: "Requires `GITHUB_AUTH_TOKEN`",
+		Name:           GithubName,
 		ConfigTemplate: `
   # Configure via environment variables for integration:
   # GITHUB_AUTH_TOKEN: GitHub token
@@ -70,6 +54,23 @@ func (g *GitHub) Meta() core.MetaInfo {
 `,
 		Ops: core.OpMatrix{Put: true, PutMapping: true, Delete: true, DeleteMapping: true},
 	}
+
+	RegisterProvider(metaInfo, NewGitHub)
+}
+
+func NewGitHub(logger logging.Logger) (core.Provider, error) {
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	if token == "" {
+		return nil, errors.New("missing `GITHUB_AUTH_TOKEN`")
+	}
+
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(context.TODO(), ts)
+	client := github.NewClient(tc)
+
+	return &GitHub{clientActions: client.Actions, logger: logger}, nil
 }
 
 func (g *GitHub) Put(p core.KeyPath, val string) error {
@@ -106,11 +107,11 @@ func (g *GitHub) PutMapping(p core.KeyPath, m map[string]string) error {
 }
 
 func (g *GitHub) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
-	return nil, fmt.Errorf("does not supported by the %s provider", g.Name())
+	return nil, fmt.Errorf("does not supported by the %s provider", GithubName)
 }
 
 func (g *GitHub) Get(p core.KeyPath) (*core.EnvEntry, error) {
-	return nil, fmt.Errorf("does not supported by the %s provider", g.Name())
+	return nil, fmt.Errorf("does not supported by the %s provider", GithubName)
 }
 
 func (g *GitHub) Delete(p core.KeyPath) error {
@@ -156,7 +157,7 @@ func (g *GitHub) parsePathToOwnerAndRepo(p core.KeyPath) (string, string, error)
 
 	splitData := strings.SplitN(p.Path, "/", 2) //nolint
 	if len(splitData) != gitHubSplitPathCount {
-		return "", "", fmt.Errorf("invalid %s path, expected owner/repo got: %s", g.Name(), p.Path)
+		return "", "", fmt.Errorf("invalid %s path, expected owner/repo got: %s", GithubName, p.Path)
 	}
 	return splitData[0], splitData[1], nil
 }

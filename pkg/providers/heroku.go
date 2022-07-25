@@ -20,20 +20,12 @@ type Heroku struct {
 	logger logging.Logger
 }
 
-func (a *Heroku) Init(logger logging.Logger) (core.Provider, error) {
-	heroku.DefaultTransport.BearerToken = os.Getenv("HEROKU_API_KEY")
+const HerokuName = "heroku"
 
-	svc := heroku.NewService(heroku.DefaultClient)
-	return &Heroku{client: svc, logger: logger}, nil
-}
-
-func (h *Heroku) Name() string {
-	return "heroku"
-}
-
-func (h *Heroku) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description:    "Heroku",
+		Name:           HerokuName,
 		Authentication: "Requires an API key populated in your environment in: `HEROKU_API_KEY` (you can fetch it from your ~/.netrc).",
 		ConfigTemplate: `
   # requires an API key in: HEROKU_API_KEY (you can fetch yours from ~/.netrc)
@@ -49,6 +41,15 @@ func (h *Heroku) Meta() core.MetaInfo {
 `,
 		Ops: core.OpMatrix{GetMapping: true, Get: true, Put: true, PutMapping: true},
 	}
+
+	RegisterProvider(metaInfo, NewHeroku)
+}
+
+func NewHeroku(logger logging.Logger) (core.Provider, error) {
+	heroku.DefaultTransport.BearerToken = os.Getenv("HEROKU_API_KEY")
+
+	svc := heroku.NewService(heroku.DefaultClient)
+	return &Heroku{client: svc, logger: logger}, nil
 }
 
 func (h *Heroku) Put(p core.KeyPath, val string) error {
@@ -112,11 +113,11 @@ func (h *Heroku) Get(p core.KeyPath) (*core.EnvEntry, error) { // nolint:dupl
 }
 
 func (h *Heroku) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", h.Name())
+	return fmt.Errorf("%s does not implement delete yet", HerokuName)
 }
 
 func (h *Heroku) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", h.Name())
+	return fmt.Errorf("%s does not implement delete yet", HerokuName)
 }
 
 func (h *Heroku) getSecret(kp core.KeyPath) (heroku.ConfigVarInfoForAppResult, error) {

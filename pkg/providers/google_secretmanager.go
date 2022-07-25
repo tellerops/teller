@@ -20,21 +20,12 @@ type GoogleSecretManager struct {
 	logger logging.Logger
 }
 
-func (a *GoogleSecretManager) Init(logger logging.Logger) (core.Provider, error) {
-	client, err := secretmanager.NewClient(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	return &GoogleSecretManager{client: client, logger: logger}, nil
-}
+const GoogleSecretManagerName = "google_secretmanager"
 
-func (a *GoogleSecretManager) Name() string {
-	return "google_secretmanager"
-}
-
-func (a *GoogleSecretManager) Meta() core.MetaInfo {
-	return core.MetaInfo{
+func init() {
+	metaInfo := core.MetaInfo{
 		Description:    "Google Secret Manager",
+		Name:           GoogleSecretManagerName,
 		Authentication: "You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your environment to your relevant `account.json` that you get from Google.",
 		ConfigTemplate: `
   # GOOGLE_APPLICATION_CREDENTIALS=foobar.json
@@ -47,13 +38,23 @@ func (a *GoogleSecretManager) Meta() core.MetaInfo {
 `,
 		Ops: core.OpMatrix{Get: true},
 	}
+
+	RegisterProvider(metaInfo, NewGoogleSecretManager)
+}
+
+func NewGoogleSecretManager(logger logging.Logger) (core.Provider, error) {
+	client, err := secretmanager.NewClient(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	return &GoogleSecretManager{client: client, logger: logger}, nil
 }
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", GoogleSecretManagerName)
 }
 func (a *GoogleSecretManager) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", a.Name())
+	return fmt.Errorf("provider %q does not implement write yet", GoogleSecretManagerName)
 }
 
 func (a *GoogleSecretManager) GetMapping(kp core.KeyPath) ([]core.EnvEntry, error) {
@@ -71,11 +72,11 @@ func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (a *GoogleSecretManager) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", GoogleSecretManagerName)
 }
 
 func (a *GoogleSecretManager) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", GoogleSecretManagerName)
 }
 
 func (a *GoogleSecretManager) getSecret(kp core.KeyPath) (string, error) {
