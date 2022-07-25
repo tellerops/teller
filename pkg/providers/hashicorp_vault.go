@@ -20,6 +20,7 @@ type HashicorpVault struct {
 
 const HashicorpVaultName = "hashicorp_vault"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Hashicorp Vault",

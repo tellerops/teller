@@ -24,6 +24,7 @@ type KeyPass struct {
 
 const KeyPassName = "KeyPass"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Keypass",

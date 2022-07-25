@@ -21,6 +21,7 @@ type OnePassword struct {
 
 const OnePasswordName = "1password"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description: "1Password",

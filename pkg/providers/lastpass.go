@@ -24,6 +24,7 @@ type LastPass struct {
 
 const LastPassName = "lastpass"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Lastpass",

@@ -25,6 +25,7 @@ type Cloudflare struct {
 
 const cloudFlareWorkersKVName = "cloudflare_workers_kv"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Cloudflare Workers K/V",

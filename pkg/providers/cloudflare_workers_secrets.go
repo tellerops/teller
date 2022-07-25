@@ -27,6 +27,7 @@ type CloudflareSecrets struct {
 
 const CloudflareWorkersSecretName = "cloudflare_workers_secret"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Cloudflare Workers Secrets",

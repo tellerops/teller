@@ -29,6 +29,7 @@ type CyberArkConjur struct {
 
 const ConjurName = "cyberark_conjur"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "CyberArk Conjure",

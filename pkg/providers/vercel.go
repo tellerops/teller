@@ -67,6 +67,7 @@ const PROJECTS_ENDPOINT = "/projects"
 
 const VercelName = "vercel"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Vercel",

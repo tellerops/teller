@@ -36,6 +36,7 @@ type GitHub struct {
 // NewGitHub create new GitHub provider
 const GithubName = "GitHub"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Github",

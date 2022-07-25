@@ -32,6 +32,7 @@ type Doppler struct {
 
 const DopplerName = "doppler"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description: "Doppler",

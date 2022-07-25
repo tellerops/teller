@@ -96,6 +96,7 @@ type Dotenv struct {
 	logger logging.Logger
 }
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    ".env",

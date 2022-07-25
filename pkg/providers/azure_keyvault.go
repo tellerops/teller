@@ -31,6 +31,7 @@ type AzureKeyVault struct {
 
 const azureName = "azure_keyvault"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Azure Key Vault",

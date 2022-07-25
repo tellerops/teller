@@ -22,6 +22,7 @@ type FileSystem struct {
 
 const FileSystemName = "FileSystem"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "File system",

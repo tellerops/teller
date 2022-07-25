@@ -35,6 +35,7 @@ type AWSSecretsManager struct {
 const defaultDeletionRecoveryWindowInDays = 7
 const versionSplit = ","
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Name:           "aws_secretsmanager",

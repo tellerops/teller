@@ -31,6 +31,7 @@ type Etcd struct {
 
 const EtcdName = "etcd"
 
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Etcd",
