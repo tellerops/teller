@@ -17,7 +17,7 @@ init_snapshot:
 expected_snapshot:
 expected_stderr: |
   -*- teller: loaded variables for test using .custom-teller.yml -*-
-  
+
   [filesystem DYNAMIC-SHORT-PATH...tings/test/foo] FOO = sh*****
 
-expected_stdout: 
+expected_stdout:

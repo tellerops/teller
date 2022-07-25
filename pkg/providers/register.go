@@ -2,6 +2,7 @@ package providers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/logging"
@@ -10,15 +11,17 @@ import (
 var providersMap = map[string]core.RegisteredProvider{}
 
 func RegisterProvider(metaInfo core.MetaInfo, builder func(logger logging.Logger) (core.Provider, error)) {
-	if _, ok := providersMap[metaInfo.Name]; ok {
-		panic(fmt.Sprintf("provider '%s' already exists", metaInfo.Name))
+	loweredProviderName := strings.ToLower(metaInfo.Name)
+	if _, ok := providersMap[loweredProviderName]; ok {
+		panic(fmt.Sprintf("provider '%s' already exists", loweredProviderName))
 	}
-	providersMap[metaInfo.Name] = core.RegisteredProvider{Meta: metaInfo, Builder: builder}
+	providersMap[loweredProviderName] = core.RegisteredProvider{Meta: metaInfo, Builder: builder}
 }
 
 func ResolveProvider(providerName string) (core.Provider, error) {
-	if registeredProvider, ok := providersMap[providerName]; ok {
-		logger := logging.GetRoot().WithField("provider_name", providerName)
+	loweredProviderName := strings.ToLower(providerName)
+	if registeredProvider, ok := providersMap[loweredProviderName]; ok {
+		logger := logging.GetRoot().WithField("provider_name", loweredProviderName)
 		return registeredProvider.Builder(logger)
 	}
 	return nil, fmt.Errorf("provider '%s' does not exist", providerName)
@@ -26,7 +29,8 @@ func ResolveProvider(providerName string) (core.Provider, error) {
 }
 
 func ResolveProviderMeta(providerName string) (core.MetaInfo, error) {
-	if registeredProvider, ok := providersMap[providerName]; ok {
+	loweredProviderName := strings.ToLower(providerName)
+	if registeredProvider, ok := providersMap[loweredProviderName]; ok {
 		return registeredProvider.Meta, nil
 	}
 	return core.MetaInfo{}, fmt.Errorf("provider '%s' does not exist", providerName)
