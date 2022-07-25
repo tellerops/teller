@@ -29,7 +29,6 @@ func (p *Porcelain) StartWizard() (*core.WizardAnswers, error) {
 
 	providers := BuiltinProviders{}
 	providerNames := providers.ProviderHumanToMachine()
-	fmt.Println("Available providers:")
 	displayProviders := lo.Keys(providerNames)
 	sort.Strings(displayProviders)
 	// the questions to ask
