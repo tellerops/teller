@@ -237,7 +237,7 @@ func checkForMatches(path string, entries []core.EnvEntry) ([]core.Match, error)
 	//nolint
 	scanner.Buffer(buf, 10*1024*1024) // 10MB lines correlating to 10MB files max (bundles?)
 
-	var lineNumber int = 0
+	var lineNumber = 0
 	for scanner.Scan() {
 		lineNumber++
 		line := scanner.Bytes()
@@ -396,7 +396,7 @@ func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 	entries := []core.EnvEntry{}
 	conf, ok := tl.Config.Providers[pname]
 	p, err := tl.Providers.GetProvider(pname)
-	m, err := providers.ResolveProviderMeta(pname)
+	m, _ := providers.ResolveProviderMeta(pname)
 	if err != nil && ok && conf.Kind != "" {
 		// ok, maybe same provider, with 'kind'?
 		p, err = tl.Providers.GetProvider(conf.Kind)

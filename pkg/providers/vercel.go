@@ -19,12 +19,12 @@ type VercelAPI struct {
 
 func NewVercelAPI(token string) *VercelAPI {
 	bearer := "Bearer " + token
-	httpClient := sling.New().Base(VERCEL_API_BASE).Set("Authorization", bearer)
+	httpClient := sling.New().Base(VercelAPIBase).Set("Authorization", bearer)
 	return &VercelAPI{http: httpClient}
 }
 
 func (v *VercelAPI) GetProject(path string) (map[string]*string, error) {
-	projectsPath := "/v1" + PROJECTS_ENDPOINT + "/" + path
+	projectsPath := "/v1" + ProjectEndPoint + "/" + path
 	project := new(VercelProject)
 	_, err := v.http.Get(projectsPath).ReceiveSuccess(project)
 	return project.envMap(), err
@@ -59,11 +59,9 @@ func (vp *VercelProject) envMap() map[string]*string {
 https://vercel.com/docs/api#endpoints/secrets
 */
 
-//nolint: golint
-const VERCEL_API_BASE = "https://api.vercel.com/"
+const VercelAPIBase = "https://api.vercel.com/"
 
-//nolint: golint
-const PROJECTS_ENDPOINT = "/projects"
+const ProjectEndPoint = "/projects"
 
 const VercelName = "vercel"
 

@@ -31,7 +31,7 @@ func TestJSONFormat(t *testing.T) {
 	logger.Error("error message")
 
 	var js interface{}
-	assert.True(t, json.Unmarshal([]byte(buf.String()), &js) == nil)
+	assert.True(t, json.Unmarshal(buf.Bytes(), &js) == nil)
 
 }
 

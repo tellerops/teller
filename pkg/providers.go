@@ -22,6 +22,6 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 	return descriptionToNameMap
 }
 
-func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) { //nolint
+func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) {
 	return providers.ResolveProvider(name)
 }
