@@ -68,6 +68,7 @@ const VercelName = "vercel"
 //nolint
 func init() {
 	metaInfo := core.MetaInfo{
+		Name:           "vercel",
 		Description:    "Vercel",
 		Authentication: "Requires an API key populated in your environment in: `VERCEL_TOKEN`.",
 		ConfigTemplate: `
