@@ -8,6 +8,8 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/spectralops/teller/pkg"
 	"github.com/spectralops/teller/pkg/logging"
+	"github.com/spectralops/teller/pkg/providers"
+	"github.com/spectralops/teller/pkg/utils"
 )
 
 var CLI struct {
@@ -27,6 +29,10 @@ var CLI struct {
 
 	Show struct {
 	} `cmd help:"Print in a human friendly, secure format"`
+
+	Providers struct {
+		Path string `optional name:"path" help:"Path for saving providers JSON file"`
+	} `cmd help:"Export providers metadata to a local JSON file" hidden: ""`
 
 	Yaml struct {
 	} `cmd help:"Print values in a YAML format (suitable for GCloud)"`
@@ -109,6 +115,19 @@ func main() {
 		fmt.Printf("Teller %v\n", version)
 		fmt.Printf("Revision %v, date: %v\n", commit, date)
 		os.Exit(0)
+	case "providers":
+		providersMetaJSON, err := providers.GetProvidersMetaJSON(version)
+		if err != nil {
+			logger.WithError(err).Fatal("could not get providers meta, %s", err)
+		}
+
+		saveErr := utils.WriteFileInPath("providers-meta.json", CLI.Providers.Path, []byte(providersMetaJSON))
+		if saveErr != nil {
+			logger.WithError(err).Fatal("could not save providers meta to a local file, %s", saveErr)
+		}
+		fmt.Printf("Providers meta has been exported successfully\n")
+
+		os.Exit(0)
 	}
 
 	//
@@ -185,7 +204,6 @@ func main() {
 		}
 		os.Exit(0)
 	}
-
 	// collecting
 
 	err = teller.Collect()
