@@ -258,4 +258,13 @@ providers:
         path: redis/config/foobar
 
 {{end}}
+
+{{- if index .ProviderKeys "process_env" }}
+
+  process_env:
+    env_sync:
+    env:
+      ETC_DSN:
+
+{{end}}
 `

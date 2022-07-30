@@ -1129,6 +1129,31 @@ providers:
         path: /folder/bar
 ```
 
+
+## ProcessEnv
+
+Load the environment variables from the parent process as needed.
+
+### Authentication
+No need.
+
+### Features
+
+* Sync - `yes`
+* Mapping - `yes`
+* Modes - `read`
+
+### Example Config
+
+```yaml
+providers:
+  process_env:
+    env_sync:
+
+    env:
+      ETC_DSN:
+```
+
 ## Azure
 
 ### Authentication
