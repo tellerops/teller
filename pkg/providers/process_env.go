@@ -61,7 +61,7 @@ func (a *ProcessEnv) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 // Delete will delete entry
 func (a *ProcessEnv) Delete(kp core.KeyPath) error {
-	return nil
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
 }
 
 // DeleteMapping will delete the given path recessively
