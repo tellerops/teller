@@ -66,7 +66,7 @@ func (a *ProcessEnv) Delete(kp core.KeyPath) error {
 
 // DeleteMapping will delete the given path recessively
 func (a *ProcessEnv) DeleteMapping(kp core.KeyPath) error {
-	return nil
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
 }
 
 // Put will create a new single entry
