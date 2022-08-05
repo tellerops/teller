@@ -76,5 +76,5 @@ func (a *ProcessEnv) Put(p core.KeyPath, val string) error {
 
 // PutMapping will create a multiple entries
 func (a *ProcessEnv) PutMapping(p core.KeyPath, m map[string]string) error {
-	return nil
+	return fmt.Errorf("%s does not implement delete yet", a.Name())
 }
