@@ -95,11 +95,12 @@ func (s *SnapshotSuite) CrateConfig(dir string) error {
 // CreateSnapshotData creates filesystem data from the given snapshotData.
 // For example, SnapshotData struct descrive the filesystem structure
 // └── /folder
-// 		├── settings/
-// 		│   ├── billing-svc
-// 		│   └── all/
-// 		│       ├── foo
-// 		└── bar
+//
+//	├── settings/
+//	│   ├── billing-svc
+//	│   └── all/
+//	│       ├── foo
+//	└── bar
 func (s *SnapshotSuite) CreateSnapshotData(snapshotData []SnapshotData, dir string) error {
 
 	for _, data := range snapshotData {

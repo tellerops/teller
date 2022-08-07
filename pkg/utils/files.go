@@ -5,8 +5,12 @@ import (
 	"path/filepath"
 )
 
-func WriteFileInPath(filename string, to string, content []byte) error {
-	if (to != "") {
+const (
+	filePermission = 0600
+)
+
+func WriteFileInPath(filename, to string, content []byte) error {
+	if to != "" {
 		if _, err := os.Stat(to); os.IsNotExist(err) {
 			err = os.MkdirAll(to, os.ModePerm)
 			if err != nil {
@@ -14,9 +18,9 @@ func WriteFileInPath(filename string, to string, content []byte) error {
 			}
 		}
 	}
-	err := os.WriteFile(filepath.Join(to, filename), content, 0600)
+	err := os.WriteFile(filepath.Join(to, filename), content, filePermission)
 
-	if (err != nil) {
+	if err != nil {
 		return err
 	}
 

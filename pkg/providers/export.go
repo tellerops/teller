@@ -7,12 +7,12 @@ import (
 )
 
 type TellerExport struct {
-	Version		string 				`json:"version"`
+	Version string `json:"version"`
 }
 
-type ProvidersMetaRoot struct {	
-	Teller		TellerExport 		`json:"teller"`
-	Providers	[]core.MetaInfo		`json:"providers"`
+type ProvidersMetaRoot struct {
+	Teller    TellerExport    `json:"teller"`
+	Providers []core.MetaInfo `json:"providers"`
 }
 
 func GetProvidersMetaJSON(version string) (string, error) {
@@ -23,12 +23,12 @@ func GetProvidersMetaJSON(version string) (string, error) {
 	}
 
 	result := ProvidersMetaRoot{
-		Teller: tellerObject,
+		Teller:    tellerObject,
 		Providers: providersMetaList,
 	}
 
 	jsonOutput, err := json.MarshalIndent(result, "", "  ")
-	
+
 	if err != nil {
 		return "", err
 	}
