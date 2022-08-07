@@ -10,7 +10,7 @@ type TellerExport struct {
 	Version string `json:"version"`
 }
 
-type ProvidersMetaRoot struct {
+type MetaRoot struct {
 	Teller    TellerExport    `json:"teller"`
 	Providers []core.MetaInfo `json:"providers"`
 }
@@ -22,7 +22,7 @@ func GetProvidersMetaJSON(version string) (string, error) {
 		Version: version,
 	}
 
-	result := ProvidersMetaRoot{
+	result := MetaRoot{
 		Teller:    tellerObject,
 		Providers: providersMetaList,
 	}
