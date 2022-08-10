@@ -10,20 +10,20 @@ import (
 )
 
 func TestGenerateProvidersMetaJSON(t *testing.T) {
-	var providersData = []core.MetaInfo {
+	var providersData = []core.MetaInfo{
 		{
-			Name: "Provider_1",
-			Description: "Description of Provider 1",
+			Name:           "Provider_1",
+			Description:    "Description of Provider 1",
 			Authentication: "Provider 1 authentication instructions",
 			ConfigTemplate: "Provider 1 config template",
-			Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+			Ops:            core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
 		},
 		{
-			Name: "Provider_2",
-			Description: "Description of Provider 2",
+			Name:           "Provider_2",
+			Description:    "Description of Provider 2",
 			Authentication: "Provider 2 authentication instructions",
 			ConfigTemplate: "Provider 2 config template",
-			Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+			Ops:            core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
 		},
 	}
 
