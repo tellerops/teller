@@ -8,26 +8,21 @@ import (
 
 type TellerExport struct {
 	Version string `json:"version"`
+	Providers map[string]core.MetaInfo `json:"providers"`
 }
 
-type MetaRoot struct {
-	Teller    TellerExport    `json:"teller"`
-	Providers []core.MetaInfo `json:"providers"`
-}
-
-func GetProvidersMetaJSON(version string) (string, error) {
-	providersMetaList := GetAllProvidersMeta()
+func GenerateProvidersMetaJSON(version string, providersMetaList []core.MetaInfo) (string, error) {
+	providersMetaMap := make(map[string]core.MetaInfo)
+	for _, provider := range providersMetaList {
+        providersMetaMap[provider.Name] = provider
+    }
 
 	tellerObject := TellerExport{
 		Version: version,
+		Providers: providersMetaMap,
 	}
 
-	result := MetaRoot{
-		Teller:    tellerObject,
-		Providers: providersMetaList,
-	}
-
-	jsonOutput, err := json.MarshalIndent(result, "", "  ")
+	jsonOutput, err := json.MarshalIndent(tellerObject, "", "  ")
 
 	if err != nil {
 		return "", err

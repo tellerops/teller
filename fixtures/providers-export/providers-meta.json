@@ -1,0 +1,33 @@
+{
+  "version": "1.1",
+  "providers": {
+    "Provider_1": {
+      "Description": "Description of Provider 1",
+      "Name": "Provider_1",
+      "Authentication": "Provider 1 authentication instructions",
+      "ConfigTemplate": "Provider 1 config template",
+      "Ops": {
+        "Delete": false,
+        "DeleteMapping": false,
+        "Put": true,
+        "PutMapping": true,
+        "Get": true,
+        "GetMapping": true
+      }
+    },
+    "Provider_2": {
+      "Description": "Description of Provider 2",
+      "Name": "Provider_2",
+      "Authentication": "Provider 2 authentication instructions",
+      "ConfigTemplate": "Provider 2 config template",
+      "Ops": {
+        "Delete": false,
+        "DeleteMapping": false,
+        "Put": true,
+        "PutMapping": true,
+        "Get": true,
+        "GetMapping": true
+      }
+    }
+  }
+}

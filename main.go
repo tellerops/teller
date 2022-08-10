@@ -116,7 +116,8 @@ func main() {
 		fmt.Printf("Revision %v, date: %v\n", commit, date)
 		os.Exit(0)
 	case "providers":
-		providersMetaJSON, err := providers.GetProvidersMetaJSON(version)
+		providersMetaList := providers.GetAllProvidersMeta()
+		providersMetaJSON, err := providers.GenerateProvidersMetaJSON(version, providersMetaList)
 		if err != nil {
 			logger.WithError(err).Fatal("could not get providers meta, %s", err)
 		}
