@@ -134,7 +134,7 @@ func TestTellerExports(t *testing.T) {
 	}
 
 	b = tl.ExportEnv()
-	assert.Equal(t, b, "#!/bin/sh\nexport k=v\n")
+	assert.Equal(t, b, "#!/bin/sh\nexport k='v'\n")
 
 	b, err := tl.ExportYAML()
 	assert.NoError(t, err)
@@ -142,6 +142,27 @@ func TestTellerExports(t *testing.T) {
 	b, err = tl.ExportJSON()
 	assert.NoError(t, err)
 	assert.Equal(t, b, "{\n  \"k\": \"v\"\n}")
+}
+
+func TestTellerShExportEscaped(t *testing.T) {
+	tl := Teller{
+		Logger:    getLogger(),
+		Entries:   []core.EnvEntry{},
+		Providers: &BuiltinProviders{},
+	}
+
+	b := tl.ExportEnv()
+	assert.Equal(t, b, "#!/bin/sh\n")
+
+	tl = Teller{
+		Logger: getLogger(),
+		Entries: []core.EnvEntry{
+			{Key: "k", Value: `()"';@  \(\)\"\'\;\@`, ProviderName: "test-provider", ResolvedPath: "path/kv"},
+		},
+	}
+
+	b = tl.ExportEnv()
+	assert.Equal(t, b, "#!/bin/sh\nexport k='()\"'\"'\"';@  \\(\\)\\\"\\'\"'\"'\\;\\@'\n")
 }
 
 func TestTellerCollect(t *testing.T) {
