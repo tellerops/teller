@@ -264,7 +264,7 @@ providers:
   process_env:
     env:
       ETC_DSN:
-        field: # Optional, specific environment variable in the parent process
+        field: SOME_KEY # Optional, accesses the environment variable SOME_KEY and maps it to ETC_DSN
 
 {{end}}
 `
