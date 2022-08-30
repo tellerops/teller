@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"fmt"
 	"os"
 	"sort"
 	"strings"
@@ -61,20 +62,20 @@ func (a *ProcessEnv) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 // Delete will delete entry
 func (a *ProcessEnv) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("provider %s does not implement delete yet", a.Name())
 }
 
 // DeleteMapping will delete the given path recessively
 func (a *ProcessEnv) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("provider %s does not implement delete yet", a.Name())
 }
 
 // Put will create a new single entry
 func (a *ProcessEnv) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("provider %s does not implement write yet", a.Name())
 }
 
 // PutMapping will create a multiple entries
 func (a *ProcessEnv) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("provider %s does not implement write yet", a.Name())
 }

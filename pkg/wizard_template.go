@@ -262,9 +262,9 @@ providers:
 {{- if index .ProviderKeys "process_env" }}
 
   process_env:
-    env_sync:
     env:
       ETC_DSN:
+        field: # Optional, specific environment variable in the parent process
 
 {{end}}
 `
