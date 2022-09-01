@@ -28,8 +28,7 @@ func TestGenerateProvidersMetaJSON(t *testing.T) {
 	}
 
 	providersMetaJSON, _ := GenerateProvidersMetaJSON("1.1", providersData)
-
-	providersFileContent, _ := os.ReadFile("../fixtures/providers-export/providers-meta.json")
+	providersFileContent, _ := os.ReadFile("../../fixtures/providers-export/providers-meta.json")
 
 	actualProvidersJSON, _ := json.Marshal(providersMetaJSON)
 	expectedProvidersJSON, _ := json.Marshal(string(providersFileContent))
