@@ -38,6 +38,7 @@ func (p *BuiltinProviders) ProviderHumanToMachine() map[string]string {
 		"GitHub":                      "github",
 		"KeyPass":                     "keypass",
 		"FileSystem":                  "filesystem",
+		"ProcessEnv":                  "process_env",
 	}
 }
 
@@ -84,6 +85,8 @@ func (p *BuiltinProviders) GetProvider(name string) (core.Provider, error) { //n
 		return providers.NewKeyPass(logger)
 	case "filesystem":
 		return providers.NewFileSystem(logger)
+	case "process_env":
+		return providers.NewProcessEnv(logger)
 	default:
 		return nil, fmt.Errorf("provider '%s' does not exist", name)
 	}

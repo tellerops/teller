@@ -258,4 +258,13 @@ providers:
         path: redis/config/foobar
 
 {{end}}
+
+{{- if index .ProviderKeys "process_env" }}
+
+  process_env:
+    env:
+      ETC_DSN:
+        field: SOME_KEY # Optional, accesses the environment variable SOME_KEY and maps it to ETC_DSN
+
+{{end}}
 `
