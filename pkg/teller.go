@@ -100,7 +100,8 @@ func (tl *Teller) ExportEnv() string {
 	fmt.Fprintf(&b, "#!/bin/sh\n")
 	for i := range tl.Entries {
 		v := tl.Entries[i]
-		fmt.Fprintf(&b, "export %s=%s\n", v.Key, v.Value)
+		value := strings.ReplaceAll(v.Value, "'", "'\"'\"'")
+		fmt.Fprintf(&b, "export %s='%s'\n", v.Key, value)
 	}
 	return b.String()
 }

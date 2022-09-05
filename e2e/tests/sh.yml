@@ -1,0 +1,46 @@
+---
+name: Sh print
+command: <binary-path> sh
+config_file_name: .teller.yml
+config_content: >
+  project: test
+
+  providers:
+    filesystem:
+      env_sync:
+        path: {{.Folder}}/settings/test/all
+      env:
+        FOO:
+          path: {{.Folder}}/settings/test/foo
+        BAR:
+          path: {{.Folder}}/settings/test/bar
+init_snapshot:
+  - path: settings/test
+    file_name: foo
+    content: shazam
+  - path: settings/test
+    file_name: bar
+    content: shazam
+  - path: settings/test/all
+    file_name: secret-a
+    content: mailman
+  - path: settings/test/all
+    file_name: secret-b
+    content: shazam
+  - path: settings/test/all
+    file_name: secret-c
+    content: shazam-1
+  - path: settings/test/all
+    file_name: secret-d
+    content: ()"';@ \(\)\"\'\;\@
+
+expected_snapshot:
+expected_stderr:
+expected_stdout: |
+  #!/bin/sh
+  export secret-d='()"'"'"';@ \(\)\"\'"'"'\;\@'
+  export secret-c='shazam-1'
+  export secret-b='shazam'
+  export secret-a='mailman'
+  export FOO='shazam'
+  export BAR='shazam'
