@@ -23,6 +23,22 @@ type Cloudflare struct {
 	logger logging.Logger
 }
 
+const cloudFlareWorkersKVName = "cloudflare_workers_kv"
+
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "Cloudflare Workers K/V",
+		Name:           cloudFlareWorkersKVName,
+		Authentication: "requires the following environment variables to be set:\n`CLOUDFLARE_API_KEY`: Your Cloudflare api key.\n`CLOUDFLARE_API_EMAIL`: Your email associated with the api key.\n`CLOUDFLARE_ACCOUNT_ID`: Your account ID.\n",
+		ConfigTemplate: `
+		TODO(XXX): Missing
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true},
+	}
+	RegisterProvider(metaInfo, NewCloudflareClient)
+}
+
 func NewCloudflareClient(logger logging.Logger) (core.Provider, error) {
 	api, err := cloudflare.New(
 		os.Getenv("CLOUDFLARE_API_KEY"),
@@ -38,16 +54,12 @@ func NewCloudflareClient(logger logging.Logger) (core.Provider, error) {
 	return &Cloudflare{client: api, logger: logger}, nil
 }
 
-func (c *Cloudflare) Name() string {
-	return "cloudflare_workers_kv"
-}
-
 func (c *Cloudflare) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", c.Name())
+	return fmt.Errorf("provider %q does not implement write yet", cloudFlareWorkersKVName)
 }
 
 func (c *Cloudflare) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", c.Name())
+	return fmt.Errorf("provider %q does not implement write yet", cloudFlareWorkersKVName)
 }
 
 func (c *Cloudflare) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -69,11 +81,11 @@ func (c *Cloudflare) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (c *Cloudflare) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", c.Name())
+	return fmt.Errorf("%s does not implement delete yet", cloudFlareWorkersKVName)
 }
 
 func (c *Cloudflare) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", c.Name())
+	return fmt.Errorf("%s does not implement delete yet", cloudFlareWorkersKVName)
 }
 
 func (c *Cloudflare) getSecrets(p core.KeyPath) ([]core.EnvEntry, error) {

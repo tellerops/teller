@@ -35,6 +35,27 @@ type AWSSecretsManager struct {
 const defaultDeletionRecoveryWindowInDays = 7
 const versionSplit = ","
 
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Name:           "aws_secretsmanager",
+		Description:    "AWS Secrets Manager",
+		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment",
+		ConfigTemplate: `
+  # configure only from environment
+  aws_secretsmanager:
+    env_sync:
+      path: prod/foo/bar
+    env:
+      FOO_BAR:
+        path: prod/foo/bar
+        field: SOME_KEY
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true, DeleteMapping: true},
+	}
+	RegisterProvider(metaInfo, NewAWSSecretsManager)
+}
+
 func NewAWSSecretsManager(logger logging.Logger) (core.Provider, error) {
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
@@ -50,10 +71,6 @@ func NewAWSSecretsManager(logger logging.Logger) (core.Provider, error) {
 		deletionDisableRecoveryWindow: false,
 		treatSecretMarkedForDeletionAsNonExisting: true,
 	}, nil
-}
-
-func (a *AWSSecretsManager) Name() string {
-	return "aws_secretsmanager"
 }
 
 func (a *AWSSecretsManager) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {

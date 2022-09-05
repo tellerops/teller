@@ -19,12 +19,12 @@ type VercelAPI struct {
 
 func NewVercelAPI(token string) *VercelAPI {
 	bearer := "Bearer " + token
-	httpClient := sling.New().Base(VERCEL_API_BASE).Set("Authorization", bearer)
+	httpClient := sling.New().Base(VercelAPIBase).Set("Authorization", bearer)
 	return &VercelAPI{http: httpClient}
 }
 
 func (v *VercelAPI) GetProject(path string) (map[string]*string, error) {
-	projectsPath := "/v1" + PROJECTS_ENDPOINT + "/" + path
+	projectsPath := "/v1" + ProjectEndPoint + "/" + path
 	project := new(VercelProject)
 	_, err := v.http.Get(projectsPath).ReceiveSuccess(project)
 	return project.envMap(), err
@@ -59,11 +59,38 @@ func (vp *VercelProject) envMap() map[string]*string {
 https://vercel.com/docs/api#endpoints/secrets
 */
 
-//nolint: golint
-const VERCEL_API_BASE = "https://api.vercel.com/"
+const VercelAPIBase = "https://api.vercel.com/"
 
-//nolint: golint
-const PROJECTS_ENDPOINT = "/projects"
+const ProjectEndPoint = "/projects"
+
+const VercelName = "vercel"
+
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Name:           "vercel",
+		Description:    "Vercel",
+		Authentication: "Requires an API key populated in your environment in: `VERCEL_TOKEN`.",
+		ConfigTemplate: `
+  # requires an API token in: VERCEL_TOKEN 
+  vercel:
+	# sync a complete environment
+    env_sync:
+      path: drakula-demo
+
+	# # pick and choose variables
+	# env:
+	#	  JVM_OPTS:
+	#      path: drakula-demo
+`,
+		Ops: core.OpMatrix{
+			Get:        true,
+			GetMapping: true,
+		},
+	}
+
+	RegisterProvider(metaInfo, NewVercel)
+}
 
 func NewVercel(logger logging.Logger) (core.Provider, error) {
 	vercelToken := os.Getenv("VERCEL_TOKEN")
@@ -71,10 +98,6 @@ func NewVercel(logger logging.Logger) (core.Provider, error) {
 		return nil, fmt.Errorf("please set VERCEL_TOKEN")
 	}
 	return &Vercel{client: NewVercelAPI(vercelToken), logger: logger}, nil
-}
-
-func (ve *Vercel) Name() string {
-	return "vercel"
 }
 
 func (ve *Vercel) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -120,18 +143,18 @@ func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) { // nolint:dupl
 }
 
 func (ve *Vercel) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", ve.Name())
+	return fmt.Errorf("provider %q does not implement write yet", VercelName)
 }
 func (ve *Vercel) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", ve.Name())
+	return fmt.Errorf("provider %q does not implement write yet", VercelName)
 }
 
 func (ve *Vercel) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", ve.Name())
+	return fmt.Errorf("%s does not implement delete yet", VercelName)
 }
 
 func (ve *Vercel) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", ve.Name())
+	return fmt.Errorf("%s does not implement delete yet", VercelName)
 }
 
 func (ve *Vercel) getSecret(kp core.KeyPath) (map[string]*string, error) {

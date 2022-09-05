@@ -27,6 +27,28 @@ type CyberArkConjur struct {
 	logger logging.Logger
 }
 
+const ConjurName = "cyberark_conjur"
+
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "CyberArk Conjure",
+		Name:           ConjurName,
+		Authentication: "Requires a username and API key populated in your environment:\n* `CONJUR_AUTHN_LOGIN`\n* `CONJUR_AUTHN_API_KEY`",
+		ConfigTemplate: `
+  # https://conjur.org
+  # set CONJUR_AUTHN_LOGIN and CONJUR_AUTHN_API_KEY env vars
+  # set .conjurrc file in user's home directory
+  cyberark_conjur:
+    env:
+      FOO_BAR:
+        path: /secrets/foo/bar
+`,
+		Ops: core.OpMatrix{Get: true, Put: true},
+	}
+	RegisterProvider(metaInfo, NewConjurClient)
+}
+
 func NewConjurClient(logger logging.Logger) (core.Provider, error) {
 	config, err := conjurapi.LoadConfig()
 	if err != nil {
@@ -46,21 +68,17 @@ func NewConjurClient(logger logging.Logger) (core.Provider, error) {
 	return &CyberArkConjur{client: conjur, logger: logger}, nil
 }
 
-func (c *CyberArkConjur) Name() string {
-	return "cyberark_conjur"
-}
-
 func (c *CyberArkConjur) Put(p core.KeyPath, val string) error {
 	err := c.putSecret(p, val)
 
 	return err
 }
 func (c *CyberArkConjur) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement put mapping yet", c.Name())
+	return fmt.Errorf("provider %q does not implement put mapping yet", ConjurName)
 }
 
 func (c *CyberArkConjur) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
-	return nil, fmt.Errorf("provider %q does not implement get mapping yet", c.Name())
+	return nil, fmt.Errorf("provider %q does not implement get mapping yet", ConjurName)
 }
 
 func (c *CyberArkConjur) Get(p core.KeyPath) (*core.EnvEntry, error) {
@@ -79,11 +97,11 @@ func (c *CyberArkConjur) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (c *CyberArkConjur) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", c.Name())
+	return fmt.Errorf("%s does not implement delete yet", ConjurName)
 }
 
 func (c *CyberArkConjur) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", c.Name())
+	return fmt.Errorf("%s does not implement delete yet", ConjurName)
 }
 
 func (c *CyberArkConjur) getSecret(kp core.KeyPath) ([]byte, error) {

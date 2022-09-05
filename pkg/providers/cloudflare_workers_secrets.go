@@ -25,6 +25,33 @@ type CloudflareSecrets struct {
 	logger logging.Logger
 }
 
+const CloudflareWorkersSecretName = "cloudflare_workers_secret"
+
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "Cloudflare Workers Secrets",
+		Name:           CloudflareWorkersSecretName,
+		Authentication: "requires the following environment variables to be set:\n`CLOUDFLARE_API_KEY`: Your Cloudflare api key.\n`CLOUDFLARE_API_EMAIL`: Your email associated with the api key.\n`CLOUDFLARE_ACCOUNT_ID`: Your account ID.\n",
+		ConfigTemplate: `
+  # Configure via environment variables for integration:
+  # CLOUDFLARE_API_KEY: Your Cloudflare api key.
+  # CLOUDFLARE_API_EMAIL: Your email associated with the api key.
+  # CLOUDFLARE_ACCOUNT_ID: Your account ID.
+
+  cloudflare_workers_secrets:
+    env_sync:
+      source: # Mandatory: script field
+    env:
+      script-value:
+        path: foo-secret
+        source: # Mandatory: script field
+		`,
+		Ops: core.OpMatrix{Put: true, PutMapping: true, Delete: true},
+	}
+	RegisterProvider(metaInfo, NewCloudflareSecretsClient)
+}
+
 func NewCloudflareSecretsClient(logger logging.Logger) (core.Provider, error) {
 	api, err := cloudflare.New(
 		os.Getenv("CLOUDFLARE_API_KEY"),
@@ -37,10 +64,6 @@ func NewCloudflareSecretsClient(logger logging.Logger) (core.Provider, error) {
 
 	cloudflare.UsingAccount(os.Getenv("CLOUDFLARE_ACCOUNT_ID"))(api) //nolint
 	return &CloudflareSecrets{client: api, logger: logger}, nil
-}
-
-func (c *CloudflareSecrets) Name() string {
-	return "cloudflare_workers_secret"
 }
 
 func (c *CloudflareSecrets) Put(p core.KeyPath, val string) error {
@@ -105,15 +128,15 @@ func (c *CloudflareSecrets) Delete(p core.KeyPath) error {
 }
 
 func (c *CloudflareSecrets) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
-	return nil, fmt.Errorf("%s does not support read functionality", c.Name())
+	return nil, fmt.Errorf("%s does not support read functionality", CloudflareWorkersSecretName)
 }
 
 func (c *CloudflareSecrets) Get(p core.KeyPath) (*core.EnvEntry, error) {
-	return nil, fmt.Errorf("%s does not support read functionality", c.Name())
+	return nil, fmt.Errorf("%s does not support read functionality", CloudflareWorkersSecretName)
 }
 
 func (c *CloudflareSecrets) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement deleteMapping yet", c.Name())
+	return fmt.Errorf("%s does not implement deleteMapping yet", CloudflareWorkersSecretName)
 }
 
 func (c *CloudflareSecrets) getSecretName(p core.KeyPath) (string, error) {

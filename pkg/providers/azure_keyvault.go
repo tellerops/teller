@@ -29,6 +29,28 @@ type AzureKeyVault struct {
 	vaultBaseURL string
 }
 
+const azureName = "azure_keyvault"
+
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "Azure Key Vault",
+		Name:           azureName,
+		Authentication: "TODO(XXX)",
+		ConfigTemplate: `
+  # you can mix and match many files
+  azure_keyvault:
+    env_sync:
+      path: azure
+    env:
+      FOO_BAR:
+        path: foobar
+		`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true},
+	}
+	RegisterProvider(metaInfo, NewAzureKeyVault)
+}
+
 func NewAzureKeyVault(logger logging.Logger) (core.Provider, error) {
 	vaultName := os.Getenv("KVAULT_NAME")
 	if vaultName == "" {
@@ -130,7 +152,7 @@ func (a *AzureKeyVault) Delete(kp core.KeyPath) error {
 }
 
 func (a *AzureKeyVault) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", azureName)
 }
 
 func (a *AzureKeyVault) getSecret(kp core.KeyPath) (keyvault.SecretBundle, error) {

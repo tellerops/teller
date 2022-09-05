@@ -22,8 +22,34 @@ type LastPass struct {
 	logger   logging.Logger
 }
 
-func NewLastPass(logger logging.Logger) (core.Provider, error) {
+const LastPassName = "lastpass"
 
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "Lastpass",
+		Authentication: "TODO(XXX)",
+		Name:           LastPassName,
+		ConfigTemplate: `
+  # Configure via environment variables:
+  # LASTPASS_USERNAME
+  # LASTPASS_PASSWORD
+
+  lastpass:
+    env_sync:
+      path: # LastPass item ID
+    env:
+      ETC_DSN:
+        path: # Lastpass item ID
+        # field: by default taking password property. in case you want other property un-mark this line and set the lastpass property name.
+`,
+		Ops: core.OpMatrix{GetMapping: true, Get: true},
+	}
+
+	RegisterProvider(metaInfo, NewLastPass)
+}
+
+func NewLastPass(logger logging.Logger) (core.Provider, error) {
 	username := os.Getenv("LASTPASS_USERNAME")
 	masterPassword := os.Getenv("LASTPASS_PASSWORD")
 
@@ -40,16 +66,12 @@ func NewLastPass(logger logging.Logger) (core.Provider, error) {
 	return &LastPass{accounts: accountsMap, logger: logger}, nil
 }
 
-func (l *LastPass) Name() string {
-	return "lastpass"
-}
-
 func (l *LastPass) Put(p core.KeyPath, val string) error {
-	return fmt.Errorf("provider %q does not implement write yet", l.Name())
+	return fmt.Errorf("provider %q does not implement write yet", LastPassName)
 }
 
 func (l *LastPass) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write yet", l.Name())
+	return fmt.Errorf("provider %q does not implement write yet", LastPassName)
 }
 
 func (l *LastPass) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -96,11 +118,11 @@ func (l *LastPass) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (l *LastPass) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", l.Name())
+	return fmt.Errorf("%s does not implement delete yet", LastPassName)
 }
 
 func (l *LastPass) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", l.Name())
+	return fmt.Errorf("%s does not implement delete yet", LastPassName)
 }
 
 func (l *LastPass) getSecretByID(id string) (*lastpass.Account, error) {

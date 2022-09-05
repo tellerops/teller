@@ -18,6 +18,32 @@ type HashicorpVault struct {
 	logger logging.Logger
 }
 
+const HashicorpVaultName = "hashicorp_vault"
+
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "Hashicorp Vault",
+		Name:           HashicorpVaultName,
+		Authentication: "Configuration is environment based, as defined by client standard. See variables [here](https://github.com/hashicorp/vault/blob/api/v1.0.4/api/client.go#L28).",
+		ConfigTemplate: `
+  # configure only from environment
+  # https://github.com/hashicorp/vault/blob/api/v1.0.4/api/client.go#L28
+  # this vars should not go through to the executing cmd
+  hashicorp_vault:
+    env_sync:
+      path: secret/data/{{"{{stage}}"}}/billing/web/env
+    env:
+      SMTP_PASS:
+        path: secret/data/{{"{{stage}}"}}/wordpress
+        field: smtp
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+	}
+
+	RegisterProvider(metaInfo, NewHashicorpVault)
+}
+
 func NewHashicorpVault(logger logging.Logger) (core.Provider, error) {
 	conf := api.DefaultConfig()
 	err := conf.ReadEnvironment()
@@ -32,10 +58,6 @@ func NewHashicorpVault(logger logging.Logger) (core.Provider, error) {
 	}
 
 	return &HashicorpVault{client: client.Logical(), logger: logger}, nil
-}
-
-func (h *HashicorpVault) Name() string {
-	return "hashicorp_vault"
 }
 
 func (h *HashicorpVault) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -114,11 +136,11 @@ func (h *HashicorpVault) PutMapping(p core.KeyPath, m map[string]string) error {
 }
 
 func (h *HashicorpVault) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", h.Name())
+	return fmt.Errorf("%s does not implement delete yet", HashicorpVaultName)
 }
 
 func (h *HashicorpVault) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", h.Name())
+	return fmt.Errorf("%s does not implement delete yet", HashicorpVaultName)
 }
 
 func (h *HashicorpVault) getSecret(kp core.KeyPath) (*api.Secret, error) {

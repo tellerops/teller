@@ -1,6 +1,10 @@
 package core
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/spectralops/teller/pkg/logging"
+)
 
 type Severity string
 
@@ -184,7 +188,6 @@ func (ee *EnvEntryLookup) EnvByKeyAndProvider(key, provider, dflt string) string
 }
 
 type Provider interface {
-	Name() string
 	// in this case 'env' is empty, but EnvEntries are the value
 	GetMapping(p KeyPath) ([]EnvEntry, error)
 
@@ -198,10 +201,31 @@ type Provider interface {
 	DeleteMapping(p KeyPath) error
 }
 
+type MetaInfo struct {
+	Description    string
+	Name           string
+	Authentication string
+	ConfigTemplate string
+	Ops            OpMatrix
+}
+type OpMatrix struct {
+	Delete        bool
+	DeleteMapping bool
+	Put           bool
+	PutMapping    bool
+	Get           bool
+	GetMapping    bool
+}
+
 type Match struct {
 	Path       string
 	Line       string
 	LineNumber int
 	MatchIndex int
 	Entry      EnvEntry
+}
+
+type RegisteredProvider struct {
+	Meta    MetaInfo
+	Builder func(logger logging.Logger) (Provider, error)
 }

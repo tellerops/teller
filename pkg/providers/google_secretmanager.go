@@ -27,16 +27,35 @@ type GoogleSecretManager struct {
 	logger logging.Logger
 }
 
+const GoogleSecretManagerName = "google_secretmanager"
+
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "Google Secret Manager",
+		Name:           GoogleSecretManagerName,
+		Authentication: "You should populate `GOOGLE_APPLICATION_CREDENTIALS=account.json` in your environment to your relevant `account.json` that you get from Google.",
+		ConfigTemplate: `
+  # GOOGLE_APPLICATION_CREDENTIALS=foobar.json
+  # https://cloud.google.com/secret-manager/docs/reference/libraries#setting_up_authentication
+  google_secretmanager:
+    env:
+      FOO_GOOG:
+        # need to supply the relevant version (versions/1)
+        path: projects/123/secrets/FOO_GOOG/versions/1
+`,
+		Ops: core.OpMatrix{Get: true, Put: true, Delete: true},
+	}
+
+	RegisterProvider(metaInfo, NewGoogleSecretManager)
+}
+
 func NewGoogleSecretManager(logger logging.Logger) (core.Provider, error) {
 	client, err := secretmanager.NewClient(context.TODO())
 	if err != nil {
 		return nil, err
 	}
 	return &GoogleSecretManager{client: client, logger: logger}, nil
-}
-
-func (a *GoogleSecretManager) Name() string {
-	return "google_secretmanager"
 }
 
 func (a *GoogleSecretManager) Put(p core.KeyPath, val string) error {
@@ -93,7 +112,7 @@ func (a *GoogleSecretManager) Delete(kp core.KeyPath) error {
 }
 
 func (a *GoogleSecretManager) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", a.Name())
+	return fmt.Errorf("%s does not implement delete yet", GoogleSecretManagerName)
 }
 
 func (a *GoogleSecretManager) getSecret(path string) (string, error) {

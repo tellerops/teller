@@ -24,8 +24,29 @@ type Gopass struct {
 	logger logging.Logger
 }
 
-func NewGopass(logger logging.Logger) (core.Provider, error) {
+const GoPassName = "gopass"
 
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description:    "Gopass",
+		Name:           GoPassName,
+		Authentication: "Configuration is environment based, as defined by client standard. See variables [here](https://github.com/gopasspw/gopass/blob/master/docs/config.md).",
+		ConfigTemplate: `
+  # Override default configuration: https://github.com/gopasspw/gopass/blob/master/docs/config.md
+  gopass:
+    env_sync:
+      path: foo
+    env:
+      ETC_DSN:
+        path: foo/bar
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+	}
+
+	RegisterProvider(metaInfo, NewGopass)
+}
+func NewGopass(logger logging.Logger) (core.Provider, error) {
 	ctx := context.Background()
 	gp, err := api.New(ctx)
 	if err != nil {
@@ -34,14 +55,10 @@ func NewGopass(logger logging.Logger) (core.Provider, error) {
 	return &Gopass{client: gp, logger: logger}, nil
 }
 
-func (g *Gopass) Name() string {
-	return "gopass"
-}
-
 func (g *Gopass) Put(p core.KeyPath, val string) error {
 	secret, err := g.getSecret(p.Path)
 	if err != nil {
-		return fmt.Errorf("%v cannot get value: %v", g.Name(), err)
+		return fmt.Errorf("%v cannot get value: %v", GoPassName, err)
 	}
 
 	secret.SetPassword(val)
@@ -54,14 +71,14 @@ func (g *Gopass) PutMapping(p core.KeyPath, m map[string]string) error {
 		ap := p.SwitchPath(fmt.Sprintf("%v/%v", p.Path, k))
 		secret, err := g.getSecret(ap.Path)
 		if err != nil {
-			return fmt.Errorf("%v cannot get value: %v", g.Name(), err)
+			return fmt.Errorf("%v cannot get value: %v", GoPassName, err)
 		}
 
 		secret.SetPassword(v)
 		g.logger.WithField("path", ap.Path).Debug("set secret")
 		err = g.client.Set(context.TODO(), ap.Path, secret)
 		if err != nil {
-			return fmt.Errorf("%v cannot update value: %v", g.Name(), err)
+			return fmt.Errorf("%v cannot update value: %v", GoPassName, err)
 		}
 
 	}
@@ -93,7 +110,7 @@ func (g *Gopass) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 	secret, err := g.getSecret(p.Path)
 	if err != nil {
-		return nil, fmt.Errorf("%v cannot get value: %v", g.Name(), err)
+		return nil, fmt.Errorf("%v cannot get value: %v", GoPassName, err)
 	}
 
 	if secret == nil {
@@ -107,11 +124,11 @@ func (g *Gopass) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (g *Gopass) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", g.Name())
+	return fmt.Errorf("%s does not implement delete yet", GoPassName)
 }
 
 func (g *Gopass) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", g.Name())
+	return fmt.Errorf("%s does not implement delete yet", GoPassName)
 }
 
 func (g *Gopass) getSecret(path string) (gopass.Secret, error) {

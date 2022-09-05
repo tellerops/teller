@@ -19,17 +19,50 @@ type OnePassword struct {
 	logger logging.Logger
 }
 
-func NewOnePassword(logger logging.Logger) (core.Provider, error) {
+const OnePasswordName = "1password"
 
+//nolint
+func init() {
+	metaInfo := core.MetaInfo{
+		Description: "1Password",
+		Name:        OnePasswordName,
+		Authentication: `
+To integrate with the 1Password API, you should have system-to-system secret management running in your infrastructure/localhost [more details here](https://support.1password.com/connect-deploy-docker/).
+
+Requires the following environment variables to be set:
+` + "`OP_CONNECT_HOST`" + ` - The hostname of the 1Password Connect API	
+` + "`OP_CONNECT_TOKEN`" + ` - The API token to be used to authenticate the client to a 1Password Connect API.
+`,
+		ConfigTemplate: `,
+  # Configure via environment variables:
+  # OP_CONNECT_HOST
+  # OP_CONNECT_TOKEN
+  1password:
+    env_sync:
+        path: # Key title
+        source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
+    env:
+      FOO_BAR:
+        path: # Key title
+        source: # 1Password token gen include access to multiple vault. to get the secrets you must add and vaultUUID. the field is mandatory
+        field: # The secret field to get. notesPlain, {label key}, password etc.
+`,
+		Ops: core.OpMatrix{
+			Put:        true,
+			GetMapping: true,
+			Get:        true,
+		},
+	}
+
+	RegisterProvider(metaInfo, NewOnePassword)
+}
+
+func NewOnePassword(logger logging.Logger) (core.Provider, error) {
 	client, err := connect.NewClientFromEnvironment()
 	if err != nil {
 		return nil, err
 	}
 	return &OnePassword{client: client, logger: logger}, nil
-}
-
-func (o *OnePassword) Name() string {
-	return "1password"
 }
 
 func (o *OnePassword) Put(p core.KeyPath, val string) error {
@@ -55,7 +88,7 @@ func (o *OnePassword) Put(p core.KeyPath, val string) error {
 }
 
 func (o *OnePassword) PutMapping(p core.KeyPath, m map[string]string) error {
-	return fmt.Errorf("provider %q does not implement write multiple keys", o.Name())
+	return fmt.Errorf("provider %q does not implement write multiple keys", OnePasswordName)
 }
 
 func (o *OnePassword) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
@@ -97,11 +130,11 @@ func (o *OnePassword) Get(p core.KeyPath) (*core.EnvEntry, error) {
 }
 
 func (o *OnePassword) Delete(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", o.Name())
+	return fmt.Errorf("%s does not implement delete yet", OnePasswordName)
 }
 
 func (o *OnePassword) DeleteMapping(kp core.KeyPath) error {
-	return fmt.Errorf("%s does not implement delete yet", o.Name())
+	return fmt.Errorf("%s does not implement delete yet", OnePasswordName)
 }
 
 func (o *OnePassword) getItemByTitle(p core.KeyPath) (*onepassword.Item, error) {

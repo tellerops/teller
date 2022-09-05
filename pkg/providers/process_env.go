@@ -15,6 +15,25 @@ type ProcessEnv struct {
 	logger logging.Logger
 }
 
+//nolint
+func init() {
+	metaInto := core.MetaInfo{
+		Description:    "ProcessEnv",
+		Name:           "process_env",
+		Authentication: "No Authentication needed",
+		ConfigTemplate: `
+  # Configure via environment:
+  process_env:
+    env:
+      ETC_DSN:
+        # Optional: accesses the environment variable 'SOME_KEY' and maps it to ETC_DSN
+        field: SOME_KEY
+`,
+		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: false, PutMapping: false},
+	}
+	RegisterProvider(metaInto, NewConsul)
+}
+
 // NewProcessEnv creates new provider instance
 func NewProcessEnv(logger logging.Logger) (core.Provider, error) {
 	return &ProcessEnv{
