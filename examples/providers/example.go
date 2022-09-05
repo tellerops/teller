@@ -12,6 +12,24 @@ type Example struct {
 	logger logging.Logger
 }
 
+//nolint
+
+// func init() {
+// 	metaInto := core.MetaInfo{
+// 		Description:    "ProviderName",
+// 		Name:           "provider_name",
+// 		Authentication: "If you have the Consul CLI working and configured, there's no special action to take.\nConfiguration is environment based, as defined by client standard. See variables [here](https://github.com/hashicorp/consul/blob/master/api/api.go#L28).",
+// 		ConfigTemplate: `
+//   provider:
+//     env:
+//       KEY_EAXMPLE:
+//         path: pathToKey
+// `,
+// 		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true},
+// 	}
+// 	RegisterProvider(metaInto, NewExample)
+// }
+
 // NewExample creates new provider instance
 func NewExample(logger logging.Logger) (core.Provider, error) {
 
