@@ -31,7 +31,7 @@ func init() {
 `,
 		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: false, PutMapping: false},
 	}
-	RegisterProvider(metaInto, NewConsul)
+	RegisterProvider(metaInto, NewProcessEnv)
 }
 
 // NewProcessEnv creates new provider instance
