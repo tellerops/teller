@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	smtypes "github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
@@ -42,7 +40,7 @@ func init() {
 	metaInfo := core.MetaInfo{
 		Name:           "aws_secretsmanager",
 		Description:    "AWS Secrets Manager",
-		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment. `AWS_ENDPOINT` is used to allow usage of localstack",
+		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment",
 		ConfigTemplate: `
   # configure only from environment
   aws_secretsmanager:
@@ -59,21 +57,7 @@ func init() {
 }
 
 func NewAWSSecretsManager(logger logging.Logger) (core.Provider, error) {
-	customResolver := aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-		awsEndpointOverride := os.Getenv("AWS_ENDPOINT")
-		if awsEndpointOverride != "" {
-			return aws.Endpoint{
-				PartitionID:   "aws",
-				URL:           awsEndpointOverride,
-				SigningRegion: region,
-			}, nil
-		}
-
-		// returning EndpointNotFoundError will allow the service to fallback to its default resolution
-		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
-	})
-
-	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithEndpointResolver(customResolver))
+	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}

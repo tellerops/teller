@@ -3,9 +3,7 @@ package providers
 import (
 	"context"
 	"fmt"
-	"os"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/spectralops/teller/pkg/core"
@@ -27,7 +25,7 @@ func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "AWS SSM (aka paramstore)",
 		Name:           awsssmName,
-		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment. `AWS_ENDPOINT` is used to allow usage of localstack",
+		Authentication: "Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` need to be populated in your environment",
 		ConfigTemplate: `
   # configure only from environment
   aws_ssm:
@@ -42,21 +40,7 @@ func init() {
 }
 
 func NewAWSSSM(logger logging.Logger) (core.Provider, error) {
-	customResolver := aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-		awsEndpointOverride := os.Getenv("AWS_ENDPOINT")
-		if awsEndpointOverride != "" {
-			return aws.Endpoint{
-				PartitionID:   "aws",
-				URL:           awsEndpointOverride,
-				SigningRegion: region,
-			}, nil
-		}
-
-		// returning EndpointNotFoundError will allow the service to fallback to its default resolution
-		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
-	})
-
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithEndpointResolver(customResolver))
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		return nil, err
 	}
