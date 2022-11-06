@@ -516,7 +516,7 @@ env_sync:
     password:
       field: PGPASSWORD
       severity: high
-      redact_with: 
+      redact_with: "**XXX**"
 ```
 
 After remapping, the local environment variable `PGUSER` will contain the provider value for `username` and `PGPASSWORD` will contain the provider value for `password`.
