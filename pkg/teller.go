@@ -418,12 +418,21 @@ func (tl *Teller) CollectFromProvider(pname string) ([]core.EnvEntry, error) {
 		logger.Debug("found %d entries from env mapping", len(es))
 		//nolint
 		for k, v := range es {
-			// optionally remap environment variables synced from the provider
-			if val, ok := conf.EnvMapping.Remap[v.Key]; ok {
-				logger.Debug("rename entry from %s to %s", v.Key, val)
-				es[k].Key = val
-			}
 			updateParams(&es[k], conf.EnvMapping, pname)
+			// optionally remap environment variables synced from the provider
+			remap := conf.EnvMapping.EffectiveRemap()
+			if val, ok := remap[v.Key]; ok {
+				if val.Field != "" {
+					logger.Debug("rename entry from %s to %s", v.Key, val.Field)
+					es[k].Key = val.Field
+				}
+				if val.Severity != "" {
+					es[k].Severity = val.Severity
+				}
+				if val.RedactWith != "" {
+					es[k].RedactWith = val.RedactWith
+				}
+			}
 		}
 
 		entries = append(entries, es...)

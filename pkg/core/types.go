@@ -15,18 +15,26 @@ const (
 	None   Severity = "none"
 )
 
-type KeyPath struct {
-	Env        string            `yaml:"env,omitempty"`
-	Path       string            `yaml:"path"`
-	Field      string            `yaml:"field,omitempty"`
-	Remap      map[string]string `yaml:"remap,omitempty"`
-	Decrypt    bool              `yaml:"decrypt,omitempty"`
-	Optional   bool              `yaml:"optional,omitempty"`
-	Severity   Severity          `yaml:"severity,omitempty" default:"high"`
-	RedactWith string            `yaml:"redact_with,omitempty" default:"**REDACTED**"`
-	Source     string            `yaml:"source,omitempty"`
-	Sink       string            `yaml:"sink,omitempty"`
+type RemapKeyPath struct {
+	Field      string   `yaml:"field,omitempty"`
+	Severity   Severity `yaml:"severity,omitempty"`
+	RedactWith string   `yaml:"redact_with,omitempty"`
 }
+
+type KeyPath struct {
+	Env        string                   `yaml:"env,omitempty"`
+	Path       string                   `yaml:"path"`
+	Field      string                   `yaml:"field,omitempty"`
+	Remap      *map[string]string       `yaml:"remap,omitempty"`
+	RemapWith  *map[string]RemapKeyPath `yaml:"remap_with,omitempty"`
+	Decrypt    bool                     `yaml:"decrypt,omitempty"`
+	Optional   bool                     `yaml:"optional,omitempty"`
+	Severity   Severity                 `yaml:"severity,omitempty" default:"high"`
+	RedactWith string                   `yaml:"redact_with,omitempty" default:"**REDACTED**"`
+	Source     string                   `yaml:"source,omitempty"`
+	Sink       string                   `yaml:"sink,omitempty"`
+}
+
 type WizardAnswers struct {
 	Project      string
 	Providers    []string
@@ -40,6 +48,18 @@ func (k *KeyPath) EffectiveKey() string {
 		key = k.Field
 	}
 	return key
+}
+
+func (k *KeyPath) EffectiveRemap() map[string]RemapKeyPath {
+	remap := make(map[string]RemapKeyPath)
+	if k.Remap != nil {
+		for k, v := range *k.Remap {
+			remap[k] = RemapKeyPath{Field: v}
+		}
+	} else if k.RemapWith != nil {
+		remap = *k.RemapWith
+	}
+	return remap
 }
 
 func (k *KeyPath) Missing() EnvEntry {

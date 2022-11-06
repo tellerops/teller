@@ -74,7 +74,7 @@ func (im *InMemProvider) Meta() core.MetaInfo {
 	return core.MetaInfo{}
 }
 
-//nolint
+// nolint
 func init() {
 	inmemProviderMeta := core.MetaInfo{
 		Name:        "inmem-provider",
@@ -256,7 +256,7 @@ func TestTellerCollectWithSync(t *testing.T) {
 				"inmem-provider": {
 					EnvMapping: &core.KeyPath{
 						Path: "{{stage}}/billing",
-						Remap: map[string]string{
+						Remap: &map[string]string{
 							"prod/billing/BEFORE_REMAP": "prod/billing/REMAPED",
 						},
 					},
@@ -282,6 +282,56 @@ func TestTellerCollectWithSync(t *testing.T) {
 	assert.Equal(t, tl.Entries[2].ResolvedPath, "prod/billing")
 	assert.Equal(t, tl.Entries[2].ProviderName, "inmem-provider")
 }
+
+func TestTellerCollectWithSyncRemapWith(t *testing.T) {
+	var b bytes.Buffer
+	tl := Teller{
+		Logger:    getLogger(),
+		Providers: &BuiltinProviders{},
+		Porcelain: &Porcelain{
+			Out: &b,
+		},
+		Populate: core.NewPopulate(map[string]string{"stage": "prod"}),
+		Config: &TellerFile{
+			Project:    "test-project",
+			LoadedFrom: "nowhere",
+			Providers: map[string]MappingConfig{
+				"inmem-provider": {
+					EnvMapping: &core.KeyPath{
+						Path: "{{stage}}/billing",
+						RemapWith: &map[string]core.RemapKeyPath{
+							"prod/billing/BEFORE_REMAP": {
+								Field:      "prod/billing/REMAPED",
+								Severity:   core.None,
+								RedactWith: "-",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	err := tl.Collect()
+	assert.Nil(t, err)
+	assert.Equal(t, len(tl.Entries), 3)
+	assert.Equal(t, tl.Entries[0].Key, "prod/billing/REMAPED")
+	assert.Equal(t, tl.Entries[0].Severity, core.None)
+	assert.Equal(t, tl.Entries[0].RedactWith, "-")
+	assert.Equal(t, tl.Entries[0].Value, "test_env_remap")
+	assert.Equal(t, tl.Entries[0].ResolvedPath, "prod/billing")
+	assert.Equal(t, tl.Entries[0].ProviderName, "inmem-provider")
+
+	assert.Equal(t, tl.Entries[1].Key, "prod/billing/MG_KEY")
+	assert.Equal(t, tl.Entries[1].Value, "mg_shazam")
+	assert.Equal(t, tl.Entries[1].ResolvedPath, "prod/billing")
+	assert.Equal(t, tl.Entries[1].ProviderName, "inmem-provider")
+
+	assert.Equal(t, tl.Entries[2].Key, "prod/billing/FOO")
+	assert.Equal(t, tl.Entries[2].Value, "foo_shazam")
+	assert.Equal(t, tl.Entries[2].ResolvedPath, "prod/billing")
+	assert.Equal(t, tl.Entries[2].ProviderName, "inmem-provider")
+}
+
 func TestTellerCollectWithErrors(t *testing.T) {
 	var b bytes.Buffer
 	tl := Teller{
