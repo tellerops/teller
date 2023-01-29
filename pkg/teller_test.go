@@ -151,6 +151,28 @@ func getLogger() logging.Logger {
 	return logger
 }
 
+func TestNewTeller(t *testing.T) {
+	tlrfile := &TellerFile{
+		Project: "teller",
+		Opts: map[string]string{
+			"foo": "bar",
+		},
+	}
+	cmd := []string{"teller", "show"}
+	logger := getLogger()
+
+	tl := NewTeller(tlrfile, cmd, true, logger)
+
+	assert.True(t, tl.Redact)
+	assert.Equal(t, tl.Config, tlrfile)
+	assert.Equal(t, tl.Cmd, cmd)
+	assert.Equal(t, tl.Populate, core.NewPopulate(map[string]string{
+		"project": "teller",
+		"foo":     "bar",
+	}))
+	assert.Equal(t, tl.Logger, logger)
+}
+
 func TestTellerExports(t *testing.T) {
 	tl := Teller{
 		Logger:    getLogger(),

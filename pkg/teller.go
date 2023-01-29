@@ -44,12 +44,16 @@ type Teller struct {
 
 // Create a new Teller instance, using a tellerfile, and a command to execute (if any)
 func NewTeller(tlrfile *TellerFile, cmd []string, redact bool, logger logging.Logger) *Teller {
+	opts := core.Opts{"project": tlrfile.Project}
+	for k, v := range tlrfile.Opts {
+		opts[k] = v
+	}
 	return &Teller{
 		Redact:     redact,
 		Config:     tlrfile,
 		Cmd:        cmd,
 		Providers:  &BuiltinProviders{},
-		Populate:   core.NewPopulate(tlrfile.Opts),
+		Populate:   core.NewPopulate(opts),
 		Porcelain:  &Porcelain{Out: os.Stderr},
 		Templating: &Templating{},
 		Redactor:   &Redactor{},
