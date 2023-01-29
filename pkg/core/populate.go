@@ -40,21 +40,7 @@ func (p *Populate) FindAndReplace(path string) string {
 }
 
 func (p *Populate) KeyPath(kp KeyPath) KeyPath {
-	path := p.FindAndReplace(kp.Path)
-	populated := path
-	for k, v := range p.opts {
-		val := v
-		if strings.HasPrefix(v, populateFromEnvironment) {
-			evar := strings.TrimPrefix(v, populateFromEnvironment)
-			evar, defaultValue := p.parseDefaultValue(evar)
-			val = os.Getenv(evar)
-			if val == "" {
-				val = defaultValue
-			}
-		}
-		populated = strings.ReplaceAll(populated, fmt.Sprintf("{{%s}}", k), val)
-	}
-	return kp.SwitchPath(path)
+	return kp.SwitchPath(p.FindAndReplace(kp.Path))
 }
 
 // parseDefaultValue returns that field name and the default value if `populateWithDefault` was found
