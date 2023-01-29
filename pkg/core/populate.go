@@ -13,28 +13,33 @@ const (
 
 type Opts map[string]string
 type Populate struct {
-	opts map[string]string
+	rules map[string]string
 }
 
 func NewPopulate(opts Opts) *Populate {
-	return &Populate{
-		opts: opts,
-	}
-}
-
-func (p *Populate) FindAndReplace(path string) string {
-	populated := path
-	for k, v := range p.opts {
+	rules := make(map[string]string)
+	for k, v := range opts {
 		val := v
 		if strings.HasPrefix(v, populateFromEnvironment) {
 			evar := strings.TrimPrefix(v, populateFromEnvironment)
-			evar, defaultValue := p.parseDefaultValue(evar)
+			evar, defaultValue := parseDefaultValue(evar)
 			val = os.Getenv(evar)
 			if val == "" {
 				val = defaultValue
 			}
 		}
-		populated = strings.ReplaceAll(populated, fmt.Sprintf("{{%s}}", k), val)
+		rules[fmt.Sprintf("{{%s}}", k)] = val
+	}
+
+	return &Populate{
+		rules: rules,
+	}
+}
+
+func (p *Populate) FindAndReplace(path string) string {
+	populated := path
+	for k, v := range p.rules {
+		populated = strings.ReplaceAll(populated, k, v)
 	}
 	return populated
 }
@@ -46,8 +51,7 @@ func (p *Populate) KeyPath(kp KeyPath) KeyPath {
 // parseDefaultValue returns that field name and the default value if `populateWithDefault` was found
 // Example 1: FOO,BAR -> the function return FOO, BAR
 // Example 2: FOO -> the function return FOO, "" (empty value)
-func (p *Populate) parseDefaultValue(evar string) (key, defaultValue string) {
-
+func parseDefaultValue(evar string) (key, defaultValue string) {
 	if strings.Contains(evar, populateWithDefault) {
 		data := strings.SplitN(evar, populateWithDefault, 2) //nolint
 		if len(data) == 2 {                                  //nolint
