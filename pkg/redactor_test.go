@@ -1,6 +1,8 @@
 package pkg
 
 import (
+	"bytes"
+	"io"
 	"testing"
 
 	"github.com/alecthomas/assert"
@@ -8,12 +10,10 @@ import (
 )
 
 func TestRedactorOverlap(t *testing.T) {
-
 	// in this case we dont want '123' to appear in the clear after all redactions are made.
 	// it can happen if the smaller secret get replaced first because both
 	// secrets overlap. we need to ensure the wider secrets always get
 	// replaced first.
-
 	entries := []core.EnvEntry{
 		{
 			ProviderName: "test",
@@ -30,26 +30,33 @@ func TestRedactorOverlap(t *testing.T) {
 			RedactWith:   "**SOME_KEY**",
 		},
 	}
-	redactor := Redactor{Entries: entries}
 	s := `
-	func Foobar(){
-		secret := "hello"
-		callService(secret, "hello123")
-		// hello, hello123
-	}
-	`
+func Foobar(){
+	secret := "hello"
+	callService(secret, "hello123")
+	// hello, hello123
+}
+`
 	sr := `
-	func Foobar(){
-		secret := "**OTHER_KEY**"
-		callService(secret, "**SOME_KEY**")
-		// **OTHER_KEY**, **SOME_KEY**
-	}
-	`
+func Foobar(){
+	secret := "**OTHER_KEY**"
+	callService(secret, "**SOME_KEY**")
+	// **OTHER_KEY**, **SOME_KEY**
+}
+`
 
-	assert.Equal(t, redactor.Redact(s), sr)
+	buf := bytes.NewBuffer(nil)
+	redactor := NewRedactor(buf, entries)
+
+	_, err := io.WriteString(redactor, s)
+	assert.NoError(t, err)
+
+	err = redactor.Close()
+	assert.NoError(t, err)
+
+	assert.Equal(t, buf.String(), sr)
 }
 func TestRedactorMultiple(t *testing.T) {
-
 	entries := []core.EnvEntry{
 		{
 			ProviderName: "test",
@@ -66,25 +73,32 @@ func TestRedactorMultiple(t *testing.T) {
 			RedactWith:   "**OTHER_KEY**",
 		},
 	}
-	redactor := Redactor{Entries: entries}
 	s := `
-	func Foobar(){
-		secret := "loot"
-		callService(secret, "shazam")
-	}
-	`
+func Foobar(){
+	secret := "loot"
+	callService(secret, "shazam")
+}
+`
 	sr := `
-	func Foobar(){
-		secret := "**OTHER_KEY**"
-		callService(secret, "**SOME_KEY**")
-	}
-	`
+func Foobar(){
+	secret := "**OTHER_KEY**"
+	callService(secret, "**SOME_KEY**")
+}
+`
 
-	assert.Equal(t, redactor.Redact(s), sr)
+	buf := bytes.NewBuffer(nil)
+	redactor := NewRedactor(buf, entries)
+
+	_, err := io.WriteString(redactor, s)
+	assert.NoError(t, err)
+
+	err = redactor.Close()
+	assert.NoError(t, err)
+
+	assert.Equal(t, buf.String(), sr)
 }
 
 func TestRedactor(t *testing.T) {
-
 	entries := []core.EnvEntry{
 		{
 			ProviderName: "test",
@@ -94,19 +108,36 @@ func TestRedactor(t *testing.T) {
 			RedactWith:   "**NOPE**",
 		},
 	}
-	redactor := Redactor{Entries: entries}
 	s := `
-	func Foobar(){
-		secret := "shazam"
-		callService(secret, "shazam")
-	}
-	`
+func Foobar(){
+	secret := "shazam"
+	callService(secret, "shazam")
+}
+`
 	sr := `
-	func Foobar(){
-		secret := "**NOPE**"
-		callService(secret, "**NOPE**")
-	}
-	`
+func Foobar(){
+	secret := "**NOPE**"
+	callService(secret, "**NOPE**")
+}
+`
 
-	assert.Equal(t, redactor.Redact(s), sr)
+	buf := bytes.NewBuffer(nil)
+	redactor := NewRedactor(buf, entries)
+
+	_, err := io.WriteString(redactor, s)
+	assert.NoError(t, err)
+
+	err = redactor.Close()
+	assert.NoError(t, err)
+
+	assert.Equal(t, buf.String(), sr)
+}
+
+func TestRedactor_Close(t *testing.T) {
+	buf := bytes.NewBuffer(nil)
+	redactor := NewRedactor(buf, nil)
+
+	assert.NoError(t, redactor.Close())
+	// can be close more than once.
+	assert.NoError(t, redactor.Close())
 }
