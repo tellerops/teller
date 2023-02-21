@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +17,7 @@ func TestGetDotEnv(t *testing.T) {
 	//
 	// pre-insert data
 	//
-	f, err := os.CreateTemp("", "dotenv-*")
+	f, err := os.CreateTemp(t.TempDir(), "dotenv-*")
 	assert.NoError(t, err)
 	f.WriteString("MG_KEY=123\n")
 	f.Close()
@@ -24,7 +25,7 @@ func TestGetDotEnv(t *testing.T) {
 	//
 	// use provider to read data
 	//
-	p, err := providers.NewDotenv()
+	p, err := providers.NewDotenv(logging.New())
 	assert.NoError(t, err)
 	kvp := core.KeyPath{Env: "MG_KEY", Path: f.Name()}
 	res, err := p.Get(kvp)

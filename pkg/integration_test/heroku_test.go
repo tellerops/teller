@@ -1,3 +1,4 @@
+//go:build integration_api
 // +build integration_api
 
 package integration_test
@@ -9,6 +10,7 @@ import (
 
 	heroku "github.com/heroku/heroku-go/v5"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +37,7 @@ func TestGetHeroku(t *testing.T) {
 	//
 	// use provider to read data
 	//
-	p, err := providers.NewHeroku()
+	p, err := providers.NewHeroku(logging.New())
 	assert.NoError(t, err)
 	kvp := core.KeyPath{Env: "MG_KEY", Path: "teller-heroku-integration"}
 	res, err := p.Get(kvp)
