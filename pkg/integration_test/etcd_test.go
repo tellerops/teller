@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration_test
@@ -5,11 +6,11 @@ package integration_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
@@ -60,8 +61,8 @@ func TestGetEtcd(t *testing.T) {
 	//
 	// use provider to read data
 	//
-	os.Setenv("ETCDCTL_ENDPOINTS", host)
-	p, err := providers.NewEtcd()
+	t.Setenv("ETCDCTL_ENDPOINTS", host)
+	p, err := providers.NewEtcd(logging.New())
 	assert.NoError(t, err)
 	kvp := core.KeyPath{Env: "MG_KEY", Path: "path/to/svc/MG_KEY"}
 	res, err := p.Get(kvp)
