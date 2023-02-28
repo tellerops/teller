@@ -10,6 +10,11 @@ import (
 	"github.com/spectralops/teller/pkg/core"
 )
 
+const (
+	bufferSize    = 64 * 1024
+	maxBufferSize = 10 * 1024 * 1024
+)
+
 type Redactor struct {
 	io.WriteCloser
 	err <-chan error
@@ -25,13 +30,13 @@ func NewRedactor(dist io.Writer, entries []core.EnvEntry) *Redactor {
 		defer close(ch)
 
 		s := bufio.NewScanner(r)
-		buf := make([]byte, 0, 64*1024)
-		s.Buffer(buf, 10*1024*1024) // 10MB lines correlating to 10MB files max (bundles?)
+		buf := make([]byte, 0, bufferSize)
+		s.Buffer(buf, maxBufferSize) // 10MB lines correlating to 10MB files max (bundles?)
 
 		for s.Scan() {
 			line := s.Text()
-			for _, ent := range entries {
-				line = strings.ReplaceAll(line, ent.Value, ent.RedactWith)
+			for i := range entries {
+				line = strings.ReplaceAll(line, entries[i].Value, entries[i].RedactWith)
 			}
 			if _, err := fmt.Fprintln(dist, line); err != nil {
 				ch <- r.CloseWithError(err)
