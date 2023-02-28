@@ -1,0 +1,29 @@
+---
+name: redact input
+command: <binary-path> redact --in dirty
+config_file_name: .teller.yml
+config_content: >
+  project: redaction test
+
+  providers:
+    filesystem:
+      env:
+        FOO:
+          path: {{.Folder}}/settings/test/foo
+init_snapshot:
+  - path: settings/test
+    file_name: foo
+    content: secret
+  - path:
+    file_name: dirty
+    content: |
+      content
+      secret
+      content
+expected_snapshot:
+replace_stdout_content:
+expected_stdout: |
+  content
+  **REDACTED**
+  content
+expected_stderr:
