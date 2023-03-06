@@ -52,7 +52,7 @@ func (a *ProcessEnv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 
 	kvs := make(map[string]string)
 	for _, envs := range os.Environ() {
-		pair := strings.SplitN(envs, "=", 2) // nolint: gomnd
+		pair := strings.SplitN(envs, "=", 2) //nolint: gomnd
 		kvs[pair[0]] = pair[1]
 	}
 	var entries []core.EnvEntry

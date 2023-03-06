@@ -75,7 +75,7 @@ func (im *InMemProvider) Meta() core.MetaInfo {
 	return core.MetaInfo{}
 }
 
-// nolint
+//nolint
 func init() {
 	inmemProviderMeta := core.MetaInfo{
 		Name:        "inmem-provider",
