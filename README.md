@@ -1160,6 +1160,38 @@ providers:
         path: bar
 ```
 
+## Ansible Vault
+
+### Authentication
+
+Requires `ANSIBLE_VAULT_PASSPHRASE` environment variable
+
+### Features
+
+- Sync - `no`
+- Mapping - `no`
+- Modes - `read`
+- Key format
+  - `env_sync` - Will return all the fields under the secret item.
+    - `path` - Mandatory field: Secret path.
+  - `env`
+    - `path` - Mandatory field: Secret path.
+
+### Example Config
+
+```yaml
+providers:
+  ansible_vault:
+    env_sync:
+      path: ansible/vars/vault_{{stage}}.yml
+
+    env:
+      KEY1:
+        path: ansible/vars/vault_{{stage}}.yml
+      NONEXIST_KEY:
+        path: ansible/vars/vault_{{stage}}.yml
+```
+
 # Semantics
 
 ## Addressing
