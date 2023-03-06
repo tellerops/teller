@@ -7,9 +7,11 @@ require (
 	github.com/1Password/connect-sdk-go v1.2.0
 	github.com/AlecAivazis/survey/v2 v2.2.8
 	github.com/Azure/azure-sdk-for-go v52.5.0+incompatible
+	github.com/Azure/go-autorest/autorest v0.11.18
 	github.com/DopplerHQ/cli v0.0.0-20210309042056-414bede8a50e
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/kong v0.2.15
+	github.com/aws/aws-sdk-go-v2 v1.2.0
 	github.com/aws/aws-sdk-go-v2/config v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.1.1
@@ -31,6 +33,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/samber/lo v1.11.0
 	github.com/sirupsen/logrus v1.7.0
+	github.com/sosedoff/ansible-vault-go v0.1.1
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.10.1-0.20210331130832-54854fb15ccb
 	github.com/tobischo/gokeepasslib/v3 v3.2.5
@@ -49,7 +52,6 @@ require (
 	filippo.io/age v1.0.0 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.13 // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.2 // indirect
@@ -66,7 +68,6 @@ require (
 	github.com/alecthomas/repr v0.0.0-20201120212035-bb82daffcca2 // indirect
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.1.1 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.0.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.0.2 // indirect

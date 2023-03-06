@@ -8,3 +8,4 @@ todo.txt
 coverage.out
 fixtures/sync/target.env
 dist/
+.idea
