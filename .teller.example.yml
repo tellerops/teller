@@ -139,3 +139,12 @@ providers:
 #     foo-secret2:
 #       path: foo-secret
 #       source: script-id
+
+  # path is the keychain record'name,
+  # mac_keychain:
+  #   env_sync:
+  #     path: 'MyApp'
+  #   env:
+  #     ETC_DSN:
+  #       path: 'MyApp'
+  #       field: 'SOME_KEY' # Optional, accesses the mac keychain SOME_KEY and map it to ETC_DSN environment variable

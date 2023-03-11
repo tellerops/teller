@@ -23,7 +23,7 @@ const (
 func GetGenericCredential(targetName string) (*GenericCredential, error) {
 	cred, err := sysCredRead(targetName, sysCRED_TYPE_GENERIC)
 	if cred != nil {
-		return &GenericCredential{*cred}, err
+		return &GenericCredential{Credential: *cred}, err
 	}
 	return nil, err
 }
@@ -55,7 +55,7 @@ func (t *GenericCredential) Delete() (err error) {
 func GetDomainPassword(targetName string) (*DomainPassword, error) {
 	cred, err := sysCredRead(targetName, sysCRED_TYPE_DOMAIN_PASSWORD)
 	if cred != nil {
-		return &DomainPassword{*cred}, err
+		return &DomainPassword{Credential: *cred}, err
 	}
 	return nil, err
 }

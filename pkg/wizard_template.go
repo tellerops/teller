@@ -267,4 +267,16 @@ providers:
         field: SOME_KEY # Optional, accesses the environment variable SOME_KEY and maps it to ETC_DSN
 
 {{end}}
+
+{{- if index .ProviderKeys "mac_keychain" }}
+
+  mac_keychain:
+    env_sync:
+      path: MyApp
+    env:
+      ETC_DSN:
+        path: "MyApp"
+        #field: "SOME_KEY" # Optional, accesses the mac keychain SOME_KEY and maps it to ETC_DSN environement variable
+ 
+{{end}}
 `
