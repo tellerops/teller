@@ -32,7 +32,7 @@ func init() {
     env:
       ETC_DSN:
         path: 'myApp'
-		field: 'dsn-etc'
+        field: 'dsn-etc'
 `,
 		Ops: core.OpMatrix{Get: true, GetMapping: true, Put: true, PutMapping: true, Delete: true, DeleteMapping: true},
 	}
