@@ -6,15 +6,22 @@ package providers
 import (
 	"github.com/99designs/keyring"
 	"github.com/spectralops/teller/pkg/core"
-
 	"github.com/spectralops/teller/pkg/logging"
 )
 
 // pathPrefix is the prefix for the keychain path
 const pathPrefix = "teller-"
 
+type KeychainClient interface {
+	Set(item keyring.Item) error
+	Get(key string) (keyring.Item, error)
+	Keys() ([]string, error)
+	Remove(key string) error
+}
+
 // MacKeychain is the provider for Mac Keychain
 type MacKeychain struct {
+	client KeychainClient
 	logger logging.Logger
 }
 
@@ -52,12 +59,17 @@ func (mc *MacKeychain) Name() string {
 }
 
 // newKeyring creates a new keyring instance
-func (mc *MacKeychain) newKeyring(serviceName string) (keyring.Keyring, error) {
-	// Use the best keyring implementation for your operating system
-	return keyring.Open(keyring.Config{
-		ServiceName:              pathPrefix + serviceName,
-		KeychainTrustApplication: true, // trust the application to access the keychain without prompting the user
-	})
+func (mc *MacKeychain) newKeyring(serviceName string) (KeychainClient, error) {
+	var err error
+	if mc.client == nil {
+		// Use the best keyring implementation for your operating system
+		mc.client, err = keyring.Open(keyring.Config{
+			ServiceName:              pathPrefix + serviceName,
+			KeychainTrustApplication: true, // trust the application to access the keychain without prompting the user
+		})
+	}
+
+	return mc.client, err
 }
 
 // Put will create a new single entry
@@ -136,15 +148,15 @@ func (mc *MacKeychain) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	item, err := ring.Get(p.Field)
+	var ent = p.Missing()
 	if err != nil {
+		if err == keyring.ErrKeyNotFound {
+			return &ent, nil
+		}
 		return nil, err
 	}
 
-	var ent = p.Missing()
 	ent = p.Found(string(item.Data))
-	//if len(password) == 0 {
-	//	return nil, keychain.ErrorItemNotFound
-	//}
 
 	return &ent, nil
 }
