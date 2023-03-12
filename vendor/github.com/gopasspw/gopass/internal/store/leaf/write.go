@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gopasspw/gopass/internal/config"
 	"github.com/gopasspw/gopass/internal/out"
 	"github.com/gopasspw/gopass/internal/queue"
 	"github.com/gopasspw/gopass/internal/store"
@@ -14,13 +15,17 @@ import (
 	"github.com/gopasspw/gopass/pkg/gopass"
 )
 
-// Set encodes and writes the cipertext of one entry to disk
+// Set encodes and writes the cipertext of one entry to disk.
 func (s *Store) Set(ctx context.Context, name string, sec gopass.Byter) error {
 	if strings.Contains(name, "//") {
 		return fmt.Errorf("invalid secret name: %s", name)
 	}
 
-	p := s.passfile(name)
+	if config.FromContext(ctx).GetM(s.alias, "core.readonly") == "true" {
+		return fmt.Errorf("writing to %s is disabled by `core.readonly`.", s.alias)
+	}
+
+	p := s.Passfile(name)
 
 	recipients, err := s.useableKeys(ctx, name)
 	if err != nil {
@@ -33,6 +38,7 @@ func (s *Store) Set(ctx context.Context, name string, sec gopass.Byter) error {
 	ciphertext, err := s.crypto.Encrypt(ctx, sec.Bytes(), recipients)
 	if err != nil {
 		debug.Log("Failed encrypt secret: %s", err)
+
 		return store.ErrEncrypt
 	}
 
@@ -45,6 +51,7 @@ func (s *Store) Set(ctx context.Context, name string, sec gopass.Byter) error {
 	// at the end of the batch processing.
 	if IsNoGitOps(ctx) {
 		debug.Log("sub.Set(%s) - skipping git ops (disabled)")
+
 		return nil
 	}
 
@@ -52,6 +59,7 @@ func (s *Store) Set(ctx context.Context, name string, sec gopass.Byter) error {
 		if errors.Is(err, store.ErrGitNotInit) {
 			return nil
 		}
+
 		return fmt.Errorf("failed to add %q to git: %w", p, err)
 	}
 
@@ -61,10 +69,13 @@ func (s *Store) Set(ctx context.Context, name string, sec gopass.Byter) error {
 
 	// try to enqueue this task, if the queue is not available
 	// it will return the task and we will execute it inline
-	t := queue.GetQueue(ctx).Add(func(ctx context.Context) error {
-		return s.gitCommitAndPush(ctx, name)
+	t := queue.GetQueue(ctx).Add(func(_ context.Context) (context.Context, error) {
+		return nil, s.gitCommitAndPush(ctx, name)
 	})
-	return t(ctx)
+
+	ctx, err = t(ctx)
+
+	return err
 }
 
 func (s *Store) gitCommitAndPush(ctx context.Context, name string) error {
@@ -79,22 +90,35 @@ func (s *Store) gitCommitAndPush(ctx context.Context, name string) error {
 		}
 	}
 
+	if !config.Bool(ctx, "core.autosync") {
+		debug.Log("not pushing to git remote, core.autosync is false")
+
+		return nil
+	}
+
 	debug.Log("syncing with remote ...")
+
 	if err := s.storage.Push(ctx, "", ""); err != nil {
 		if errors.Is(err, store.ErrGitNotInit) {
 			msg := "Warning: git is not initialized for this.storage. Ignoring auto-push option\n" +
 				"Run: gopass git init"
 			out.Errorf(ctx, msg)
+
 			return nil
 		}
+
 		if errors.Is(err, store.ErrGitNoRemote) {
 			msg := "Warning: git has no remote. Ignoring auto-push option\n" +
 				"Run: gopass git remote add origin ..."
 			debug.Log(msg)
+
 			return nil
 		}
+
 		return fmt.Errorf("failed to push to git remote: %w", err)
 	}
+
 	debug.Log("synced with remote")
+
 	return nil
 }

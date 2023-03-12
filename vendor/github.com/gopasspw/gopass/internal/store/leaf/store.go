@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/gopasspw/gopass/internal/backend"
+	"github.com/gopasspw/gopass/internal/set"
 	"github.com/gopasspw/gopass/pkg/debug"
 )
 
-// Store is password store
+// Store is a password store.
 type Store struct {
 	alias   string
 	path    string
@@ -19,9 +19,10 @@ type Store struct {
 	storage backend.Storage
 }
 
-// Init initializes this sub store
+// Init initializes this sub store.
 func Init(ctx context.Context, alias, path string) (*Store, error) {
 	debug.Log("Initializing %s at %s", alias, path)
+
 	s := &Store{
 		alias: alias,
 		path:  path,
@@ -29,24 +30,26 @@ func Init(ctx context.Context, alias, path string) (*Store, error) {
 
 	st, err := backend.InitStorage(ctx, backend.GetStorageBackend(ctx), path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize storage for %s at %s: %w", alias, path, err)
 	}
+
 	s.storage = st
-	debug.Log("Storage initialized")
+	debug.Log("Storage for %s => %s initialized as %s", alias, path, st.Name())
 
 	crypto, err := backend.NewCrypto(ctx, backend.GetCryptoBackend(ctx))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize crypto for %s at %s: %w", alias, path, err)
 	}
+
 	s.crypto = crypto
-	debug.Log("Crypto initialized")
+	debug.Log("Crypto for %q => %q initialized as %s", alias, path, crypto.Name())
 
 	return s, nil
 }
 
-// New creates a new store
+// New creates a new store.
 func New(ctx context.Context, alias, path string) (*Store, error) {
-	debug.Log("Instantiating %s at %s", alias, path)
+	debug.Log("Instantiating %q at %q", alias, path)
 
 	s := &Store{
 		alias: alias,
@@ -57,15 +60,16 @@ func New(ctx context.Context, alias, path string) (*Store, error) {
 	if err := s.initStorageBackend(ctx); err != nil {
 		return nil, fmt.Errorf("failed to init storage backend: %w", err)
 	}
-	debug.Log("Storage initialized")
+
+	debug.Log("Storage for %s => %s initialized as %v", alias, path, s.storage)
 
 	// init crypto backend
 	if err := s.initCryptoBackend(ctx); err != nil {
 		return nil, fmt.Errorf("failed to init crypto backend: %w", err)
 	}
-	debug.Log("Crypto initialized")
 
-	debug.Log("Instantiated %s at %s - storage: %+#v - crypto: %+#v", alias, path, s.storage, s.crypto)
+	debug.Log("Crypto for %s => %s initialized as %v", alias, path, s.crypto)
+
 	return s, nil
 }
 
@@ -76,22 +80,29 @@ func (s *Store) idFile(ctx context.Context, name string) string {
 	if s.crypto == nil {
 		return ""
 	}
+
 	fn := name
+
 	var cnt uint8
+
 	for {
 		cnt++
 		if cnt > 100 {
 			break
 		}
+
 		if fn == "" || fn == Sep {
 			break
 		}
+
 		gfn := filepath.Join(fn, s.crypto.IDFile())
 		if s.storage.Exists(ctx, gfn) {
 			return gfn
 		}
+
 		fn = filepath.Dir(fn)
 	}
+
 	return s.crypto.IDFile()
 }
 
@@ -100,44 +111,50 @@ func (s *Store) idFiles(ctx context.Context) []string {
 	if s.crypto == nil {
 		return nil
 	}
+
 	files, err := s.Storage().List(ctx, "")
 	if err != nil {
 		return nil
 	}
-	fileSet := make(map[string]struct{}, len(files))
-	for _, file := range files {
-		if strings.HasPrefix(filepath.Base(file), ".") {
+
+	// we need to transform the list of files into a list of id files so we can't use
+	// set.SortedFiltered as it doesn't support transformations
+	idfs := make([]string, 0, len(files))
+
+	for _, f := range files {
+		if strings.HasPrefix(filepath.Base(f), ".") {
 			continue
 		}
-		idf := s.idFile(ctx, file)
+
+		idf := s.idFile(ctx, f)
+		debug.Log("checking for if %q has an idf: %q", f, idf)
 		if s.storage.Exists(ctx, idf) {
-			fileSet[idf] = struct{}{}
+			idfs = append(idfs, idf)
 		}
 	}
-	out := make([]string, 0, len(fileSet))
-	for file := range fileSet {
-		out = append(out, file)
-	}
-	sort.Strings(out)
-	return out
+
+	debug.Log("idFiles: %q", idfs)
+
+	return set.Sorted(idfs)
 }
 
-// Equals returns true if this.storage has the same on-disk path as the other
+// Equals returns true if this storage has the same on-disk path as the other.
 func (s *Store) Equals(other *Store) bool {
 	if other == nil {
 		return false
 	}
+
 	return s.Path() == other.Path()
 }
 
-// IsDir returns true if the entry is folder inside the store
+// IsDir returns true if the entry is folder inside the store.
 func (s *Store) IsDir(ctx context.Context, name string) bool {
 	return s.storage.IsDir(ctx, name)
 }
 
-// Exists checks the existence of a single entry
+// Exists checks the existence of a single entry.
 func (s *Store) Exists(ctx context.Context, name string) bool {
-	return s.storage.Exists(ctx, s.passfile(name))
+	return s.storage.Exists(ctx, s.Passfile(name))
 }
 
 func (s *Store) useableKeys(ctx context.Context, name string) ([]string, error) {
@@ -147,43 +164,49 @@ func (s *Store) useableKeys(ctx context.Context, name string) ([]string, error) 
 	}
 
 	if !IsCheckRecipients(ctx) {
-		return rs, nil
+		return rs.IDs(), nil
 	}
 
-	kl, err := s.crypto.FindRecipients(ctx, rs...)
+	kl, err := s.crypto.FindRecipients(ctx, rs.IDs()...)
 	if err != nil {
-		return rs, err
+		return rs.IDs(), err
 	}
 
 	return kl, nil
 }
 
-// passfile returns the name of gpg file on disk, for the given key/name
-func (s *Store) passfile(name string) string {
+// Passfile returns the name of gpg file on disk, for the given key/name.
+func (s *Store) Passfile(name string) string {
 	return strings.TrimPrefix(name+"."+s.crypto.Ext(), "/")
 }
 
-// String implement fmt.Stringer
+// String implement fmt.Stringer.
 func (s *Store) String() string {
 	return fmt.Sprintf("Store(Alias: %s, Path: %s)", s.alias, s.path)
 }
 
-// Path returns the value of path
+// Path returns the value of path.
 func (s *Store) Path() string {
 	return s.path
 }
 
-// Alias returns the value of alias
+// Alias returns the value of alias.
 func (s *Store) Alias() string {
 	return s.alias
 }
 
-// Storage returns the storage backend used by this.storage
+// Storage returns the storage backend used by this store.
 func (s *Store) Storage() backend.Storage {
 	return s.storage
 }
 
-// Valid returns true if this store is not nil
+// Valid returns true if this store is not nil.
 func (s *Store) Valid() bool {
 	return s != nil
+}
+
+// Concurrency returns the number of concurrent operations allowed
+// by this stores crypto implementation (e.g. usually 1 for GPG).
+func (s *Store) Concurrency() int {
+	return s.Crypto().Concurrency()
 }

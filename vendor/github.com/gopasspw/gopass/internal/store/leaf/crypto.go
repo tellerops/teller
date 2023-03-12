@@ -1,13 +1,16 @@
 package leaf
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
 	"github.com/gopasspw/gopass/internal/backend"
 	"github.com/gopasspw/gopass/internal/backend/crypto/age"
 	"github.com/gopasspw/gopass/internal/out"
+	"github.com/gopasspw/gopass/internal/store"
 	"github.com/gopasspw/gopass/pkg/ctxutil"
 	"github.com/gopasspw/gopass/pkg/debug"
 )
@@ -18,27 +21,33 @@ func (s *Store) initCryptoBackend(ctx context.Context) error {
 		return err
 	}
 	s.crypto = cb
+
 	return nil
 }
 
-// Crypto returns the crypto backend
+// Crypto returns the crypto backend.
 func (s *Store) Crypto() backend.Crypto {
 	return s.crypto
 }
 
 // ImportMissingPublicKeys will try to import any missing public keys from the
-// .public-keys folder in the password store
-func (s *Store) ImportMissingPublicKeys(ctx context.Context) error {
+// .public-keys folder in the password store.
+func (s *Store) ImportMissingPublicKeys(ctx context.Context, newrs ...string) error {
 	// do not import any keys for age, where public key == key id
+	// TODO: do not hard code exceptions, ask the backend if it supports it
 	if _, ok := s.crypto.(*age.Age); ok {
 		debug.Log("not importing public keys for age")
+
 		return nil
 	}
+
 	rs, err := s.GetRecipients(ctx, "")
 	if err != nil {
 		return fmt.Errorf("failed to get recipients: %w", err)
 	}
-	for _, r := range rs {
+
+	ids := append(rs.IDs(), newrs...)
+	for _, r := range ids {
 		debug.Log("Checking recipients %s ...", r)
 		// check if this recipient is missing
 		// we could list all keys outside the loop and just do the lookup here
@@ -46,17 +55,30 @@ func (s *Store) ImportMissingPublicKeys(ctx context.Context) error {
 		// gpg does on encryption
 		kl, err := s.crypto.FindRecipients(ctx, r)
 		if err != nil {
-			out.Errorf(ctx, "[%s] Failed to get public key for %s: %s", s.alias, r, err)
+			// this is expected if we don't have the key
+			debug.Log("Failed to get public key for %s: %s", r, err)
 		}
+
 		if len(kl) > 0 {
-			debug.Log("[%s] Keyring contains %d public keys for %s", s.alias, len(kl), r)
-			continue
+			debug.Log("Keyring contains %d public keys for %s", len(kl), r)
+			if !IsPubkeyUpdate(ctx) {
+				continue
+			}
+			ex, ok := s.crypto.(keyExporter)
+			if ok {
+				pk, err := ex.ExportPublicKey(ctx, r)
+				pk2, err2 := s.getPublicKey(ctx, r)
+				if err == nil && err2 == nil && bytes.Equal(pk, pk2) {
+					continue
+				}
+			}
 		}
 
 		// get info about this public key
 		names, err := s.decodePublicKey(ctx, r)
 		if err != nil {
-			out.Errorf(ctx, "[%s] Failed to decode public key %s: %s", s.alias, r, err)
+			out.Errorf(ctx, "Failed to decode public key %s: %s", r, err)
+
 			continue
 		}
 
@@ -68,15 +90,17 @@ func (s *Store) ImportMissingPublicKeys(ctx context.Context) error {
 			}
 		}
 
-		debug.Log("[%s] Public Key %s not found in keyring, importing", s.alias, r)
+		debug.Log("Public Key %s not found in keyring, importing", r)
 
 		// try to load this recipient
 		if err := s.importPublicKey(ctx, r); err != nil {
-			out.Errorf(ctx, "[%s] Failed to import public key for %s: %s", s.alias, r, err)
+			out.Errorf(ctx, "Failed to import public key for %s: %s", r, err)
+
 			continue
 		}
-		out.Printf(ctx, "[%s] Imported public key for %s into Keyring", s.alias, r)
+		out.Printf(ctx, "Imported public key for %s into Keyring", r)
 	}
+
 	return nil
 }
 
@@ -85,23 +109,28 @@ func (s *Store) decodePublicKey(ctx context.Context, r string) ([]string, error)
 		filename := filepath.Join(kd, r)
 		if !s.storage.Exists(ctx, filename) {
 			debug.Log("Public Key %s not found at %s", r, filename)
+
 			continue
 		}
 		buf, err := s.storage.Get(ctx, filename)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read Public Key %q %q: %w", r, filename, err)
 		}
+
 		return s.crypto.ReadNamesFromKey(ctx, buf)
 	}
+
 	return nil, fmt.Errorf("public key %q not found", r)
 }
 
-// export an ASCII armored public key
+// export an ASCII armored public key.
 func (s *Store) exportPublicKey(ctx context.Context, exp keyExporter, r string) (string, error) {
 	filename := filepath.Join(keyDir, r)
 
-	// do not overwrite existing keys
-	if s.storage.Exists(ctx, filename) {
+	// do not overwrite existing keys, unless forced
+	if !IsPubkeyUpdate(ctx) && s.storage.Exists(ctx, filename) {
+		debug.Log("leaving existing key for %s at %s alone", filename)
+
 		return "", nil
 	}
 
@@ -116,8 +145,13 @@ func (s *Store) exportPublicKey(ctx context.Context, exp keyExporter, r string) 
 	}
 
 	if err := s.storage.Set(ctx, filename, pk); err != nil {
-		return "", fmt.Errorf("failed to write exported public key to store: %w", err)
+		if !errors.Is(err, store.ErrMeaninglessWrite) {
+			return "", fmt.Errorf("failed to write exported public key to store: %w", err)
+		}
+		debug.Log("No need to write exported public key %s: already stored", r)
 	}
+
+	debug.Log("exported public keys for %s to %s", r, filename)
 
 	return filename, nil
 }
@@ -125,45 +159,62 @@ func (s *Store) exportPublicKey(ctx context.Context, exp keyExporter, r string) 
 type keyImporter interface {
 	ImportPublicKey(ctx context.Context, key []byte) error
 }
+type keyExporter interface {
+	ExportPublicKey(ctx context.Context, id string) ([]byte, error)
+}
 
-// import an public key into the default keyring
-func (s *Store) importPublicKey(ctx context.Context, r string) error {
-	im, ok := s.crypto.(keyImporter)
-	if !ok {
-		debug.Log("importing public keys not supported by %T", s.crypto)
-		return nil
-	}
-
+func (s *Store) getPublicKey(ctx context.Context, r string) ([]byte, error) {
 	for _, kd := range []string{keyDir, oldKeyDir} {
 		filename := filepath.Join(kd, r)
 		if !s.storage.Exists(ctx, filename) {
 			debug.Log("Public Key %s not found at %s", r, filename)
+
 			continue
 		}
 		pk, err := s.storage.Get(ctx, filename)
-		if err != nil {
-			return err
-		}
-		return im.ImportPublicKey(ctx, pk)
+
+		return pk, err
 	}
-	return fmt.Errorf("public key not found in store")
+
+	return nil, fmt.Errorf("public key not found in store")
+}
+
+// import an public key into the default keyring.
+func (s *Store) importPublicKey(ctx context.Context, r string) error {
+	im, ok := s.crypto.(keyImporter)
+	if !ok {
+		debug.Log("importing public keys not supported by %T", s.crypto)
+
+		return nil
+	}
+
+	pk, err := s.getPublicKey(ctx, r)
+	if err != nil {
+		return err
+	}
+
+	return im.ImportPublicKey(ctx, pk)
 }
 
 type locker interface {
 	Lock()
 }
 
-// Lock clears the credential caches of all supported backends
+// Lock clears the credential caches of all supported backends.
 func (s *Store) Lock() error {
 	f, ok := s.crypto.(locker)
 	if !ok {
 		debug.Log("locking not supported by %T in %q", s.crypto, s.alias)
 	}
+
 	if f == nil {
 		debug.Log("backend %q invalid", s.alias)
+
 		return nil
 	}
+
 	f.Lock()
 	debug.Log("locked backend %T for %q", s.crypto, s.alias)
+
 	return nil
 }

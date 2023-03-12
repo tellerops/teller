@@ -7,12 +7,10 @@ import (
 	"github.com/gopasspw/gopass/pkg/debug"
 )
 
-var (
-	// Sep is the separator used in lists to separate folders from entries
-	Sep = "/"
-)
+// Sep is the separator used in lists to separate folders from entries.
+var Sep = "/"
 
-// List will list all entries in this store
+// List will list all entries in this store.
 func (s *Store) List(ctx context.Context, prefix string) ([]string, error) {
 	if s.storage == nil || s.crypto == nil {
 		return nil, nil
@@ -22,7 +20,8 @@ func (s *Store) List(ctx context.Context, prefix string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	debug.Log("Listing %s: %+v\n", prefix, lst)
+
+	debug.Log("Listing storage content of %s: %+v", prefix, lst)
 	out := make([]string, 0, len(lst))
 	cExt := "." + s.crypto.Ext()
 	for _, path := range lst {
@@ -35,5 +34,7 @@ func (s *Store) List(ctx context.Context, prefix string) ([]string, error) {
 		}
 		out = append(out, path)
 	}
+	debug.Log("Leaf store entries: %+v", out)
+
 	return out, nil
 }

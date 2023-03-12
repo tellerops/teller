@@ -15,17 +15,22 @@
 package keyring
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
+
+	"github.com/alessio/shellescape"
 )
 
 const (
 	execPathKeychain = "/usr/bin/security"
 
 	// encodingPrefix is a well-known prefix added to strings encoded by Set.
-	encodingPrefix = "go-keyring-encoded:"
+	encodingPrefix       = "go-keyring-encoded:"
+	base64EncodingPrefix = "go-keyring-base64:"
 )
 
 type macOSXKeychain struct{}
@@ -34,8 +39,7 @@ type macOSXKeychain struct{}
 // 	return exec.Command(execPathKeychain).Run() != exec.ErrNotFound
 // }
 
-// Set stores stores user and pass in the keyring under the defined service
-// name.
+// Get password from macos keyring given service and user name.
 func (k macOSXKeychain) Get(service, username string) (string, error) {
 	out, err := exec.Command(
 		execPathKeychain,
@@ -43,7 +47,7 @@ func (k macOSXKeychain) Get(service, username string) (string, error) {
 		"-s", service,
 		"-wa", username).CombinedOutput()
 	if err != nil {
-		if strings.Contains(fmt.Sprintf("%s", out), "could not be found") {
+		if strings.Contains(string(out), "could not be found") {
 			err = ErrNotFound
 		}
 		return "", err
@@ -54,26 +58,46 @@ func (k macOSXKeychain) Get(service, username string) (string, error) {
 	if strings.HasPrefix(trimStr, encodingPrefix) {
 		dec, err := hex.DecodeString(trimStr[len(encodingPrefix):])
 		return string(dec), err
+	} else if strings.HasPrefix(trimStr, base64EncodingPrefix) {
+		dec, err := base64.StdEncoding.DecodeString(trimStr[len(base64EncodingPrefix):])
+		return string(dec), err
 	}
 
 	return trimStr, nil
 }
 
-// Set stores a secret in the keyring given a service name and a user.
+// Set stores a secret in the macos keyring given a service name and a user.
 func (k macOSXKeychain) Set(service, username, password string) error {
-	// if the added secret has multiple lines, osx will hex encode it
-	// identify this with a well-known prefix.
-	if strings.ContainsRune(password, '\n') {
-		password = encodingPrefix + hex.EncodeToString([]byte(password))
+	// if the added secret has multiple lines or some non ascii,
+	// osx will hex encode it on return. To avoid getting garbage, we
+	// encode all passwords
+	password = base64EncodingPrefix + base64.StdEncoding.EncodeToString([]byte(password))
+
+	cmd := exec.Command(execPathKeychain, "-i")
+	stdIn, err := cmd.StdinPipe()
+	if err != nil {
+		return err
 	}
 
-	return exec.Command(
-		execPathKeychain,
-		"add-generic-password",
-		"-U", //update if exists
-		"-s", service,
-		"-a", username,
-		"-w", password).Run()
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+
+	command := fmt.Sprintf("add-generic-password -U -s %s -a %s -w %s\n", shellescape.Quote(service), shellescape.Quote(username), shellescape.Quote(password))
+	if len(command) > 4096 {
+		return ErrSetDataTooBig
+	}
+
+	if _, err := io.WriteString(stdIn, command); err != nil {
+		return err
+	}
+
+	if err = stdIn.Close(); err != nil {
+		return err
+	}
+
+	err = cmd.Wait()
+	return err
 }
 
 // Delete deletes a secret, identified by service & user, from the keyring.
@@ -83,7 +107,7 @@ func (k macOSXKeychain) Delete(service, username string) error {
 		"delete-generic-password",
 		"-s", service,
 		"-a", username).CombinedOutput()
-	if strings.Contains(fmt.Sprintf("%s", out), "could not be found") {
+	if strings.Contains(string(out), "could not be found") {
 		err = ErrNotFound
 	}
 	return err
