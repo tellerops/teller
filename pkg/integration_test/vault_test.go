@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration_test
@@ -5,12 +6,12 @@ package integration_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
@@ -60,9 +61,9 @@ func TestGetVaultSecret(t *testing.T) {
 	//
 	// use provider to read data
 	//
-	os.Setenv("VAULT_ADDR", host)
-	os.Setenv("VAULT_TOKEN", testToken)
-	p, err := providers.NewHashicorpVault()
+	t.Setenv("VAULT_ADDR", host)
+	t.Setenv("VAULT_TOKEN", testToken)
+	p, err := providers.NewHashicorpVault(logging.New())
 	assert.NoError(t, err)
 	kvp := core.KeyPath{Env: "MG_KEY", Path: "secret/data/settings/prod/billing-svc"}
 	res, err := p.Get(kvp)

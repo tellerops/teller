@@ -38,7 +38,6 @@ type Teller struct {
 	Providers  Providers
 	Entries    []core.EnvEntry
 	Templating *Templating
-	Redactor   *Redactor
 	Logger     logging.Logger
 }
 
@@ -52,7 +51,6 @@ func NewTeller(tlrfile *TellerFile, cmd []string, redact bool, logger logging.Lo
 		Populate:   core.NewPopulate(tlrfile.Opts),
 		Porcelain:  &Porcelain{Out: os.Stderr},
 		Templating: &Templating{},
-		Redactor:   &Redactor{},
 		Logger:     logger,
 	}
 }
@@ -73,16 +71,20 @@ func (tl *Teller) execCmd(cmd string, cmdArgs []string, withRedaction bool) erro
 			os.Setenv(b.Key, b.Value)
 		}
 	}
-	if withRedaction {
-		out, err := command.CombinedOutput()
-		redacted := tl.Redactor.Redact(string(out))
-		os.Stdout.WriteString(redacted)
-		return err
-	}
 
 	command.Stdin = os.Stdin
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
+	if withRedaction {
+		o := NewRedactor(command.Stdout, tl.Entries)
+		defer o.Close()
+		command.Stdout = o
+
+		e := NewRedactor(command.Stderr, tl.Entries)
+		defer e.Close()
+		command.Stderr = e
+	}
+
 	return command.Run()
 }
 
@@ -178,23 +180,11 @@ func (tl *Teller) SetupNewProject(fname string) error {
 
 // Execute a command with teller. This requires all entries to be loaded beforehand with Collect()
 func (tl *Teller) RedactLines(r io.Reader, w io.Writer) error {
-	scanner := bufio.NewScanner(r)
-	//nolint
-	buf := make([]byte, 0, 64*1024)
-	//nolint
-	scanner.Buffer(buf, 10*1024*1024) // 10MB lines correlating to 10MB files max (bundles?)
+	o := NewRedactor(w, tl.Entries)
+	defer o.Close()
 
-	for scanner.Scan() {
-		if _, err := fmt.Fprintln(w, tl.Redactor.Redact(string(scanner.Bytes()))); err != nil {
-			return err
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := io.Copy(o, r)
+	return err
 }
 
 // Execute a command with teller. This requires all entries to be loaded beforehand with Collect()
@@ -491,7 +481,6 @@ func (tl *Teller) Collect() error {
 	}
 
 	tl.Entries = entries
-	tl.Redactor = NewRedactor(entries)
 	return nil
 }
 

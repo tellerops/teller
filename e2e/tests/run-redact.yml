@@ -1,0 +1,33 @@
+---
+name: Run with --redact flag
+command: <binary-path> run --redact -- bash script
+config_file_name: .teller.yml
+config_content: >
+  project: redaction test
+
+  providers:
+    filesystem:
+      env:
+        FOO:
+          path: {{.Folder}}/settings/test/foo
+init_snapshot:
+  - path: settings/test
+    file_name: foo
+    content: secret
+  - path:
+    file_name: script
+    content: |
+      #!/usr/bin/env bash
+      for _ in {1..5};
+      do 
+        echo secret value;
+      done
+expected_snapshot:
+replace_stdout_content:
+expected_stdout: |
+  **REDACTED** value
+  **REDACTED** value
+  **REDACTED** value
+  **REDACTED** value
+  **REDACTED** value
+expected_stderr:

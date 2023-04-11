@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -686,4 +687,86 @@ func TestTellerDeleteAll(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, len(p.inmem), 0)
+}
+
+func TestTeller_execCmd(t *testing.T) {
+	cmd := "bash"
+	cmdArgs := []string{"-c", "for i in {1..3}; do echo $SOME_KEY; echo $OTHER_KEY 1>&2; done"}
+	entries := []core.EnvEntry{
+		{
+			ProviderName: "test",
+			ResolvedPath: "/some/path",
+			Key:          "OTHER_KEY",
+			Value:        "hello",
+			RedactWith:   "**OTHER_KEY**",
+		},
+		{
+			ProviderName: "test",
+			ResolvedPath: "/some/path",
+			Key:          "SOME_KEY",
+			Value:        "hello123",
+			RedactWith:   "**SOME_KEY**",
+		},
+	}
+
+	tests := []struct {
+		name          string
+		carryEnv      bool
+		withRedaction bool
+	}{
+		{
+			name:          "CarryEnv: false, withRedaction: false",
+			carryEnv:      false,
+			withRedaction: false,
+		},
+		{
+			name:          "CarryEnv: true, withRedaction: false",
+			carryEnv:      true,
+			withRedaction: false,
+		},
+		{
+			name:          "CarryEnv: false, withRedaction: true",
+			carryEnv:      false,
+			withRedaction: true,
+		},
+		{
+			name:          "CarryEnv: true, withRedaction: true",
+			carryEnv:      true,
+			withRedaction: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldStdout, oldStderr := os.Stdout, os.Stderr
+			t.Cleanup(func() {
+				os.Stdout, os.Stderr = oldStdout, oldStderr
+			})
+
+			var err error
+			os.Stdout, err = os.CreateTemp(t.TempDir(), "stdout")
+			assert.NoError(t, err)
+			os.Stderr, err = os.CreateTemp(t.TempDir(), "stderr")
+			assert.NoError(t, err)
+
+			tl := &Teller{
+				Config: &TellerFile{
+					CarryEnv: tt.carryEnv,
+				},
+				Entries: entries,
+			}
+			assert.NoError(t, tl.execCmd(cmd, cmdArgs, tt.withRedaction))
+
+			os.Stdout.Seek(0, io.SeekStart)
+			o, _ := io.ReadAll(os.Stdout)
+			os.Stderr.Seek(0, io.SeekStart)
+			e, _ := io.ReadAll(os.Stderr)
+			if tt.withRedaction {
+				assert.Equal(t, "**SOME_KEY**\n**SOME_KEY**\n**SOME_KEY**\n", string(o))
+				assert.Equal(t, "**OTHER_KEY**\n**OTHER_KEY**\n**OTHER_KEY**\n", string(e))
+			} else {
+				assert.Equal(t, "hello123\nhello123\nhello123\n", string(o))
+				assert.Equal(t, "hello\nhello\nhello\n", string(e))
+			}
+		})
+	}
 }
