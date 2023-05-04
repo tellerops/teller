@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration_test
@@ -5,12 +6,12 @@ package integration_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
@@ -56,8 +57,8 @@ func TestGetConsul(t *testing.T) {
 	//
 	// use provider to read data
 	//
-	os.Setenv("CONSUL_HTTP_ADDR", host)
-	p, err := providers.NewConsul()
+	t.Setenv("CONSUL_HTTP_ADDR", host)
+	p, err := providers.NewConsul(logging.New())
 	assert.NoError(t, err)
 	kvp := core.KeyPath{Env: "MG_KEY", Path: "path/to/svc/MG_KEY"}
 	res, err := p.Get(kvp)
