@@ -2,6 +2,7 @@ package termio
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,12 +14,14 @@ import (
 )
 
 var (
-	// Stderr is exported for tests
+	// Stderr is exported for tests.
 	Stderr io.Writer = os.Stderr
-	// Stdin is exported for tests
+	// Stdin is exported for tests.
 	Stdin io.Reader = os.Stdin
-	// ErrAborted is returned if the user aborts an action
+	// ErrAborted is returned if the user aborts an action.
 	ErrAborted = fmt.Errorf("user aborted")
+	// ErrInvalidInput is returned if the user enters invalid input.
+	ErrInvalidInput = fmt.Errorf("no valid user input")
 )
 
 const (
@@ -26,7 +29,7 @@ const (
 )
 
 // AskForString asks for a string once, using the default if the
-// answer is empty. Errors are only returned on I/O errors
+// answer is empty. Errors are only returned on I/O errors.
 func AskForString(ctx context.Context, text, def string) (string, error) {
 	if ctxutil.IsAlwaysYes(ctx) || !ctxutil.IsInteractive(ctx) {
 		return def, nil
@@ -40,14 +43,17 @@ func AskForString(ctx context.Context, text, def string) (string, error) {
 	}
 
 	fmt.Fprintf(Stderr, "%s [%s]: ", text, def)
+
 	input, err := NewReader(ctx, Stdin).ReadLine()
 	if err != nil {
 		return "", fmt.Errorf("failed to read user input: %w", err)
 	}
+
 	input = strings.TrimSpace(input)
 	if input == "" {
 		input = def
 	}
+
 	return input, nil
 }
 
@@ -68,6 +74,7 @@ func AskForBool(ctx context.Context, text string, def bool) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to read user input: %w", err)
 	}
+
 	switch str {
 	case "Y/n/q":
 		return true, nil
@@ -84,12 +91,12 @@ func AskForBool(ctx context.Context, text string, def bool) (bool, error) {
 	case "q":
 		return false, ErrAborted
 	default:
-		return false, fmt.Errorf("unknown answer: %s", str)
+		return false, fmt.Errorf("unknown answer '%s': %w", str, ErrInvalidInput)
 	}
 }
 
 // AskForInt asks for an valid interger once. If the input
-// can not be converted to an int it returns an error
+// can not be converted to an int it returns an error.
 func AskForInt(ctx context.Context, text string, def int) (int, error) {
 	if ctxutil.IsAlwaysYes(ctx) {
 		return def, nil
@@ -99,18 +106,21 @@ func AskForInt(ctx context.Context, text string, def int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	if str == "q" {
 		return 0, ErrAborted
 	}
+
 	intVal, err := strconv.Atoi(str)
 	if err != nil {
 		return 0, fmt.Errorf("failed to convert to number: %w", err)
 	}
+
 	return intVal, nil
 }
 
 // AskForConfirmation asks a yes/no question until the user
-// replies yes or no
+// replies yes or no.
 func AskForConfirmation(ctx context.Context, text string) bool {
 	if ctxutil.IsAlwaysYes(ctx) {
 		return true
@@ -121,18 +131,21 @@ func AskForConfirmation(ctx context.Context, text string) bool {
 		if err == nil {
 			return choice
 		}
-		if err == ErrAborted {
+
+		if errors.Is(err, ErrAborted) {
 			return false
 		}
 	}
+
 	return false
 }
 
-// AskForKeyImport asks for permissions to import the named key
+// AskForKeyImport asks for permissions to import the named key.
 func AskForKeyImport(ctx context.Context, key string, names []string) bool {
 	if ctxutil.IsAlwaysYes(ctx) {
 		return true
 	}
+
 	if !ctxutil.IsInteractive(ctx) {
 		return false
 	}
@@ -145,13 +158,14 @@ func AskForKeyImport(ctx context.Context, key string, names []string) bool {
 	return ok
 }
 
-// AskForPassword prompts for a password, optionally prompting twice until both match
+// AskForPassword prompts for a password, optionally prompting twice until both match.
 func AskForPassword(ctx context.Context, name string, repeat bool) (string, error) {
 	if ctxutil.IsAlwaysYes(ctx) {
 		return "", nil
 	}
 
 	askFn := GetPassPromptFunc(ctx)
+
 	for i := 0; i < maxTries; i++ {
 		// check for context cancellation
 		select {
@@ -164,6 +178,7 @@ func AskForPassword(ctx context.Context, name string, repeat bool) (string, erro
 		if !repeat {
 			return pass, err
 		}
+
 		if err != nil {
 			return "", err
 		}
@@ -179,5 +194,6 @@ func AskForPassword(ctx context.Context, name string, repeat bool) (string, erro
 
 		out.Errorf(ctx, "Error: the entered password do not match")
 	}
-	return "", fmt.Errorf("no valid user input")
+
+	return "", ErrInvalidInput
 }

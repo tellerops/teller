@@ -9,12 +9,10 @@ import (
 	"github.com/gopasspw/gopass/pkg/debug"
 )
 
-var (
-	// Name is used in the final path of the generated path
-	Name = "gopass"
-)
+// Name is used in the final path of the generated path.
+var Name = "gopass"
 
-// UserHome returns the users home dir
+// UserHome returns the users home dir.
 func UserHome() string {
 	if hd := os.Getenv("GOPASS_HOMEDIR"); hd != "" {
 		return hd
@@ -23,7 +21,9 @@ func UserHome() string {
 	uhd, err := os.UserHomeDir()
 	if err != nil {
 		debug.Log("failed to detect user home dir: %s", err)
+
 		return ""
 	}
+
 	return uhd
 }
