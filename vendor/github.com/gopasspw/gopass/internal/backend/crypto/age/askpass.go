@@ -3,20 +3,17 @@ package age
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gopasspw/gopass/internal/cache"
+	"github.com/gopasspw/gopass/internal/config"
 	"github.com/gopasspw/gopass/pkg/debug"
 	"github.com/gopasspw/gopass/pkg/pinentry/cli"
-	"github.com/gopasspw/pinentry"
+	"github.com/nbutton23/zxcvbn-go"
+	"github.com/twpayne/go-pinentry"
+	"github.com/zalando/go-keyring"
 )
-
-type piner interface {
-	Close()
-	Confirm() bool
-	Set(string, string) error
-	GetPin() ([]byte, error)
-}
 
 type cacher interface {
 	Get(string) (string, bool)
@@ -25,29 +22,75 @@ type cacher interface {
 	Purge()
 }
 
-type askPass struct {
-	testing  bool
-	cache    cacher
-	pinentry func() (piner, error)
+type osKeyring struct {
+	knownKeys map[string]bool
 }
 
-var (
-	// DefaultAskPass is the default password cache
-	DefaultAskPass = newAskPass()
-)
-
-func newAskPass() *askPass {
-	return &askPass{
-		cache: cache.NewInMemTTL(time.Hour, 24*time.Hour),
-		pinentry: func() (piner, error) {
-			p, err := pinentry.New()
-			if err == nil {
-				return p, nil
-			}
-			debug.Log("Pinentry not found: %q", err)
-			return cli.New()
-		},
+func newOsKeyring() *osKeyring {
+	return &osKeyring{
+		knownKeys: make(map[string]bool),
 	}
+}
+
+func (o *osKeyring) Get(key string) (string, bool) {
+	sec, err := keyring.Get("gopass", key)
+	if err != nil {
+		debug.Log("failed to get %s from OS keyring: %w", key, err)
+
+		return "", false
+	}
+	o.knownKeys[name] = true
+
+	return sec, true
+}
+
+func (o *osKeyring) Set(name, value string) {
+	if err := keyring.Set("gopass", name, value); err != nil {
+		debug.Log("failed to set %s: %w", name, err)
+	}
+	o.knownKeys[name] = true
+}
+
+func (o *osKeyring) Remove(name string) {
+	if err := keyring.Delete("gopass", name); err != nil {
+		debug.Log("failed to remove %s from keyring: %s", name, err)
+
+		return
+	}
+	o.knownKeys[name] = false
+}
+
+func (o *osKeyring) Purge() {
+	// purge all known keys. only useful for the REPL case.
+	// Does not persist across restarts.
+	for k, v := range o.knownKeys {
+		if !v {
+			continue
+		}
+		if err := keyring.Delete("gopass", k); err != nil {
+			debug.Log("failed to remove %s from keyring: %s", k, err)
+		}
+	}
+}
+
+type askPass struct {
+	testing bool
+	cache   cacher
+}
+
+func newAskPass(ctx context.Context) *askPass {
+	a := &askPass{
+		cache: cache.NewInMemTTL[string, string](time.Hour, 24*time.Hour),
+	}
+
+	if config.Bool(ctx, "age.usekeychain") {
+		if err := keyring.Set("gopass", "sentinel", "empty"); err == nil {
+			debug.Log("using OS keychain to cache age credentials")
+			a.cache = newOsKeyring()
+		}
+	}
+
+	return a
 }
 
 func (a *askPass) Ping(_ context.Context) error {
@@ -57,41 +100,67 @@ func (a *askPass) Ping(_ context.Context) error {
 func (a *askPass) Passphrase(key string, reason string, repeat bool) (string, error) {
 	if value, found := a.cache.Get(key); found || a.testing {
 		debug.Log("Read value for %s from cache", key)
+
 		return value, nil
 	}
 	debug.Log("Value for %s not found in cache", key)
 
-	pi, err := a.pinentry()
+	pw, err := a.getPassphrase(reason, repeat)
 	if err != nil {
-		return "", fmt.Errorf("pinentry (%s) error: %w", pinentry.GetBinary(), err)
-	}
-	defer pi.Close()
-
-	_ = pi.Set("title", "gopass")
-	_ = pi.Set("desc", "Need your passphrase "+reason)
-	_ = pi.Set("prompt", "Please enter your passphrase:")
-	_ = pi.Set("ok", "OK")
-	if repeat {
-		_ = pi.Set("REPEAT", "Confirm")
+		return "", fmt.Errorf("pinentry error: %w", err)
 	}
 
-	pw, err := pi.GetPin()
-	if err != nil {
-		return "", fmt.Errorf("pinentry (%s) error: %w", pinentry.GetBinary(), err)
-	}
-
-	pass := string(pw)
 	debug.Log("Updated value for %s in cache", key)
-	a.cache.Set(key, pass)
-	return pass, nil
+	a.cache.Set(key, pw)
+
+	return pw, nil
+}
+
+func (a *askPass) getPassphrase(reason string, repeat bool) (string, error) {
+	opts := []pinentry.ClientOption{
+		pinentry.WithBinaryNameFromGnuPGAgentConf(),
+		pinentry.WithDesc(strings.TrimSuffix(reason, ":") + "."),
+		pinentry.WithGPGTTY(),
+		pinentry.WithPrompt("Passphrase:"),
+		pinentry.WithTitle("gopass"),
+	}
+	if repeat {
+		opts = append(opts, pinentry.WithOption("REPEAT=Confirm"))
+		opts = append(opts, pinentry.WithQualityBar(func(s string) (int, bool) {
+			match := zxcvbn.PasswordStrength(s, nil)
+
+			return match.Score, true
+		}))
+	}
+
+	p, err := pinentry.NewClient(opts...)
+	if err != nil {
+		debug.Log("Pinentry not found: %q", err)
+		// use CLI fallback
+		pf := cli.New()
+		if repeat {
+			_ = pf.Set("REPEAT")
+		}
+
+		return pf.GetPIN()
+	}
+	defer func() {
+		_ = p.Close()
+	}()
+
+	pw, _, err := p.GetPIN()
+	if err != nil {
+		return "", fmt.Errorf("pinentry error: %w", err)
+	}
+
+	return pw, nil
 }
 
 func (a *askPass) Remove(key string) {
 	a.cache.Remove(key)
 }
 
-// Lock flushes the password cache
+// Lock flushes the password cache.
 func (a *Age) Lock() {
 	a.askPass.cache.Purge()
-	a.krCache = nil
 }

@@ -3,29 +3,32 @@ package backend
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/blang/semver/v4"
 	"github.com/gopasspw/gopass/pkg/debug"
 )
 
-// CryptoBackend is a cryptographic backend
+// CryptoBackend is a cryptographic backend.
 type CryptoBackend int
 
 const (
-	// Plain is a no-op crypto backend
+	// Plain is a no-op crypto backend.
 	Plain CryptoBackend = iota
-	// GPGCLI is a gpg-cli based crypto backend
+	// GPGCLI is a gpg-cli based crypto backend.
 	GPGCLI
-	// Age - age-encryption.org
+	// Age - age-encryption.org.
 	Age
 )
 
 func (c CryptoBackend) String() string {
-	return CryptoNameFromBackend(c)
+	if be, err := CryptoRegistry.BackendName(c); err == nil {
+		return be
+	}
+
+	return ""
 }
 
-// Keyring is a public/private key manager
+// Keyring is a public/private key manager.
 type Keyring interface {
 	ListRecipients(ctx context.Context) ([]string, error)
 	ListIdentities(ctx context.Context) ([]string, error)
@@ -40,7 +43,7 @@ type Keyring interface {
 	GenerateIdentity(ctx context.Context, name, email, passphrase string) error
 }
 
-// Crypto is a crypto backend
+// Crypto is a crypto backend.
 type Crypto interface {
 	Keyring
 
@@ -51,51 +54,40 @@ type Crypto interface {
 	Name() string
 	Version(context.Context) semver.Version
 	Initialized(ctx context.Context) error
-	Ext() string    // filename extension
-	IDFile() string // recipient IDs
+	Ext() string    // filename extension.
+	IDFile() string // recipient IDs.
 	Concurrency() int
-}
-
-// RegisterCrypto registers a new crypto backend with the backend registry.
-func RegisterCrypto(id CryptoBackend, name string, loader CryptoLoader) {
-	cryptoRegistry[id] = loader
-	cryptoNameToBackendMap[name] = id
-	cryptoBackendToNameMap[id] = name
 }
 
 // NewCrypto instantiates a new crypto backend.
 func NewCrypto(ctx context.Context, id CryptoBackend) (Crypto, error) {
-	if be, found := cryptoRegistry[id]; found {
+	if be, err := CryptoRegistry.Get(id); err == nil {
 		return be.New(ctx)
 	}
+
 	return nil, fmt.Errorf("unknown backend %d: %w", id, ErrNotFound)
 }
 
-// DetectCrypto tries to detect the crypto backend used
+// DetectCrypto tries to detect the crypto backend used.
 func DetectCrypto(ctx context.Context, storage Storage) (Crypto, error) {
 	if HasCryptoBackend(ctx) {
-		if be, found := cryptoRegistry[GetCryptoBackend(ctx)]; found {
+		if be, err := CryptoRegistry.Get(GetCryptoBackend(ctx)); err == nil {
 			return be.New(ctx)
 		}
 	}
 
-	bes := make([]CryptoBackend, 0, len(cryptoRegistry))
-	for id := range cryptoRegistry {
-		bes = append(bes, id)
-	}
-	sort.Slice(bes, func(i, j int) bool {
-		return cryptoRegistry[bes[i]].Priority() < cryptoRegistry[bes[j]].Priority()
-	})
-	for _, id := range bes {
-		be := cryptoRegistry[id]
+	for _, be := range CryptoRegistry.Prioritized() {
 		debug.Log("Trying %s for %s", be, storage)
-		if err := be.Handles(storage); err != nil {
-			debug.Log("failed to use crypto %s for %s", id, storage)
+		if err := be.Handles(ctx, storage); err != nil {
+			debug.Log("failed to use crypto %s for %s", be, storage)
+
 			continue
 		}
 		debug.Log("Using %s for %s", be, storage)
+
 		return be.New(ctx)
 	}
 	debug.Log("No valid crypto provider found for %s", storage)
-	return nil, nil
+	// TODO: this should return ErrNotSupported, but need to fix some tests for that
+	return nil, nil //nolint:nilnil
 }

@@ -4,17 +4,15 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/gopasspw/gopass/internal/out"
 	"github.com/gopasspw/gopass/internal/store"
-	"github.com/gopasspw/gopass/pkg/debug"
 )
 
 const (
-	fileMode = 0600
+	fileMode = 0o600
 )
 
 // fixConfig sets up the git config for the password store in a way to simplifies some of the quirks
@@ -23,7 +21,7 @@ const (
 func (g *Git) fixConfig(ctx context.Context) error {
 	// set push default, to avoid issues with
 	// "fatal: The current branch master has multiple upstream branches, refusing to push"
-	// https://stackoverflow.com/questions/948354/default-behavior-of-git-push-without-a-branch-specified
+	// https://stackoverflow.com/questions/948354/default-behavior-of-git-push-without-a-branch-specified.
 	if err := g.ConfigSet(ctx, "push.default", "matching"); err != nil {
 		return fmt.Errorf("failed to set git config for push.default: %w", err)
 	}
@@ -32,7 +30,7 @@ func (g *Git) fixConfig(ctx context.Context) error {
 		return fmt.Errorf("failed to set git config for pull.rebase: %w", err)
 	}
 
-	// setup for proper diffs
+	// setup for proper diffs.
 	if err := g.ConfigSet(ctx, "diff.gpg.binary", "true"); err != nil {
 		out.Errorf(ctx, "Error while initializing git: %s", err)
 	}
@@ -40,7 +38,7 @@ func (g *Git) fixConfig(ctx context.Context) error {
 		out.Errorf(ctx, "Error while initializing git: %s", err)
 	}
 
-	// setup for persistent SSH connections
+	// setup for persistent SSH connections.
 	if sc := gitSSHCommand(); sc != "" {
 		if err := g.ConfigSet(ctx, "core.sshCommand", sc); err != nil {
 			out.Errorf(ctx, "Error while configuring persistent SSH connections: %s", err)
@@ -50,9 +48,9 @@ func (g *Git) fixConfig(ctx context.Context) error {
 	return nil
 }
 
-// InitConfig initialized and preparse the git config
+// InitConfig initialized and preparse the git config.
 func (g *Git) InitConfig(ctx context.Context, userName, userEmail string) error {
-	// set commit identity
+	// set commit identity.
 	if userName != "" {
 		if err := g.ConfigSet(ctx, "user.name", userName); err != nil {
 			return fmt.Errorf("failed to set git config user.name: %w", err)
@@ -68,7 +66,7 @@ func (g *Git) InitConfig(ctx context.Context, userName, userEmail string) error 
 		out.Printf(ctx, "Git Email not set")
 	}
 
-	// ensure sane git config
+	// ensure sane git config.
 	if err := g.fixConfig(ctx); err != nil {
 		return fmt.Errorf("failed to fix git config: %w", err)
 	}
@@ -86,59 +84,38 @@ func (g *Git) InitConfig(ctx context.Context, userName, userEmail string) error 
 	return nil
 }
 
-// ConfigSet sets a local config value
+// ConfigSet sets a local config value.
 func (g *Git) ConfigSet(ctx context.Context, key, value string) error {
-	return g.Cmd(ctx, "gitConfigSet", "config", "--local", key, value)
+	// return g.Cmd(ctx, "gitConfigSet", "config", "--local", key, value)
+	return g.cfg.SetLocal(key, value)
 }
 
-// ConfigGet returns a given config value
+// ConfigGet returns a given config value.
 func (g *Git) ConfigGet(ctx context.Context, key string) (string, error) {
 	if !g.IsInitialized() {
 		return "", store.ErrGitNotInit
 	}
 
-	buf := &strings.Builder{}
+	value := g.cfg.Get(key)
+	if value == "" {
+		g.cfg.Reload()
 
-	cmd := exec.CommandContext(ctx, "git", "config", "--get", key)
-	cmd.Dir = g.fs.Path()
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
-
-	debug.Log("%s %+v", cmd.Path, cmd.Args)
-	if err := cmd.Run(); err != nil {
-		return "", err
+		value = g.cfg.Get(key)
 	}
 
-	return strings.TrimSpace(buf.String()), nil
+	return value, nil
 }
 
-// ConfigList returns all git config settings
+// ConfigList returns all git config settings.
 func (g *Git) ConfigList(ctx context.Context) (map[string]string, error) {
 	if !g.IsInitialized() {
 		return nil, store.ErrGitNotInit
 	}
 
-	buf := &strings.Builder{}
-
-	cmd := exec.CommandContext(ctx, "git", "config", "--list")
-	cmd.Dir = g.fs.Path()
-	cmd.Stdout = buf
-	cmd.Stderr = os.Stderr
-
-	debug.Log("%s %+v", cmd.Path, cmd.Args)
-	if err := cmd.Run(); err != nil {
-		return nil, err
+	kv := make(map[string]string, 23)
+	for _, k := range g.cfg.List("") {
+		kv[k] = g.cfg.Get(k)
 	}
 
-	lines := strings.Split(buf.String(), "\n")
-	kv := make(map[string]string, len(lines))
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		p := strings.SplitN(line, "=", 2)
-		if len(p) < 2 {
-			continue
-		}
-		kv[p[0]] = p[1]
-	}
 	return kv, nil
 }

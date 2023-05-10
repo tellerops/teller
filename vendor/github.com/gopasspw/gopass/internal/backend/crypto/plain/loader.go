@@ -13,7 +13,7 @@ const (
 )
 
 func init() {
-	backend.RegisterCrypto(backend.Plain, name, &loader{})
+	backend.CryptoRegistry.Register(backend.Plain, name, &loader{})
 }
 
 type loader struct{}
@@ -21,13 +21,15 @@ type loader struct{}
 // New implements backend.CryptoLoader.
 func (l loader) New(ctx context.Context) (backend.Crypto, error) {
 	debug.Log("Using Crypto Backend: %s (NO ENCRYPTION)", name)
+
 	return New(), nil
 }
 
-func (l loader) Handles(s backend.Storage) error {
-	if s.Exists(context.TODO(), IDFile) {
+func (l loader) Handles(ctx context.Context, s backend.Storage) error {
+	if s.Exists(ctx, IDFile) {
 		return nil
 	}
+
 	return fmt.Errorf("not supported")
 }
 

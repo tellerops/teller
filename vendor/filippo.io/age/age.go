@@ -1,8 +1,6 @@
-// Copyright 2019 Google LLC
-//
+// Copyright 2019 The age Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file or at
-// https://developers.google.com/open-source/licenses/bsd
+// license that can be found in the LICENSE file.
 
 // Package age implements file encryption according to the age-encryption.org/v1
 // specification.
@@ -12,13 +10,13 @@
 // ScryptRecipient and ScryptIdentity. For compatibility with existing SSH keys
 // use the filippo.io/age/agessh package.
 //
-// Age encrypted files are binary and not malleable. For encoding them as text,
+// age encrypted files are binary and not malleable. For encoding them as text,
 // use the filippo.io/age/armor package.
 //
 // Key management
 //
-// Age does not have a global keyring. Instead, since age keys are small,
-// textual, and cheap, you are encoraged to generate dedicated keys for each
+// age does not have a global keyring. Instead, since age keys are small,
+// textual, and cheap, you are encouraged to generate dedicated keys for each
 // task and application.
 //
 // Recipient public keys can be passed around as command line flags and in
@@ -181,7 +179,7 @@ func Decrypt(src io.Reader, identities ...Identity) (io.Reader, error) {
 
 	hdr, payload, err := format.Parse(src)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read header: %v", err)
+		return nil, fmt.Errorf("failed to read header: %w", err)
 	}
 
 	stanzas := make([]*Stanza, 0, len(hdr.Recipients))
@@ -214,7 +212,7 @@ func Decrypt(src io.Reader, identities ...Identity) (io.Reader, error) {
 
 	nonce := make([]byte, streamNonceSize)
 	if _, err := io.ReadFull(payload, nonce); err != nil {
-		return nil, fmt.Errorf("failed to read nonce: %v", err)
+		return nil, fmt.Errorf("failed to read nonce: %w", err)
 	}
 
 	return stream.NewReader(streamKey(fileKey, nonce), payload)
