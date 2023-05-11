@@ -1,19 +1,20 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"io"
-	"os"
-
 	"github.com/alecthomas/kong"
 	"github.com/spectralops/teller/pkg"
 	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 	"github.com/spectralops/teller/pkg/utils"
+	"io"
+	"io/fs"
+	"os"
 )
 
 var CLI struct {
-	Config   string `short:"c" help:"Path to teller.yml"`
+	Config   string `short:"c" help:"Path to teller YAML file"`
 	LogLevel string `short:"l"  help:"Application log level"`
 
 	Run struct {
@@ -98,7 +99,7 @@ var (
 	defaultLogLevel = "error"
 )
 
-//nolint
+// nolint
 func main() {
 	ctx := kong.Parse(&CLI)
 
@@ -134,7 +135,14 @@ func main() {
 	//
 	// load or create new file
 	//
-	telleryml := ".teller.yml"
+	const (
+		defaultTellerFile = ".teller.yml"
+		// Alternative default teller file, it uses official YAML extension
+		// See https://github.com/tellerops/teller/issues/162
+		secondDefaultTellerFile = ".teller.yaml"
+	)
+
+	telleryml := defaultTellerFile
 	if CLI.Config != "" {
 		telleryml = CLI.Config
 	}
@@ -156,9 +164,11 @@ func main() {
 	}
 
 	tlrfile, err := pkg.NewTellerFile(telleryml)
+	if isDefaultFilePathErr(CLI.Config, err) {
+		tlrfile, err = pkg.NewTellerFile(secondDefaultTellerFile)
+	}
 	if err != nil {
 		logger.WithError(err).WithField("file", telleryml).Fatal("could not read file")
-
 	}
 
 	teller := pkg.NewTeller(tlrfile, CLI.Run.Cmd, CLI.Run.Redact, logger)
@@ -304,4 +314,12 @@ func main() {
 		println(ctx.Command())
 		teller.PrintEnvKeys()
 	}
+}
+
+func isDefaultFilePathErr(config string, err error) bool {
+	// Ignore if explicitly set to '.teller.yml'.
+	if config != "" {
+		return false
+	}
+	return errors.Is(err, fs.ErrNotExist)
 }
