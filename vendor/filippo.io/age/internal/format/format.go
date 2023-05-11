@@ -1,8 +1,6 @@
-// Copyright 2019 Google LLC
-//
+// Copyright 2019 The age Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file or at
-// https://developers.google.com/open-source/licenses/bsd
+// license that can be found in the LICENSE file.
 
 // Package format implements the age file format.
 package format
@@ -109,12 +107,11 @@ func (w *WrappedBase64Encoder) LastLineIsEmpty() bool {
 
 const intro = "age-encryption.org/v1\n"
 
-var recipientPrefix = []byte("->")
-
+var stanzaPrefix = []byte("->")
 var footerPrefix = []byte("---")
 
 func (r *Stanza) Marshal(w io.Writer) error {
-	if _, err := w.Write(recipientPrefix); err != nil {
+	if _, err := w.Write(stanzaPrefix); err != nil {
 		return err
 	}
 	for _, a := range append([]string{r.Type}, r.Args...) {
@@ -158,14 +155,81 @@ func (h *Header) Marshal(w io.Writer) error {
 	return err
 }
 
-type ParseError string
+type StanzaReader struct {
+	r   *bufio.Reader
+	err error
+}
 
-func (e ParseError) Error() string {
-	return "parsing age header: " + string(e)
+func NewStanzaReader(r *bufio.Reader) *StanzaReader {
+	return &StanzaReader{r: r}
+}
+
+func (r *StanzaReader) ReadStanza() (s *Stanza, err error) {
+	// Read errors are unrecoverable.
+	if r.err != nil {
+		return nil, r.err
+	}
+	defer func() { r.err = err }()
+
+	s = &Stanza{}
+
+	line, err := r.r.ReadBytes('\n')
+	if err != nil {
+		return nil, fmt.Errorf("failed to read line: %w", err)
+	}
+	if !bytes.HasPrefix(line, stanzaPrefix) {
+		return nil, fmt.Errorf("malformed stanza opening line: %q", line)
+	}
+	prefix, args := splitArgs(line)
+	if prefix != string(stanzaPrefix) || len(args) < 1 {
+		return nil, fmt.Errorf("malformed stanza: %q", line)
+	}
+	for _, a := range args {
+		if !isValidString(a) {
+			return nil, fmt.Errorf("malformed stanza: %q", line)
+		}
+	}
+	s.Type = args[0]
+	s.Args = args[1:]
+
+	for {
+		line, err := r.r.ReadBytes('\n')
+		if err != nil {
+			return nil, fmt.Errorf("failed to read line: %w", err)
+		}
+
+		b, err := DecodeString(strings.TrimSuffix(string(line), "\n"))
+		if err != nil {
+			if bytes.HasPrefix(line, footerPrefix) || bytes.HasPrefix(line, stanzaPrefix) {
+				return nil, fmt.Errorf("malformed body line %q: stanza ended without a short line\nNote: this might be a file encrypted with an old beta version of age or rage. Use age v1.0.0-beta6 or rage to decrypt it.", line)
+			}
+			return nil, errorf("malformed body line %q: %v", line, err)
+		}
+		if len(b) > BytesPerLine {
+			return nil, errorf("malformed body line %q: too long", line)
+		}
+		s.Body = append(s.Body, b...)
+		if len(b) < BytesPerLine {
+			// A stanza body always ends with a short line.
+			return s, nil
+		}
+	}
+}
+
+type ParseError struct {
+	err error
+}
+
+func (e *ParseError) Error() string {
+	return "parsing age header: " + e.err.Error()
+}
+
+func (e *ParseError) Unwrap() error {
+	return e.err
 }
 
 func errorf(format string, a ...interface{}) error {
-	return ParseError(fmt.Sprintf(format, a...))
+	return &ParseError{fmt.Errorf(format, a...)}
 }
 
 // Parse returns the header and a Reader that begins at the start of the
@@ -176,68 +240,41 @@ func Parse(input io.Reader) (*Header, io.Reader, error) {
 
 	line, err := rr.ReadString('\n')
 	if err != nil {
-		return nil, nil, errorf("failed to read intro: %v", err)
+		return nil, nil, errorf("failed to read intro: %w", err)
 	}
 	if line != intro {
 		return nil, nil, errorf("unexpected intro: %q", line)
 	}
 
-	var r *Stanza
+	sr := NewStanzaReader(rr)
 	for {
-		line, err := rr.ReadBytes('\n')
+		peek, err := rr.Peek(len(footerPrefix))
 		if err != nil {
-			return nil, nil, errorf("failed to read header: %v", err)
+			return nil, nil, errorf("failed to read header: %w", err)
 		}
 
-		if bytes.HasPrefix(line, footerPrefix) {
-			if r != nil {
-				return nil, nil, errorf("malformed body line %q: reached footer without previous stanza being closed\nNote: this might be a file encrypted with an old beta version of rage. Use rage to decrypt it.", line)
+		if bytes.Equal(peek, footerPrefix) {
+			line, err := rr.ReadBytes('\n')
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to read header: %w", err)
 			}
+
 			prefix, args := splitArgs(line)
 			if prefix != string(footerPrefix) || len(args) != 1 {
 				return nil, nil, errorf("malformed closing line: %q", line)
 			}
 			h.MAC, err = DecodeString(args[0])
-			if err != nil {
+			if err != nil || len(h.MAC) != 32 {
 				return nil, nil, errorf("malformed closing line %q: %v", line, err)
 			}
 			break
-
-		} else if bytes.HasPrefix(line, recipientPrefix) {
-			if r != nil {
-				return nil, nil, errorf("malformed body line %q: new stanza started without previous stanza being closed\nNote: this might be a file encrypted with an old beta version of rage. Use rage to decrypt it.", line)
-			}
-			r = &Stanza{}
-			prefix, args := splitArgs(line)
-			if prefix != string(recipientPrefix) || len(args) < 1 {
-				return nil, nil, errorf("malformed recipient: %q", line)
-			}
-			for _, a := range args {
-				if !isValidString(a) {
-					return nil, nil, errorf("malformed recipient: %q", line)
-				}
-			}
-			r.Type = args[0]
-			r.Args = args[1:]
-			h.Recipients = append(h.Recipients, r)
-
-		} else if r != nil {
-			b, err := DecodeString(strings.TrimSuffix(string(line), "\n"))
-			if err != nil {
-				return nil, nil, errorf("malformed body line %q: %v", line, err)
-			}
-			if len(b) > BytesPerLine {
-				return nil, nil, errorf("malformed body line %q: too long", line)
-			}
-			r.Body = append(r.Body, b...)
-			if len(b) < BytesPerLine {
-				// Only the last line of a body can be short.
-				r = nil
-			}
-
-		} else {
-			return nil, nil, errorf("unexpected line: %q", line)
 		}
+
+		s, err := sr.ReadStanza()
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse header: %w", err)
+		}
+		h.Recipients = append(h.Recipients, s)
 	}
 
 	// If input is a bufio.Reader, rr might be equal to input because

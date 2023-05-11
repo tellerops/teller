@@ -1,8 +1,6 @@
-// Copyright 2019 Google LLC
-//
+// Copyright 2019 The age Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file or at
-// https://developers.google.com/open-source/licenses/bsd
+// license that can be found in the LICENSE file.
 
 // Package stream implements a variant of the STREAM chunked encryption scheme.
 package stream
@@ -10,6 +8,7 @@ package stream
 import (
 	"crypto/cipher"
 	"errors"
+	"fmt"
 	"io"
 
 	"golang.org/x/crypto/chacha20poly1305"
@@ -68,7 +67,17 @@ func (r *Reader) Read(p []byte) (int, error) {
 	r.unread = r.unread[n:]
 
 	if last {
-		r.err = io.EOF
+		// Ensure there is an EOF after the last chunk as expected. In other
+		// words, check for trailing data after a full-length final chunk.
+		// Hopefully, the underlying reader supports returning EOF even if it
+		// had previously returned an EOF to ReadFull.
+		if _, err := r.src.Read(make([]byte, 1)); err == nil {
+			r.err = errors.New("trailing data after end of encrypted file")
+		} else if err != io.EOF {
+			r.err = fmt.Errorf("non-EOF error reading after end of encrypted file: %w", err)
+		} else {
+			r.err = io.EOF
+		}
 	}
 
 	return n, nil
@@ -89,7 +98,11 @@ func (r *Reader) readChunk() (last bool, err error) {
 		// A message can't end without a marked chunk. This message is truncated.
 		return false, io.ErrUnexpectedEOF
 	case err == io.ErrUnexpectedEOF:
-		// The last chunk can be short.
+		// The last chunk can be short, but not empty unless it's the first and
+		// only chunk.
+		if !nonceIsZero(&r.nonce) && n == r.a.Overhead() {
+			return false, errors.New("last chunk is empty, try age v1.0.0, and please consider reporting this")
+		}
 		in = in[:n]
 		last = true
 		setLastChunkFlag(&r.nonce)
@@ -128,6 +141,10 @@ func incNonce(nonce *[chacha20poly1305.NonceSize]byte) {
 
 func setLastChunkFlag(nonce *[chacha20poly1305.NonceSize]byte) {
 	nonce[len(nonce)-1] = lastChunkFlag
+}
+
+func nonceIsZero(nonce *[chacha20poly1305.NonceSize]byte) bool {
+	return *nonce == [chacha20poly1305.NonceSize]byte{}
 }
 
 type Writer struct {

@@ -17,11 +17,9 @@ const (
 	fps = 25
 )
 
-var (
-	now = time.Now
-)
+var now = time.Now
 
-// ProgressBar is a gopass progress bar
+// ProgressBar is a gopass progress bar.
 type ProgressBar struct {
 	// keep both int64 fields at the top to ensure correct
 	// 8-byte alignment on 32 bit systems. See https://golang.org/pkg/sync/atomic/#pkg-note-BUG
@@ -36,7 +34,7 @@ type ProgressBar struct {
 	Bytes  bool
 }
 
-// NewProgressBar creates a new progress bar
+// NewProgressBar creates a new progress bar.
 func NewProgressBar(total int64) *ProgressBar {
 	return &ProgressBar{
 		total:   total,
@@ -45,51 +43,81 @@ func NewProgressBar(total int64) *ProgressBar {
 	}
 }
 
-// Add adds the given amount to the progress
+// Add adds the given amount to the progress.
 func (p *ProgressBar) Add(v int64) {
+	if p == nil {
+		return
+	}
+
 	cur := atomic.AddInt64(&p.current, v)
 	if max := atomic.LoadInt64(&p.total); cur > max {
 		atomic.StoreInt64(&p.total, cur)
 	}
+
 	p.print()
 }
 
-// Inc adds one to the progress
+// Inc adds one to the progress.
 func (p *ProgressBar) Inc() {
+	if p == nil {
+		return
+	}
+
 	cur := atomic.AddInt64(&p.current, 1)
 	if max := atomic.LoadInt64(&p.total); cur > max {
 		atomic.StoreInt64(&p.total, cur)
 	}
+
 	p.print()
 }
 
-// Set sets an arbitrary progress
+// Set sets an arbitrary progress.
 func (p *ProgressBar) Set(v int64) {
+	if p == nil {
+		return
+	}
+
 	atomic.StoreInt64(&p.current, v)
+
 	if max := atomic.LoadInt64(&p.total); v > max {
 		atomic.StoreInt64(&p.total, v)
 	}
+
 	p.print()
 }
 
-// Done finalizes the progress bar
+// Done finalizes the progress bar.
 func (p *ProgressBar) Done() {
+	if p == nil {
+		return
+	}
+
 	if p.Hidden {
 		return
 	}
+
 	fmt.Fprintln(Stderr, "")
 }
 
-// Clear removes the progress bar
+// Clear removes the progress bar.
 func (p *ProgressBar) Clear() {
+	if p == nil {
+		return
+	}
+
 	clearLine()
 }
 
-// print will print the progress bar, if necessary
+// print will print the progress bar, if necessary.
 func (p *ProgressBar) print() {
+	if p == nil {
+		return
+	}
+
 	if p.Hidden {
 		return
 	}
+
 	// try to lock
 	select {
 	case p.mutex <- struct{}{}:
@@ -98,6 +126,7 @@ func (p *ProgressBar) print() {
 		<-p.mutex
 	default:
 		// lock not acquired
+		return
 	}
 }
 
@@ -121,7 +150,7 @@ func (p *ProgressBar) doPrint() {
 		pctStr = " " + pctStr
 	}
 
-	termWidth, _, _ := term.GetSize(int(syscall.Stdin))
+	termWidth, _, _ := term.GetSize(int(syscall.Stdin)) //nolint:unconvert
 	if termWidth < 0 {
 		// if we can determine the size (e.g. windows, fake term, mock)
 		// assume a sane default of 80
@@ -130,13 +159,20 @@ func (p *ProgressBar) doPrint() {
 
 	barWidth := uint(termWidth)
 	digits := int(math.Log10(float64(max))) + 1
+	// Log10(0) is undefined
+	if max < 1 {
+		digits = 1
+	}
+
 	text := fmt.Sprintf(fmt.Sprintf(" %%%dd / %%%dd ", digits, digits), cur, max)
+
 	if p.Bytes {
 		curStr := humanize.Bytes(uint64(cur))
 		maxStr := humanize.Bytes(uint64(max))
 		digits := len(maxStr) + 1
 		text = fmt.Sprintf(fmt.Sprintf(" %%%ds / %%%ds ", digits, digits), curStr, maxStr)
 	}
+
 	size := int(barWidth) - len(text) - len(pctStr) - 5
 	fill := int(math.Max(2, math.Floor((float64(size)*pct)+.5)))
 
@@ -170,6 +206,7 @@ func gteZero(a int) int {
 	if a >= 0 {
 		return a
 	}
+
 	return 0
 }
 
@@ -177,6 +214,7 @@ func min(a, b int) int {
 	if a < b {
 		return a
 	}
+
 	return b
 }
 
@@ -188,6 +226,7 @@ func (p *ProgressBar) percent() (int64, int64, float64) {
 	cur := atomic.LoadInt64(&p.current)
 	max := atomic.LoadInt64(&p.total)
 	pct := float64(cur) / float64(max)
+
 	if p.total < 1 {
 		if p.current < 1 {
 			pct = 1

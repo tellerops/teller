@@ -5,30 +5,11 @@ package wincred
 import (
 	"encoding/binary"
 	"reflect"
-	"syscall"
 	"time"
-	"unicode/utf16"
 	"unsafe"
-)
 
-// uf16PtrToString creates a Go string from a pointer to a UTF16 encoded zero-terminated string.
-// Such pointers are returned from the Windows API calls.
-// The function creates a copy of the string.
-func utf16PtrToString(wstr *uint16) string {
-	if wstr != nil {
-		for len := 0; ; len++ {
-			ptr := unsafe.Pointer(uintptr(unsafe.Pointer(wstr)) + uintptr(len)*unsafe.Sizeof(*wstr)) // see https://golang.org/pkg/unsafe/#Pointer (3)
-			if *(*uint16)(ptr) == 0 {
-				return string(utf16.Decode(*(*[]uint16)(unsafe.Pointer(&reflect.SliceHeader{
-					Data: uintptr(unsafe.Pointer(wstr)),
-					Len:  len,
-					Cap:  len,
-				}))))
-			}
-		}
-	}
-	return ""
-}
+	syscall "golang.org/x/sys/windows"
+)
 
 // utf16ToByte creates a byte array from a given UTF 16 char array.
 func utf16ToByte(wstr []uint16) (result []byte) {
@@ -41,7 +22,11 @@ func utf16ToByte(wstr []uint16) (result []byte) {
 
 // utf16FromString creates a UTF16 char array from a string.
 func utf16FromString(str string) []uint16 {
-	return syscall.StringToUTF16(str)
+	res, err := syscall.UTF16FromString(str)
+	if err != nil {
+		return []uint16{}
+	}
+	return res
 }
 
 // goBytes copies the given C byte array to a Go byte array (see `C.GoBytes`).
@@ -65,10 +50,10 @@ func sysToCredential(cred *sysCREDENTIAL) (result *Credential) {
 		return nil
 	}
 	result = new(Credential)
-	result.Comment = utf16PtrToString(cred.Comment)
-	result.TargetName = utf16PtrToString(cred.TargetName)
-	result.TargetAlias = utf16PtrToString(cred.TargetAlias)
-	result.UserName = utf16PtrToString(cred.UserName)
+	result.Comment = syscall.UTF16PtrToString(cred.Comment)
+	result.TargetName = syscall.UTF16PtrToString(cred.TargetName)
+	result.TargetAlias = syscall.UTF16PtrToString(cred.TargetAlias)
+	result.UserName = syscall.UTF16PtrToString(cred.UserName)
 	result.LastWritten = time.Unix(0, cred.LastWritten.Nanoseconds())
 	result.Persist = CredentialPersistence(cred.Persist)
 	result.CredentialBlob = goBytes(cred.CredentialBlob, cred.CredentialBlobSize)
@@ -80,7 +65,7 @@ func sysToCredential(cred *sysCREDENTIAL) (result *Credential) {
 	}))
 	for i, attr := range attrSlice {
 		resultAttr := &result.Attributes[i]
-		resultAttr.Keyword = utf16PtrToString(attr.Keyword)
+		resultAttr.Keyword = syscall.UTF16PtrToString(attr.Keyword)
 		resultAttr.Value = goBytes(attr.Value, attr.ValueSize)
 	}
 	return result

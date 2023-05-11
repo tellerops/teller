@@ -4,13 +4,13 @@ package wincred
 
 import (
 	"reflect"
-	"syscall"
 	"unsafe"
+
+	syscall "golang.org/x/sys/windows"
 )
 
 var (
-	modadvapi32 = syscall.NewLazyDLL("advapi32.dll")
-
+	modadvapi32            = syscall.NewLazyDLL("advapi32.dll")
 	procCredRead      proc = modadvapi32.NewProc("CredReadW")
 	procCredWrite     proc = modadvapi32.NewProc("CredWriteW")
 	procCredDelete    proc = modadvapi32.NewProc("CredDeleteW")

@@ -12,26 +12,30 @@ import (
 )
 
 // addRel adds the required number of relative elements to go from dst back to
-// src
+// src.
 func addRel(src, dst string) string {
 	for i := 0; i < strings.Count(dst, "/"); i++ {
 		src = "../" + src
 	}
+
 	return src
 }
 
-// longestCommonPrefix finds the longest common prefix directory
+// longestCommonPrefix finds the longest common prefix directory.
 func longestCommonPrefix(l, r string) string {
 	var prefix string
 	for i := 0; i < len(l) && i < len(r); i++ {
 		if l[i] != r[i] {
 			prefix = l[:i]
+
 			break
 		}
 	}
+
 	if !strings.Contains(prefix, "/") {
 		return prefix
 	}
+
 	return prefix[:strings.LastIndex(prefix, "/")]
 }
 
@@ -53,12 +57,13 @@ func (s *Store) Link(ctx context.Context, from, to string) error {
 	if err != nil {
 		return fmt.Errorf("can not get current working directory: %w", err)
 	}
+
 	defer func() {
-		os.Chdir(cwd)
+		_ = os.Chdir(cwd)
 	}()
 
 	toDir := filepath.Dir(toPath)
-	if err := os.MkdirAll(toDir, 0700); err != nil {
+	if err := os.MkdirAll(toDir, 0o700); err != nil {
 		return fmt.Errorf("failed to create destination dir %q: %w", toDir, err)
 	}
 
@@ -70,5 +75,6 @@ func (s *Store) Link(ctx context.Context, from, to string) error {
 
 	debug.Log("path: %q\n\tfromPath:\t%q\n\ttoPath:\t\t%q\n\tprefix:\t\t%q\n\tfromRel:\t%q\n\ttoRel:\t\t%q\n\ttoDir:\t\t%q\n\tlinkDst:\t%q",
 		s.path, fromPath, toPath, prefix, fromRel, toRel, toDir, linkDst)
+
 	return os.Symlink(linkDst, filepath.Base(toRel))
 }

@@ -5,7 +5,7 @@
 [![GoDoc](https://godoc.org/github.com/zalando/go-keyring?status.svg)](https://godoc.org/github.com/zalando/go-keyring)
 
 `go-keyring` is an OS-agnostic library for *setting*, *getting* and *deleting*
-secrets from the system keyring. It supports **OS X**, **Linux (dbus)** and
+secrets from the system keyring. It supports **OS X**, **Linux/BSD (dbus)** and
 **Windows**.
 
 go-keyring was created after its authors searched for, but couldn't find, a better alternative. It aims to simplify
@@ -25,9 +25,9 @@ keyring instead of having the user type it on every invocation.
 The OS X implementation depends on the `/usr/bin/security` binary for
 interfacing with the OS X keychain. It should be available by default.
 
-#### Linux
+#### Linux and *BSD
 
-The Linux implementation depends on the [Secret Service][SecretService] dbus
+The Linux and *BSD implementation depends on the [Secret Service][SecretService] dbus
 interface, which is provided by [GNOME Keyring](https://wiki.gnome.org/Projects/GnomeKeyring).
 
 It's expected that the default collection `login` exists in the keyring, because
@@ -82,8 +82,8 @@ Running the tests is simple:
 go test
 ```
 
-Which OS you use *does* matter. If you're using **Linux**, it will
-test the implementation in `keyring_linux.go`. If running the tests
+Which OS you use *does* matter. If you're using **Linux** or **BSD**, it will
+test the implementation in `keyring_unix.go`. If running the tests
 on **OS X**, it will test the implementation in `keyring_darwin.go`.
 
 ### Mocking

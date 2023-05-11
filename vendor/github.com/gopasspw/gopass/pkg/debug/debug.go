@@ -12,27 +12,33 @@ import (
 )
 
 var (
-	// Stdout is exported for tests
+	// Stdout is exported for tests.
 	Stdout io.Writer = os.Stdout
-	// Stderr is exported for tests
+	// Stderr is exported for tests.
 	Stderr     io.Writer = os.Stderr
 	logSecrets bool
 )
 
 var opts struct {
-	logger *log.Logger
-	funcs  map[string]bool
-	files  map[string]bool
+	logger  *log.Logger
+	funcs   map[string]bool
+	files   map[string]bool
+	logFile *os.File
 }
 
 var logFn = doNotLog
 
-// make sure all initializations happens before the init func
+// make sure all initializations happens before the init func.
 var enabled = initDebug()
 
 func initDebug() bool {
+	if opts.logFile != nil {
+		_ = opts.logFile.Close()
+	}
+
 	if os.Getenv("GOPASS_DEBUG") == "" && os.Getenv("GOPASS_DEBUG_LOG") == "" {
 		logFn = doNotLog
+
 		return false
 	}
 
@@ -42,6 +48,7 @@ func initDebug() bool {
 
 	initDebugLogger()
 	initDebugTags()
+
 	logFn = doLog
 
 	return true
@@ -50,19 +57,24 @@ func initDebug() bool {
 func initDebugLogger() {
 	debugfile := os.Getenv("GOPASS_DEBUG_LOG")
 	if debugfile == "" {
+		opts.logger = log.New(os.Stderr, "", log.Ldate|log.Lmicroseconds)
+
 		return
 	}
 
-	f, err := os.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
+	f, err := os.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0o600)
 	if err == nil {
-		_, err := f.Seek(2, 0)
+		// seek to the end of the file (offset, whence [2 = end])
+		_, err := f.Seek(0, 2)
 		if err != nil {
+			_ = f.Close()
 			fmt.Fprintf(Stderr, "unable to seek to end of %v: %v\n", debugfile, err)
 			os.Exit(3)
 		}
 	}
+
 	if err != nil && os.IsNotExist(err) {
-		f, err = os.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+		f, err = os.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	}
 
 	if err != nil {
@@ -70,6 +82,7 @@ func initDebugLogger() {
 		os.Exit(2)
 	}
 
+	opts.logFile = f
 	opts.logger = log.New(f, "", log.Ldate|log.Lmicroseconds)
 }
 
@@ -84,6 +97,7 @@ func parseFilter(envname string, pad func(string) string) map[string]bool {
 	for _, fn := range strings.Split(env, ",") {
 		t := pad(strings.TrimSpace(fn))
 		val := true
+
 		if t[0] == '-' {
 			val = false
 			t = t[1:]
@@ -123,7 +137,7 @@ func padFile(s string) string {
 	}
 
 	if !strings.Contains(s, ":") {
-		s = s + ":*"
+		s += ":*"
 	}
 
 	return s
@@ -134,7 +148,7 @@ func initDebugTags() {
 	opts.files = parseFilter("GOPASS_DEBUG_FILES", padFile)
 }
 
-func getPosition(offset int) (fn, dir, file string, line int) {
+func getPosition(offset int) (fn, dir, file string, line int) { //nolint:nonamedreturns
 	pc, file, line, ok := runtime.Caller(3 + offset)
 	if !ok {
 		return "", "", "", 0
@@ -144,6 +158,7 @@ func getPosition(offset int) (fn, dir, file string, line int) {
 	filename := filepath.Base(file)
 
 	f := runtime.FuncForPC(pc)
+
 	return path.Base(f.Name()), dirname, filename, line
 }
 
@@ -170,21 +185,22 @@ func checkFilter(filter map[string]bool, key string) bool {
 
 // Log logs a statement to Stderr (unless filtered) and the
 // debug log file (if enabled).
-func Log(f string, args ...interface{}) {
+func Log(f string, args ...any) {
 	logFn(0, f, args...)
 }
 
 // LogN logs a statement to Stderr (unless filtered) and the
 // debug log file (if enabled). The offset will be applied to
 // the runtime position.
-func LogN(offset int, f string, args ...interface{}) {
+func LogN(offset int, f string, args ...any) {
 	logFn(offset, f, args...)
 }
 
-func doNotLog(offset int, f string, args ...interface{}) {}
+func doNotLog(offset int, f string, args ...any) {}
 
-func doLog(offset int, f string, args ...interface{}) {
+func doLog(offset int, f string, args ...any) {
 	fn, dir, file, line := getPosition(offset)
+
 	if len(f) == 0 || f[len(f)-1] != '\n' {
 		f += "\n"
 	}
@@ -197,13 +213,15 @@ func doLog(offset int, f string, args ...interface{}) {
 		SafeStr() string
 	}
 
-	argsi := make([]interface{}, len(args))
+	argsi := make([]any, len(args))
 	for i, item := range args {
 		argsi[i] = item
 		if secreter, ok := item.(Safer); ok && !logSecrets {
 			argsi[i] = secreter.SafeStr()
+
 			continue
 		}
+
 		if shortener, ok := item.(Shortener); ok {
 			argsi[i] = shortener.Str()
 		}
@@ -224,6 +242,7 @@ func doLog(offset int, f string, args ...interface{}) {
 	filename := fmt.Sprintf("%s/%s:%d", dir, file, line)
 	if checkFilter(opts.files, filename) {
 		dbgprint()
+
 		return
 	}
 
@@ -232,7 +251,7 @@ func doLog(offset int, f string, args ...interface{}) {
 	}
 }
 
-// IsEnabled returns true if debug logging was enabled
+// IsEnabled returns true if debug logging was enabled.
 func IsEnabled() bool {
 	return enabled
 }
