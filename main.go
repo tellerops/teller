@@ -3,14 +3,15 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
+	"os"
+
 	"github.com/alecthomas/kong"
 	"github.com/spectralops/teller/pkg"
 	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 	"github.com/spectralops/teller/pkg/utils"
-	"io"
-	"io/fs"
-	"os"
 )
 
 var CLI struct {
