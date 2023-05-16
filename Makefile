@@ -18,6 +18,7 @@ mocks:
 	mockgen -source pkg/providers/gopass.go -destination pkg/providers/mock_providers/gopass_mock.go
 	mockgen -source pkg/providers/github.go -destination pkg/providers/mock_providers/github_mock.go
 	mockgen -source pkg/providers/azure_keyvault.go -destination pkg/providers/mock_providers/azure_keyvault_mock.go
+	mockgen -source pkg/providers/mac_keychain_darwin.go -destination pkg/providers/mock_providers/mac_keychain_darwin_mock.go
 readme:
 	yarn readme
 lint:

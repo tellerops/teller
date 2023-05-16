@@ -1160,6 +1160,26 @@ providers:
         path: bar
 ```
 
+## Mac Keychain
+
+### Features
+
+- Sync - `yes`
+- Mapping - `yes`
+- Modes - `read+write+delete`
+
+### Example Config
+```yaml
+providers:
+  mac_keychain:
+    env_sync:
+      path: 'MyApp' # All keychain entries related to 'MyApp'
+    env:
+      ETC_DSN:
+        path: 'MyApp'
+        #field: "SOME_KEY" # Optional, accesses the mac keychain SOME_KEY and maps it to ETC_DSN environement variable
+```
+
 # Semantics
 
 ## Addressing
