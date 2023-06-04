@@ -487,6 +487,20 @@ env_sync:
     password: PGPASSWORD
 ```
 
+Additionally, you can remap key settings by using `remap_with` instead of `remap`:
+```yaml
+env_sync:
+  path: database/roles/my-role
+  remap_with: # Use either remap or remap_with, not both.
+    username:
+      field: PGUSER
+      severity: none
+    password:
+      field: PGPASSWORD
+      severity: high
+      redact_with: "**XXX**"
+```
+
 After remapping, the local environment variable `PGUSER` will contain the provider value for `username` and `PGPASSWORD` will contain the provider value for `password`.
 
 ## Hashicorp Vault
