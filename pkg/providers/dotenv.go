@@ -167,7 +167,7 @@ func (a *Dotenv) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	return entries, nil
 }
 
-func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) {
+func (a *Dotenv) Get(p core.KeyPath) (*core.EnvEntry, error) { //nolint:dupl
 	a.logger.WithField("path", p.Path).Debug("read secret")
 	kvs, err := a.client.Read(p.Path)
 	if err != nil {
