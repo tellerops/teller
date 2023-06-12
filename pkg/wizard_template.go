@@ -267,4 +267,21 @@ providers:
         field: SOME_KEY # Optional, accesses the environment variable SOME_KEY and maps it to ETC_DSN
 
 {{end}}
+
+{{- if index .ProviderKeys "ansible_vault" }}
+
+  # Configure via environment variables for integration:
+  # ANSIBLE_VAULT_PASSPHRASE: Ansible Vault Password
+
+  ansible_vault:
+    env_sync:
+       path: ansible/vars/vault_{{stage}}.yml
+
+    env:
+      KEY1:
+        path: ansible/vars/vault_{{stage}}.yml
+      NONEXIST_KEY:
+        path: ansible/vars/vault_{{stage}}.yml
+
+{{end}}
 `
