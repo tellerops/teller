@@ -2,7 +2,7 @@
 project: teller
 
 # Set this if you want to carry over parent process' environment variables
-# carry_env: true 
+carry_env: true
 
 
 #
@@ -12,7 +12,7 @@ project: teller
 # paths.
 #
 opts:
-  region: env:AWS_REGION    # you can get env variables with the 'env:' prefix
+  region: env:AWS_REGION    # you can get env variables with the 'env:' prefix, for default values if env not found use comma. Example: env:AWS_REGION,{DEFAULT_VALUE}
   stage: development
 
 
@@ -20,10 +20,23 @@ opts:
 # Providers
 #
 providers:
-  # Configure via environment:
-  # CONSUL_HTTP_ADDR
-  cyberark_conjur:
-    env:
-      GH_USERNAME:
-        path: github/username
 
+#  dotenv:
+##    env_sync:
+##      path: ~/teller-env.env
+#    env:
+#      ANSIBLE_VAULT_PASSPHRASE:
+#        path: ~/teller-env.env
+
+  # Configure via environment variables for integration:
+  # ANSIBLE_VAULT_PASSPHRASE: Ansible Vault Password
+
+  ansible_vault:
+    env_sync:
+       path: ansible/vars/vault_{{stage}}.yml
+
+    env:
+      KEY1:
+        path: ansible/vars/vault_{{stage}}.yml
+      NONEXIST_KEY:
+        path: ansible/vars/vault_{{stage}}.yml
