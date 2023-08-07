@@ -126,7 +126,7 @@ func (l *StandardLogger) SetLevel(level string) {
 		l.logger.SetLevel(logrus.ErrorLevel)
 	case "warn", "warning":
 		l.logger.SetLevel(logrus.WarnLevel)
-	case "info'":
+	case "info":
 		l.logger.SetLevel(logrus.InfoLevel)
 	case "debug":
 		l.logger.SetLevel(logrus.DebugLevel)
