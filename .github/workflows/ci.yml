@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ['1.18']
+        go: ['1.21']
     env:
       VERBOSE: 1
       GOFLAGS: -mod=readonly
@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
 
@@ -31,7 +31,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.45.0
+          version: v1.54.0
           args: --timeout 5m0s
 
       - name: Test
