@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -29,7 +30,7 @@ type GoogleSecretManager struct {
 
 const GoogleSecretManagerName = "google_secretmanager"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Google Secret Manager",
@@ -104,6 +105,16 @@ func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	ent := p.Found(secret)
+	if ent.Field != "" {
+		var x map[string]interface{}
+		err = json.Unmarshal([]byte(ent.Value), &x)
+		if err != nil {
+			return nil, err
+		}
+		fieldValue := x[ent.Field].(string)
+
+		ent.Value = fieldValue
+	}
 	return &ent, nil
 }
 
