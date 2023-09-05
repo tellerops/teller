@@ -105,14 +105,14 @@ func (a *GoogleSecretManager) Get(p core.KeyPath) (*core.EnvEntry, error) {
 	}
 
 	ent := p.Found(secret)
+
 	if ent.Field != "" {
-		var x map[string]interface{}
-		err = json.Unmarshal([]byte(ent.Value), &x)
+		var valueSecrets map[string]interface{}
+		err = json.Unmarshal([]byte(ent.Value), &valueSecrets)
 		if err != nil {
 			return nil, err
 		}
-		fieldValue := x[ent.Field].(string)
-
+		fieldValue := valueSecrets[ent.Field].(string)
 		ent.Value = fieldValue
 	}
 	return &ent, nil
