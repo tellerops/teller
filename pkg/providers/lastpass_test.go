@@ -5,7 +5,7 @@ import (
 
 	"github.com/alecthomas/assert"
 	"github.com/mattn/lastpass-go"
-	"github.com/spectralops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/core"
 )
 
 func TestLastPass(t *testing.T) {

@@ -17,9 +17,9 @@ import (
 
 	"github.com/karrick/godirwalk"
 	"github.com/samber/lo"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
-	"github.com/spectralops/teller/pkg/providers"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/providers"
 	"gopkg.in/yaml.v3"
 )
 

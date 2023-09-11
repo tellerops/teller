@@ -9,8 +9,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/keyvault"
 	kvauth "github.com/Azure/azure-sdk-for-go/services/keyvault/auth"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 const AzureVaultDomain = "vault.azure.net"
@@ -31,7 +31,7 @@ type AzureKeyVault struct {
 
 const azureName = "azure_keyvault"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Azure Key Vault",

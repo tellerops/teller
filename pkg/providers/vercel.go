@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	"github.com/dghubble/sling"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 type VercelClient interface {
@@ -65,7 +65,7 @@ const ProjectEndPoint = "/projects"
 
 const VercelName = "vercel"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Name:           "vercel",

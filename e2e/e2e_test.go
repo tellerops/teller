@@ -10,10 +10,10 @@ import (
 
 	"testing"
 
-	"github.com/spectralops/teller/e2e/register"
-	_ "github.com/spectralops/teller/e2e/tests"
-	"github.com/spectralops/teller/e2e/testutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/tellerops/teller/e2e/register"
+	_ "github.com/tellerops/teller/e2e/tests"
+	"github.com/tellerops/teller/e2e/testutils"
 )
 
 const (

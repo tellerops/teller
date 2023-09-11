@@ -6,16 +6,16 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/spectralops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/core"
 
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 type ProcessEnv struct {
 	logger logging.Logger
 }
 
-//nolint
+// nolint
 func init() {
 	metaInto := core.MetaInfo{
 		Description:    "ProcessEnv",

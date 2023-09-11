@@ -10,8 +10,8 @@ import (
 	"github.com/DopplerHQ/cli/pkg/http"
 	"github.com/DopplerHQ/cli/pkg/models"
 	"github.com/DopplerHQ/cli/pkg/utils"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 type DopplerClient interface {
@@ -32,7 +32,7 @@ type Doppler struct {
 
 const DopplerName = "doppler"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description: "Doppler",

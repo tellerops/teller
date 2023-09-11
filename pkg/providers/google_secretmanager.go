@@ -12,8 +12,8 @@ import (
 	secretmanagerpb "google.golang.org/genproto/googleapis/cloud/secretmanager/v1"
 
 	"github.com/googleapis/gax-go/v2"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
 	"google.golang.org/api/iterator"
 )
 
@@ -30,7 +30,7 @@ type GoogleSecretManager struct {
 
 const GoogleSecretManagerName = "google_secretmanager"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Google Secret Manager",

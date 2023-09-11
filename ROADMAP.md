@@ -1,6 +1,6 @@
 # Teller Roadmap
 
-This document lists the new features being considered for the future and that are being experimented / worked on currently. We would like our contributors and users to know what features could come in the near future. We definitely welcome suggestions and ideas from everyone about the roadmap and features (feel free to open an [issue](https://github.com/SpectralOps/teller/issues)). 
+This document lists the new features being considered for the future and that are being experimented / worked on currently. We would like our contributors and users to know what features could come in the near future. We definitely welcome suggestions and ideas from everyone about the roadmap and features (feel free to open an [issue](https://github.com/tellerops/teller/issues)). 
 
 ## Currently worked on
 

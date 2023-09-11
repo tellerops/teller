@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/vault/api"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
-	"github.com/spectralops/teller/pkg/providers"
 	"github.com/stretchr/testify/assert"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/providers"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )

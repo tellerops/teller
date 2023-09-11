@@ -7,8 +7,8 @@ import (
 
 	"github.com/joho/godotenv"
 	vault "github.com/sosedoff/ansible-vault-go"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 type AnsibleVaultClient interface {
@@ -32,7 +32,7 @@ type AnsibleVault struct {
 	client AnsibleVaultClient
 }
 
-//nolint
+// nolint
 func init() {
 	metaInto := core.MetaInfo{
 		Description:    "Ansible Vault",

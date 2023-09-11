@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spectralops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/core"
 
 	"github.com/mattn/lastpass-go"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 const (
@@ -24,7 +24,7 @@ type LastPass struct {
 
 const LastPassName = "lastpass"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Lastpass",

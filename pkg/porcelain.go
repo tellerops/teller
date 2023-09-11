@@ -15,8 +15,8 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/jftuga/ellipsis"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/utils"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/utils"
 )
 
 type Porcelain struct {

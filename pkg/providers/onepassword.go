@@ -5,8 +5,8 @@ import (
 
 	"github.com/1Password/connect-sdk-go/connect"
 	"github.com/1Password/connect-sdk-go/onepassword"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 type OnePasswordClient interface {
@@ -21,7 +21,7 @@ type OnePassword struct {
 
 const OnePasswordName = "1password"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description: "1Password",

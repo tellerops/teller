@@ -8,8 +8,8 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/1Password/connect-sdk-go/onepassword"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/providers/mock_providers"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/providers/mock_providers"
 )
 
 func TestOnePassword(t *testing.T) {

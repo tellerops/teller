@@ -8,9 +8,9 @@ import (
 
 	"github.com/gopasspw/gopass/pkg/gopass"
 	"github.com/gopasspw/gopass/pkg/gopass/api"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
-	"github.com/spectralops/teller/pkg/utils"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/utils"
 )
 
 type GopassClient interface {
@@ -26,7 +26,7 @@ type Gopass struct {
 
 const GoPassName = "gopass"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Gopass",

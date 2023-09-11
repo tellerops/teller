@@ -3,7 +3,7 @@ package providers
 import (
 	"encoding/json"
 
-	"github.com/spectralops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/core"
 )
 
 type TellerExport struct {
