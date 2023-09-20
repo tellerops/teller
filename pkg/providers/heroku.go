@@ -90,7 +90,7 @@ func (h *Heroku) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	return entries, nil
 }
 
-func (h *Heroku) Get(p core.KeyPath) (*core.EnvEntry, error) { // nolint:dupl
+func (h *Heroku) Get(p core.KeyPath) (*core.EnvEntry, error) { //nolint:dupl
 	secret, err := h.getSecret(p)
 	if err != nil {
 		return nil, err

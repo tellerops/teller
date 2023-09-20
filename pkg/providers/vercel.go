@@ -119,7 +119,7 @@ func (ve *Vercel) GetMapping(p core.KeyPath) ([]core.EnvEntry, error) {
 	return entries, nil
 }
 
-func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) { // nolint:dupl
+func (ve *Vercel) Get(p core.KeyPath) (*core.EnvEntry, error) { //nolint:dupl
 	secret, err := ve.getSecret(p)
 	if err != nil {
 		return nil, err
