@@ -4,20 +4,25 @@ package ssm
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
+	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Initiates execution of an Automation document.
+// Initiates execution of an Automation runbook.
 func (c *Client) StartAutomationExecution(ctx context.Context, params *StartAutomationExecutionInput, optFns ...func(*Options)) (*StartAutomationExecutionOutput, error) {
 	if params == nil {
 		params = &StartAutomationExecutionInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "StartAutomationExecution", params, optFns, addOperationStartAutomationExecutionMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "StartAutomationExecution", params, optFns, c.addOperationStartAutomationExecutionMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -29,21 +34,28 @@ func (c *Client) StartAutomationExecution(ctx context.Context, params *StartAuto
 
 type StartAutomationExecutionInput struct {
 
-	// The name of the Automation document to use for this execution.
+	// The name of the SSM document to run. This can be a public document or a custom
+	// document. To run a shared document belonging to another account, specify the
+	// document ARN. For more information about how to use shared documents, see Using
+	// shared SSM documents (https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-using-shared.html)
+	// in the Amazon Web Services Systems Manager User Guide.
 	//
 	// This member is required.
 	DocumentName *string
+
+	// The CloudWatch alarm you want to apply to your automation.
+	AlarmConfiguration *types.AlarmConfiguration
 
 	// User-provided idempotency token. The token must be unique, is case insensitive,
 	// enforces the UUID format, and can't be reused.
 	ClientToken *string
 
-	// The version of the Automation document to use for this execution.
+	// The version of the Automation runbook to use for this execution.
 	DocumentVersion *string
 
 	// The maximum number of targets allowed to run this task in parallel. You can
 	// specify a number, such as 10, or a percentage, such as 10%. The default value is
-	// 10.
+	// 10 .
 	MaxConcurrency *string
 
 	// The number of errors that are allowed before the system stops running the
@@ -65,34 +77,29 @@ type StartAutomationExecutionInput struct {
 	Mode types.ExecutionMode
 
 	// A key-value map of execution parameters, which match the declared parameters in
-	// the Automation document.
+	// the Automation runbook.
 	Parameters map[string][]string
 
 	// Optional metadata that you assign to a resource. You can specify a maximum of
 	// five tags for an automation. Tags enable you to categorize a resource in
 	// different ways, such as by purpose, owner, or environment. For example, you
 	// might want to tag an automation to identify an environment or operating system.
-	// In this case, you could specify the following key name/value pairs:
-	//
-	// *
-	// Key=environment,Value=test
-	//
-	// * Key=OS,Value=Windows
-	//
-	// To add tags to an existing
-	// patch baseline, use the AddTagsToResource action.
+	// In this case, you could specify the following key-value pairs:
+	//   - Key=environment,Value=test
+	//   - Key=OS,Value=Windows
+	// To add tags to an existing automation, use the AddTagsToResource operation.
 	Tags []types.Tag
 
-	// A location is a combination of AWS Regions and/or AWS accounts where you want to
-	// run the Automation. Use this action to start an Automation in multiple Regions
-	// and multiple accounts. For more information, see Running Automation workflows in
-	// multiple AWS Regions and accounts
-	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-automation-multiple-accounts-and-regions.html)
-	// in the AWS Systems Manager User Guide.
+	// A location is a combination of Amazon Web Services Regions and/or Amazon Web
+	// Services accounts where you want to run the automation. Use this operation to
+	// start an automation in multiple Amazon Web Services Regions and multiple Amazon
+	// Web Services accounts. For more information, see Running Automation workflows
+	// in multiple Amazon Web Services Regions and Amazon Web Services accounts (https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-automation-multiple-accounts-and-regions.html)
+	// in the Amazon Web Services Systems Manager User Guide.
 	TargetLocations []types.TargetLocation
 
-	// A key-value mapping of document parameters to target resources. Both Targets and
-	// TargetMaps cannot be specified together.
+	// A key-value mapping of document parameters to target resources. Both Targets
+	// and TargetMaps can't be specified together.
 	TargetMaps []map[string][]string
 
 	// The name of the parameter used as the target resource for the rate-controlled
@@ -102,6 +109,8 @@ type StartAutomationExecutionInput struct {
 	// A key-value mapping to target resources. Required if you specify
 	// TargetParameterName.
 	Targets []types.Target
+
+	noSmithyDocumentSerde
 }
 
 type StartAutomationExecutionOutput struct {
@@ -111,15 +120,20 @@ type StartAutomationExecutionOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, options Options) (err error) {
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpStartAutomationExecution{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpStartAutomationExecution{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -149,7 +163,7 @@ func addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, op
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -158,10 +172,16 @@ func addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, op
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addStartAutomationExecutionResolveEndpointMiddleware(stack, options); err != nil {
+		return err
+	}
 	if err = addOpStartAutomationExecutionValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opStartAutomationExecution(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -171,6 +191,9 @@ func addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, op
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -183,4 +206,127 @@ func newServiceMetadataMiddleware_opStartAutomationExecution(region string) *aws
 		SigningName:   "ssm",
 		OperationName: "StartAutomationExecution",
 	}
+}
+
+type opStartAutomationExecutionResolveEndpointMiddleware struct {
+	EndpointResolver EndpointResolverV2
+	BuiltInResolver  builtInParameterResolver
+}
+
+func (*opStartAutomationExecutionResolveEndpointMiddleware) ID() string {
+	return "ResolveEndpointV2"
+}
+
+func (m *opStartAutomationExecutionResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
+	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
+) {
+	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
+		return next.HandleSerialize(ctx, in)
+	}
+
+	req, ok := in.Request.(*smithyhttp.Request)
+	if !ok {
+		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
+	}
+
+	if m.EndpointResolver == nil {
+		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
+	}
+
+	params := EndpointParameters{}
+
+	m.BuiltInResolver.ResolveBuiltIns(&params)
+
+	var resolvedEndpoint smithyendpoints.Endpoint
+	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
+	if err != nil {
+		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
+	}
+
+	req.URL = &resolvedEndpoint.URI
+
+	for k := range resolvedEndpoint.Headers {
+		req.Header.Set(
+			k,
+			resolvedEndpoint.Headers.Get(k),
+		)
+	}
+
+	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
+	if err != nil {
+		var nfe *internalauth.NoAuthenticationSchemesFoundError
+		if errors.As(err, &nfe) {
+			// if no auth scheme is found, default to sigv4
+			signingName := "ssm"
+			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
+			ctx = awsmiddleware.SetSigningName(ctx, signingName)
+			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
+
+		}
+		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
+		if errors.As(err, &ue) {
+			return out, metadata, fmt.Errorf(
+				"This operation requests signer version(s) %v but the client only supports %v",
+				ue.UnsupportedSchemes,
+				internalauth.SupportedSchemes,
+			)
+		}
+	}
+
+	for _, authScheme := range authSchemes {
+		switch authScheme.(type) {
+		case *internalauth.AuthenticationSchemeV4:
+			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
+			var signingName, signingRegion string
+			if v4Scheme.SigningName == nil {
+				signingName = "ssm"
+			} else {
+				signingName = *v4Scheme.SigningName
+			}
+			if v4Scheme.SigningRegion == nil {
+				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
+			} else {
+				signingRegion = *v4Scheme.SigningRegion
+			}
+			if v4Scheme.DisableDoubleEncoding != nil {
+				// The signer sets an equivalent value at client initialization time.
+				// Setting this context value will cause the signer to extract it
+				// and override the value set at client initialization time.
+				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
+			}
+			ctx = awsmiddleware.SetSigningName(ctx, signingName)
+			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
+			break
+		case *internalauth.AuthenticationSchemeV4A:
+			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
+			if v4aScheme.SigningName == nil {
+				v4aScheme.SigningName = aws.String("ssm")
+			}
+			if v4aScheme.DisableDoubleEncoding != nil {
+				// The signer sets an equivalent value at client initialization time.
+				// Setting this context value will cause the signer to extract it
+				// and override the value set at client initialization time.
+				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
+			}
+			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
+			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
+			break
+		case *internalauth.AuthenticationSchemeNone:
+			break
+		}
+	}
+
+	return next.HandleSerialize(ctx, in)
+}
+
+func addStartAutomationExecutionResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
+	return stack.Serialize.Insert(&opStartAutomationExecutionResolveEndpointMiddleware{
+		EndpointResolver: options.EndpointResolverV2,
+		BuiltInResolver: &builtInResolver{
+			Region:       options.Region,
+			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
+			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
+			Endpoint:     options.BaseEndpoint,
+		},
+	}, "ResolveEndpoint", middleware.After)
 }

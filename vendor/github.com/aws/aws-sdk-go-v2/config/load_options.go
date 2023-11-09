@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/ssocreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	smithybearer "github.com/aws/smithy-go/auth/bearer"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
 )
@@ -18,7 +19,8 @@ import (
 // LoadOptionsFunc is a type alias for LoadOptions functional option
 type LoadOptionsFunc func(*LoadOptions) error
 
-// LoadOptions are discrete set of options that are valid for loading the configuration
+// LoadOptions are discrete set of options that are valid for loading the
+// configuration
 type LoadOptions struct {
 
 	// Region is the region to send requests to.
@@ -27,15 +29,42 @@ type LoadOptions struct {
 	// Credentials object to use when signing requests.
 	Credentials aws.CredentialsProvider
 
+	// Token provider for authentication operations with bearer authentication.
+	BearerAuthTokenProvider smithybearer.TokenProvider
+
 	// HTTPClient the SDK's API clients will use to invoke HTTP requests.
 	HTTPClient HTTPClient
 
-	// EndpointResolver that can be used to provide or override an endpoint for the given
-	// service and region Please see the `aws.EndpointResolver` documentation on usage.
+	// EndpointResolver that can be used to provide or override an endpoint for
+	// the given service and region.
+	//
+	// See the `aws.EndpointResolver` documentation on usage.
+	//
+	// Deprecated: See EndpointResolverWithOptions
 	EndpointResolver aws.EndpointResolver
 
-	// Retryer is a function that provides a Retryer implementation. A Retryer guides how HTTP requests should be
-	// retried in case of recoverable failures.
+	// EndpointResolverWithOptions that can be used to provide or override an
+	// endpoint for the given service and region.
+	//
+	// See the `aws.EndpointResolverWithOptions` documentation on usage.
+	EndpointResolverWithOptions aws.EndpointResolverWithOptions
+
+	// RetryMaxAttempts specifies the maximum number attempts an API client
+	// will call an operation that fails with a retryable error.
+	//
+	// This value will only be used if Retryer option is nil.
+	RetryMaxAttempts int
+
+	// RetryMode specifies the retry model the API client will be created with.
+	//
+	// This value will only be used if Retryer option is nil.
+	RetryMode aws.RetryMode
+
+	// Retryer is a function that provides a Retryer implementation. A Retryer
+	// guides how HTTP requests should be retried in case of recoverable
+	// failures.
+	//
+	// If not nil, RetryMaxAttempts, and RetryMode will be ignored.
 	Retryer func() aws.Retryer
 
 	// APIOptions provides the set of middleware mutations modify how the API
@@ -46,50 +75,70 @@ type LoadOptions struct {
 	// Logger writer interface to write logging messages to.
 	Logger logging.Logger
 
-	// ClientLogMode is used to configure the events that will be sent to the configured logger.
-	// This can be used to configure the logging of signing, retries, request, and responses
-	// of the SDK clients.
+	// ClientLogMode is used to configure the events that will be sent to the
+	// configured logger. This can be used to configure the logging of signing,
+	// retries, request, and responses of the SDK clients.
 	//
-	// See the ClientLogMode type documentation for the complete set of logging modes and available
-	// configuration.
+	// See the ClientLogMode type documentation for the complete set of logging
+	// modes and available configuration.
 	ClientLogMode *aws.ClientLogMode
 
 	// SharedConfigProfile is the profile to be used when loading the SharedConfig
 	SharedConfigProfile string
 
-	// SharedConfigFiles is the slice of custom shared config files to use when loading the SharedConfig.
-	// A non-default profile used within config file must have name defined with prefix 'profile '.
-	// eg [profile xyz] indicates a profile with name 'xyz'.
-	// To read more on the format of the config file, please refer the documentation at
+	// SharedConfigFiles is the slice of custom shared config files to use when
+	// loading the SharedConfig. A non-default profile used within config file
+	// must have name defined with prefix 'profile '. eg [profile xyz]
+	// indicates a profile with name 'xyz'. To read more on the format of the
+	// config file, please refer the documentation at
 	// https://docs.aws.amazon.com/credref/latest/refdocs/file-format.html#file-format-config
 	//
-	// If duplicate profiles are provided within the same, or across multiple shared config files, the next parsed
-	// profile will override only the properties that conflict with the previously defined profile.
-	// Note that if duplicate profiles are provided within the SharedCredentialsFiles and SharedConfigFiles,
-	// the properties defined in shared credentials file take precedence.
+	// If duplicate profiles are provided within the same, or across multiple
+	// shared config files, the next parsed profile will override only the
+	// properties that conflict with the previously defined profile. Note that
+	// if duplicate profiles are provided within the SharedCredentialsFiles and
+	// SharedConfigFiles, the properties defined in shared credentials file
+	// take precedence.
 	SharedConfigFiles []string
 
-	// SharedCredentialsFile is the slice of custom shared credentials files to use when loading the SharedConfig.
-	// The profile name used within credentials file must not prefix 'profile '.
-	// eg [xyz] indicates a profile with name 'xyz'. Profile declared as [profile xyz] will be ignored.
-	// To read more on the format of the credentials file, please refer the documentation at
+	// SharedCredentialsFile is the slice of custom shared credentials files to
+	// use when loading the SharedConfig. The profile name used within
+	// credentials file must not prefix 'profile '. eg [xyz] indicates a
+	// profile with name 'xyz'. Profile declared as [profile xyz] will be
+	// ignored. To read more on the format of the credentials file, please
+	// refer the documentation at
 	// https://docs.aws.amazon.com/credref/latest/refdocs/file-format.html#file-format-creds
 	//
-	// If duplicate profiles are provided with a same, or across multiple shared credentials files, the next parsed
-	// profile will override only properties that conflict with the previously defined profile.
-	// Note that if duplicate profiles are provided within the SharedCredentialsFiles and SharedConfigFiles,
-	// the properties defined in shared credentials file take precedence.
+	// If duplicate profiles are provided with a same, or across multiple
+	// shared credentials files, the next parsed profile will override only
+	// properties that conflict with the previously defined profile. Note that
+	// if duplicate profiles are provided within the SharedCredentialsFiles and
+	// SharedConfigFiles, the properties defined in shared credentials file
+	// take precedence.
 	SharedCredentialsFiles []string
 
 	// CustomCABundle is CA bundle PEM bytes reader
 	CustomCABundle io.Reader
 
-	// DefaultRegion is the fall back region, used if a region was not resolved from other sources
+	// DefaultRegion is the fall back region, used if a region was not resolved
+	// from other sources
 	DefaultRegion string
 
 	// UseEC2IMDSRegion indicates if SDK should retrieve the region
 	// from the EC2 Metadata service
 	UseEC2IMDSRegion *UseEC2IMDSRegion
+
+	// CredentialsCacheOptions is a function for setting the
+	// aws.CredentialsCacheOptions
+	CredentialsCacheOptions func(*aws.CredentialsCacheOptions)
+
+	// BearerAuthTokenCacheOptions is a function for setting the smithy-go
+	// auth/bearer#TokenCacheOptions
+	BearerAuthTokenCacheOptions func(*smithybearer.TokenCacheOptions)
+
+	// SSOTokenProviderOptions is a function for setting the
+	// credentials/ssocreds.SSOTokenProviderOptions
+	SSOTokenProviderOptions func(*ssocreds.SSOTokenProviderOptions)
 
 	// ProcessCredentialOptions is a function for setting
 	// the processcreds.Options
@@ -122,6 +171,72 @@ type LoadOptions struct {
 	// S3UseARNRegion specifies if the S3 service should allow ARNs to direct
 	// the region, the client's requests are sent to.
 	S3UseARNRegion *bool
+
+	// S3DisableMultiRegionAccessPoints specifies if the S3 service should disable
+	// the S3 Multi-Region access points feature.
+	S3DisableMultiRegionAccessPoints *bool
+
+	// EnableEndpointDiscovery specifies if endpoint discovery is enable for
+	// the client.
+	EnableEndpointDiscovery aws.EndpointDiscoveryEnableState
+
+	// Specifies if the EC2 IMDS service client is enabled.
+	//
+	// AWS_EC2_METADATA_DISABLED=true
+	EC2IMDSClientEnableState imds.ClientEnableState
+
+	// Specifies the EC2 Instance Metadata Service default endpoint selection
+	// mode (IPv4 or IPv6)
+	EC2IMDSEndpointMode imds.EndpointModeState
+
+	// Specifies the EC2 Instance Metadata Service endpoint to use. If
+	// specified it overrides EC2IMDSEndpointMode.
+	EC2IMDSEndpoint string
+
+	// Specifies that SDK clients must resolve a dual-stack endpoint for
+	// services.
+	UseDualStackEndpoint aws.DualStackEndpointState
+
+	// Specifies that SDK clients must resolve a FIPS endpoint for
+	// services.
+	UseFIPSEndpoint aws.FIPSEndpointState
+
+	// Specifies the SDK configuration mode for defaults.
+	DefaultsModeOptions DefaultsModeOptions
+
+	// The sdk app ID retrieved from env var or shared config to be added to request user agent header
+	AppID string
+}
+
+func (o LoadOptions) getDefaultsMode(ctx context.Context) (aws.DefaultsMode, bool, error) {
+	if len(o.DefaultsModeOptions.Mode) == 0 {
+		return "", false, nil
+	}
+	return o.DefaultsModeOptions.Mode, true, nil
+}
+
+// GetRetryMaxAttempts returns the RetryMaxAttempts if specified in the
+// LoadOptions and not 0.
+func (o LoadOptions) GetRetryMaxAttempts(ctx context.Context) (int, bool, error) {
+	if o.RetryMaxAttempts == 0 {
+		return 0, false, nil
+	}
+	return o.RetryMaxAttempts, true, nil
+}
+
+// GetRetryMode returns the RetryMode specified in the LoadOptions.
+func (o LoadOptions) GetRetryMode(ctx context.Context) (aws.RetryMode, bool, error) {
+	if len(o.RetryMode) == 0 {
+		return "", false, nil
+	}
+	return o.RetryMode, true, nil
+}
+
+func (o LoadOptions) getDefaultsModeIMDSClient(ctx context.Context) (*imds.Client, bool, error) {
+	if o.DefaultsModeOptions.IMDSClient == nil {
+		return nil, false, nil
+	}
+	return o.DefaultsModeOptions.IMDSClient, true, nil
 }
 
 // getRegion returns Region from config's LoadOptions
@@ -133,6 +248,11 @@ func (o LoadOptions) getRegion(ctx context.Context) (string, bool, error) {
 	return o.Region, true, nil
 }
 
+// getAppID returns AppID from config's LoadOptions
+func (o LoadOptions) getAppID(ctx context.Context) (string, bool, error) {
+	return o.AppID, len(o.AppID) > 0, nil
+}
+
 // WithRegion is a helper function to construct functional options
 // that sets Region on config's LoadOptions. Setting the region to
 // an empty string, will result in the region value being ignored.
@@ -141,6 +261,15 @@ func (o LoadOptions) getRegion(ctx context.Context) (string, bool, error) {
 func WithRegion(v string) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.Region = v
+		return nil
+	}
+}
+
+// WithAppID is a helper function to construct functional options
+// that sets AppID on config's LoadOptions.
+func WithAppID(ID string) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.AppID = ID
 		return nil
 	}
 }
@@ -273,7 +402,7 @@ func (p *UseEC2IMDSRegion) getRegion(ctx context.Context) (string, bool, error) 
 		client = imds.New(imds.Options{})
 	}
 
-	result, err := p.Client.GetRegion(ctx, nil)
+	result, err := client.GetRegion(ctx, nil)
 	if err != nil {
 		return "", false, err
 	}
@@ -328,6 +457,96 @@ func (o LoadOptions) getCredentialsProvider(ctx context.Context) (aws.Credential
 func WithCredentialsProvider(v aws.CredentialsProvider) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.Credentials = v
+		return nil
+	}
+}
+
+// getCredentialsCacheOptionsProvider returns the wrapped function to set aws.CredentialsCacheOptions
+func (o LoadOptions) getCredentialsCacheOptions(ctx context.Context) (func(*aws.CredentialsCacheOptions), bool, error) {
+	if o.CredentialsCacheOptions == nil {
+		return nil, false, nil
+	}
+
+	return o.CredentialsCacheOptions, true, nil
+}
+
+// WithCredentialsCacheOptions is a helper function to construct functional
+// options that sets a function to modify the aws.CredentialsCacheOptions the
+// aws.CredentialsCache will be configured with, if the CredentialsCache is used
+// by the configuration loader.
+//
+// If multiple WithCredentialsCacheOptions calls are made, the last call
+// overrides the previous call values.
+func WithCredentialsCacheOptions(v func(*aws.CredentialsCacheOptions)) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.CredentialsCacheOptions = v
+		return nil
+	}
+}
+
+// getBearerAuthTokenProvider returns the credentials value
+func (o LoadOptions) getBearerAuthTokenProvider(ctx context.Context) (smithybearer.TokenProvider, bool, error) {
+	if o.BearerAuthTokenProvider == nil {
+		return nil, false, nil
+	}
+
+	return o.BearerAuthTokenProvider, true, nil
+}
+
+// WithBearerAuthTokenProvider is a helper function to construct functional options
+// that sets Credential provider value on config's LoadOptions. If credentials
+// provider is set to nil, the credentials provider value will be ignored.
+// If multiple WithBearerAuthTokenProvider calls are made, the last call overrides
+// the previous call values.
+func WithBearerAuthTokenProvider(v smithybearer.TokenProvider) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.BearerAuthTokenProvider = v
+		return nil
+	}
+}
+
+// getBearerAuthTokenCacheOptionsProvider returns the wrapped function to set smithybearer.TokenCacheOptions
+func (o LoadOptions) getBearerAuthTokenCacheOptions(ctx context.Context) (func(*smithybearer.TokenCacheOptions), bool, error) {
+	if o.BearerAuthTokenCacheOptions == nil {
+		return nil, false, nil
+	}
+
+	return o.BearerAuthTokenCacheOptions, true, nil
+}
+
+// WithBearerAuthTokenCacheOptions is a helper function to construct functional options
+// that sets a function to modify the TokenCacheOptions the smithy-go
+// auth/bearer#TokenCache will be configured with, if the TokenCache is used by
+// the configuration loader.
+//
+// If multiple WithBearerAuthTokenCacheOptions calls are made, the last call overrides
+// the previous call values.
+func WithBearerAuthTokenCacheOptions(v func(*smithybearer.TokenCacheOptions)) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.BearerAuthTokenCacheOptions = v
+		return nil
+	}
+}
+
+// getSSOTokenProviderOptionsProvider returns the wrapped function to set smithybearer.TokenCacheOptions
+func (o LoadOptions) getSSOTokenProviderOptions(ctx context.Context) (func(*ssocreds.SSOTokenProviderOptions), bool, error) {
+	if o.SSOTokenProviderOptions == nil {
+		return nil, false, nil
+	}
+
+	return o.SSOTokenProviderOptions, true, nil
+}
+
+// WithSSOTokenProviderOptions is a helper function to construct functional
+// options that sets a function to modify the SSOtokenProviderOptions the SDK's
+// credentials/ssocreds#SSOProvider will be configured with, if the
+// SSOTokenProvider is used by the configuration loader.
+//
+// If multiple WithSSOTokenProviderOptions calls are made, the last call overrides
+// the previous call values.
+func WithSSOTokenProviderOptions(v func(*ssocreds.SSOTokenProviderOptions)) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.SSOTokenProviderOptions = v
 		return nil
 	}
 }
@@ -482,6 +701,48 @@ func WithAPIOptions(v []func(*middleware.Stack) error) LoadOptionsFunc {
 	}
 }
 
+func (o LoadOptions) getRetryMaxAttempts(ctx context.Context) (int, bool, error) {
+	if o.RetryMaxAttempts == 0 {
+		return 0, false, nil
+	}
+
+	return o.RetryMaxAttempts, true, nil
+}
+
+// WithRetryMaxAttempts is a helper function to construct functional options that sets
+// RetryMaxAttempts on LoadOptions. If RetryMaxAttempts is unset, the RetryMaxAttempts value is
+// ignored. If multiple WithRetryMaxAttempts calls are made, the last call overrides
+// the previous call values.
+//
+// Will be ignored of LoadOptions.Retryer or WithRetryer are used.
+func WithRetryMaxAttempts(v int) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.RetryMaxAttempts = v
+		return nil
+	}
+}
+
+func (o LoadOptions) getRetryMode(ctx context.Context) (aws.RetryMode, bool, error) {
+	if o.RetryMode == "" {
+		return "", false, nil
+	}
+
+	return o.RetryMode, true, nil
+}
+
+// WithRetryMode is a helper function to construct functional options that sets
+// RetryMode on LoadOptions. If RetryMode is unset, the RetryMode value is
+// ignored. If multiple WithRetryMode calls are made, the last call overrides
+// the previous call values.
+//
+// Will be ignored of LoadOptions.Retryer or WithRetryer are used.
+func WithRetryMode(v aws.RetryMode) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.RetryMode = v
+		return nil
+	}
+}
+
 func (o LoadOptions) getRetryer(ctx context.Context) (func() aws.Retryer, bool, error) {
 	if o.Retryer == nil {
 		return nil, false, nil
@@ -510,12 +771,33 @@ func (o LoadOptions) getEndpointResolver(ctx context.Context) (aws.EndpointResol
 }
 
 // WithEndpointResolver is a helper function to construct functional options
-// that sets endpoint resolver on LoadOptions. The EndpointResolver is set to nil,
+// that sets the EndpointResolver on LoadOptions. If the EndpointResolver is set to nil,
 // the EndpointResolver value is ignored. If multiple WithEndpointResolver calls
 // are made, the last call overrides the previous call values.
+//
+// Deprecated: See WithEndpointResolverWithOptions
 func WithEndpointResolver(v aws.EndpointResolver) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.EndpointResolver = v
+		return nil
+	}
+}
+
+func (o LoadOptions) getEndpointResolverWithOptions(ctx context.Context) (aws.EndpointResolverWithOptions, bool, error) {
+	if o.EndpointResolverWithOptions == nil {
+		return nil, false, nil
+	}
+
+	return o.EndpointResolverWithOptions, true, nil
+}
+
+// WithEndpointResolverWithOptions is a helper function to construct functional options
+// that sets the EndpointResolverWithOptions on LoadOptions. If the EndpointResolverWithOptions is set to nil,
+// the EndpointResolver value is ignored. If multiple WithEndpointResolver calls
+// are made, the last call overrides the previous call values.
+func WithEndpointResolverWithOptions(v aws.EndpointResolverWithOptions) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.EndpointResolverWithOptions = v
 		return nil
 	}
 }
@@ -598,6 +880,45 @@ func WithS3UseARNRegion(v bool) LoadOptionsFunc {
 	}
 }
 
+// GetS3DisableMultiRegionAccessPoints returns whether to disable
+// the S3 multi-region access points feature.
+func (o LoadOptions) GetS3DisableMultiRegionAccessPoints(ctx context.Context) (v bool, found bool, err error) {
+	if o.S3DisableMultiRegionAccessPoints == nil {
+		return false, false, nil
+	}
+	return *o.S3DisableMultiRegionAccessPoints, true, nil
+}
+
+// WithS3DisableMultiRegionAccessPoints is a helper function to construct functional options
+// that can be used to set S3DisableMultiRegionAccessPoints on LoadOptions.
+// If multiple WithS3DisableMultiRegionAccessPoints calls are made, the last call overrides
+// the previous call values.
+func WithS3DisableMultiRegionAccessPoints(v bool) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.S3DisableMultiRegionAccessPoints = &v
+		return nil
+	}
+}
+
+// GetEnableEndpointDiscovery returns if the EnableEndpointDiscovery flag is set.
+func (o LoadOptions) GetEnableEndpointDiscovery(ctx context.Context) (value aws.EndpointDiscoveryEnableState, ok bool, err error) {
+	if o.EnableEndpointDiscovery == aws.EndpointDiscoveryUnset {
+		return aws.EndpointDiscoveryUnset, false, nil
+	}
+	return o.EnableEndpointDiscovery, true, nil
+}
+
+// WithEndpointDiscovery is a helper function to construct functional options
+// that can be used to enable endpoint discovery on LoadOptions for supported clients.
+// If multiple WithEndpointDiscovery calls are made, the last call overrides
+// the previous call values.
+func WithEndpointDiscovery(v aws.EndpointDiscoveryEnableState) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.EnableEndpointDiscovery = v
+		return nil
+	}
+}
+
 // getSSOProviderOptions returns AssumeRoleCredentialOptions from LoadOptions
 func (o LoadOptions) getSSOProviderOptions(context.Context) (func(options *ssocreds.Options), bool, error) {
 	if o.SSOProviderOptions == nil {
@@ -616,6 +937,110 @@ func (o LoadOptions) getSSOProviderOptions(context.Context) (func(options *ssocr
 func WithSSOProviderOptions(v func(*ssocreds.Options)) LoadOptionsFunc {
 	return func(o *LoadOptions) error {
 		o.SSOProviderOptions = v
+		return nil
+	}
+}
+
+// GetEC2IMDSClientEnableState implements a EC2IMDSClientEnableState options resolver interface.
+func (o LoadOptions) GetEC2IMDSClientEnableState() (imds.ClientEnableState, bool, error) {
+	if o.EC2IMDSClientEnableState == imds.ClientDefaultEnableState {
+		return imds.ClientDefaultEnableState, false, nil
+	}
+
+	return o.EC2IMDSClientEnableState, true, nil
+}
+
+// GetEC2IMDSEndpointMode implements a EC2IMDSEndpointMode option resolver interface.
+func (o LoadOptions) GetEC2IMDSEndpointMode() (imds.EndpointModeState, bool, error) {
+	if o.EC2IMDSEndpointMode == imds.EndpointModeStateUnset {
+		return imds.EndpointModeStateUnset, false, nil
+	}
+
+	return o.EC2IMDSEndpointMode, true, nil
+}
+
+// GetEC2IMDSEndpoint implements a EC2IMDSEndpoint option resolver interface.
+func (o LoadOptions) GetEC2IMDSEndpoint() (string, bool, error) {
+	if len(o.EC2IMDSEndpoint) == 0 {
+		return "", false, nil
+	}
+
+	return o.EC2IMDSEndpoint, true, nil
+}
+
+// WithEC2IMDSClientEnableState is a helper function to construct functional options that sets the EC2IMDSClientEnableState.
+func WithEC2IMDSClientEnableState(v imds.ClientEnableState) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.EC2IMDSClientEnableState = v
+		return nil
+	}
+}
+
+// WithEC2IMDSEndpointMode is a helper function to construct functional options that sets the EC2IMDSEndpointMode.
+func WithEC2IMDSEndpointMode(v imds.EndpointModeState) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.EC2IMDSEndpointMode = v
+		return nil
+	}
+}
+
+// WithEC2IMDSEndpoint is a helper function to construct functional options that sets the EC2IMDSEndpoint.
+func WithEC2IMDSEndpoint(v string) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.EC2IMDSEndpoint = v
+		return nil
+	}
+}
+
+// WithUseDualStackEndpoint is a helper function to construct
+// functional options that can be used to set UseDualStackEndpoint on LoadOptions.
+func WithUseDualStackEndpoint(v aws.DualStackEndpointState) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.UseDualStackEndpoint = v
+		return nil
+	}
+}
+
+// GetUseDualStackEndpoint returns whether the service's dual-stack endpoint should be
+// used for requests.
+func (o LoadOptions) GetUseDualStackEndpoint(ctx context.Context) (value aws.DualStackEndpointState, found bool, err error) {
+	if o.UseDualStackEndpoint == aws.DualStackEndpointStateUnset {
+		return aws.DualStackEndpointStateUnset, false, nil
+	}
+	return o.UseDualStackEndpoint, true, nil
+}
+
+// WithUseFIPSEndpoint is a helper function to construct
+// functional options that can be used to set UseFIPSEndpoint on LoadOptions.
+func WithUseFIPSEndpoint(v aws.FIPSEndpointState) LoadOptionsFunc {
+	return func(o *LoadOptions) error {
+		o.UseFIPSEndpoint = v
+		return nil
+	}
+}
+
+// GetUseFIPSEndpoint returns whether the service's FIPS endpoint should be
+// used for requests.
+func (o LoadOptions) GetUseFIPSEndpoint(ctx context.Context) (value aws.FIPSEndpointState, found bool, err error) {
+	if o.UseFIPSEndpoint == aws.FIPSEndpointStateUnset {
+		return aws.FIPSEndpointStateUnset, false, nil
+	}
+	return o.UseFIPSEndpoint, true, nil
+}
+
+// WithDefaultsMode sets the SDK defaults configuration mode to the value provided.
+//
+// Zero or more functional options can be provided to provide configuration options for performing
+// environment discovery when using aws.DefaultsModeAuto.
+func WithDefaultsMode(mode aws.DefaultsMode, optFns ...func(options *DefaultsModeOptions)) LoadOptionsFunc {
+	do := DefaultsModeOptions{
+		Mode: mode,
+	}
+	for _, fn := range optFns {
+		fn(&do)
+	}
+	return func(options *LoadOptions) error {
+		options.DefaultsModeOptions = do
 		return nil
 	}
 }

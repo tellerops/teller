@@ -22,7 +22,7 @@ type AWSSSM struct {
 
 const awsssmName = "aws_ssm"
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "AWS SSM (aka paramstore)",
@@ -103,7 +103,7 @@ func (a *AWSSSM) Get(p core.KeyPath) (*core.EnvEntry, error) {
 
 func (a *AWSSSM) getSecret(kp core.KeyPath) (*string, error) {
 	a.logger.WithField("path", kp.Path).Debug("get entry")
-	res, err := a.client.GetParameter(context.TODO(), &ssm.GetParameterInput{Name: &kp.Path, WithDecryption: kp.Decrypt})
+	res, err := a.client.GetParameter(context.TODO(), &ssm.GetParameterInput{Name: &kp.Path, WithDecryption: &kp.Decrypt})
 	if err != nil {
 		return nil, err
 	}

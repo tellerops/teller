@@ -2,6 +2,10 @@
 
 package types
 
+import (
+	smithydocument "github.com/aws/smithy-go/document"
+)
+
 // Provides information about your AWS account.
 type AccountInfo struct {
 
@@ -13,6 +17,8 @@ type AccountInfo struct {
 
 	// The email address of the AWS account that is assigned to the user.
 	EmailAddress *string
+
+	noSmithyDocumentSerde
 }
 
 // Provides information about the role credentials that are assigned to the user.
@@ -20,8 +26,7 @@ type RoleCredentials struct {
 
 	// The identifier used for the temporary security credentials. For more
 	// information, see Using Temporary Security Credentials to Request Access to AWS
-	// Resources
-	// (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html)
+	// Resources (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html)
 	// in the AWS IAM User Guide.
 	AccessKeyId *string
 
@@ -29,16 +34,16 @@ type RoleCredentials struct {
 	Expiration int64
 
 	// The key that is used to sign the request. For more information, see Using
-	// Temporary Security Credentials to Request Access to AWS Resources
-	// (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html)
+	// Temporary Security Credentials to Request Access to AWS Resources (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html)
 	// in the AWS IAM User Guide.
 	SecretAccessKey *string
 
 	// The token used for temporary credentials. For more information, see Using
-	// Temporary Security Credentials to Request Access to AWS Resources
-	// (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html)
+	// Temporary Security Credentials to Request Access to AWS Resources (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html)
 	// in the AWS IAM User Guide.
 	SessionToken *string
+
+	noSmithyDocumentSerde
 }
 
 // Provides information about the role that is assigned to the user.
@@ -49,4 +54,8 @@ type RoleInfo struct {
 
 	// The friendly name of the role that is assigned to the user.
 	RoleName *string
+
+	noSmithyDocumentSerde
 }
+
+type noSmithyDocumentSerde = smithydocument.NoSerde

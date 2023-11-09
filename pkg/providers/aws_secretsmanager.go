@@ -34,10 +34,11 @@ type AWSSecretsManager struct {
 	deletionRecoveryWindowInDays              int64
 }
 
-const defaultDeletionRecoveryWindowInDays = 7
+var defaultDeletionRecoveryWindowInDays int64 = 7
+
 const versionSplit = ","
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Name:           "aws_secretsmanager",
@@ -200,8 +201,8 @@ func (a *AWSSecretsManager) DeleteMapping(kp core.KeyPath) error {
 	a.logger.WithField("path", kp.Path).Debug("delete secret")
 	_, err = a.client.DeleteSecret(ctx, &secretsmanager.DeleteSecretInput{
 		SecretId:                   &kp.Path,
-		RecoveryWindowInDays:       a.deletionRecoveryWindowInDays,
-		ForceDeleteWithoutRecovery: a.deletionDisableRecoveryWindow,
+		RecoveryWindowInDays:       &a.deletionRecoveryWindowInDays,
+		ForceDeleteWithoutRecovery: &a.deletionDisableRecoveryWindow,
 	})
 
 	return err

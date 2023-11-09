@@ -129,8 +129,8 @@ const (
 	AssociationStatusNameFailed  AssociationStatusName = "Failed"
 )
 
-// Values returns all known values for AssociationStatusName. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
+// Values returns all known values for AssociationStatusName. Note that this can
+// be expanded in the future, and so it is only as up to date as the client. The
 // ordering of this slice is not guaranteed to be stable across updates.
 func (AssociationStatusName) Values() []AssociationStatusName {
 	return []AssociationStatusName{
@@ -212,9 +212,10 @@ const (
 	AutomationExecutionFilterKeyOpsItemId           AutomationExecutionFilterKey = "OpsItemId"
 )
 
-// Values returns all known values for AutomationExecutionFilterKey. Note that this
-// can be expanded in the future, and so it is only as up to date as the client.
-// The ordering of this slice is not guaranteed to be stable across updates.
+// Values returns all known values for AutomationExecutionFilterKey. Note that
+// this can be expanded in the future, and so it is only as up to date as the
+// client. The ordering of this slice is not guaranteed to be stable across
+// updates.
 func (AutomationExecutionFilterKey) Values() []AutomationExecutionFilterKey {
 	return []AutomationExecutionFilterKey{
 		"DocumentNamePrefix",
@@ -532,8 +533,8 @@ type ConnectionStatus string
 
 // Enum values for ConnectionStatus
 const (
-	ConnectionStatusConnected    ConnectionStatus = "Connected"
-	ConnectionStatusNotConnected ConnectionStatus = "NotConnected"
+	ConnectionStatusConnected    ConnectionStatus = "connected"
+	ConnectionStatusNotConnected ConnectionStatus = "notconnected"
 )
 
 // Values returns all known values for ConnectionStatus. Note that this can be
@@ -541,8 +542,8 @@ const (
 // ordering of this slice is not guaranteed to be stable across updates.
 func (ConnectionStatus) Values() []ConnectionStatus {
 	return []ConnectionStatus{
-		"Connected",
-		"NotConnected",
+		"connected",
+		"notconnected",
 	}
 }
 
@@ -651,8 +652,8 @@ const (
 	DocumentParameterTypeStringList DocumentParameterType = "StringList"
 )
 
-// Values returns all known values for DocumentParameterType. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
+// Values returns all known values for DocumentParameterType. Note that this can
+// be expanded in the future, and so it is only as up to date as the client. The
 // ordering of this slice is not guaranteed to be stable across updates.
 func (DocumentParameterType) Values() []DocumentParameterType {
 	return []DocumentParameterType{
@@ -753,11 +754,16 @@ const (
 	DocumentTypeDeploymentStrategy             DocumentType = "DeploymentStrategy"
 	DocumentTypeChangeCalendar                 DocumentType = "ChangeCalendar"
 	DocumentTypeChangeTemplate                 DocumentType = "Automation.ChangeTemplate"
+	DocumentTypeProblemAnalysis                DocumentType = "ProblemAnalysis"
+	DocumentTypeProblemAnalysisTemplate        DocumentType = "ProblemAnalysisTemplate"
+	DocumentTypeCloudFormation                 DocumentType = "CloudFormation"
+	DocumentTypeConformancePackTemplate        DocumentType = "ConformancePackTemplate"
+	DocumentTypeQuickSetup                     DocumentType = "QuickSetup"
 )
 
-// Values returns all known values for DocumentType. Note that this can be expanded
-// in the future, and so it is only as up to date as the client. The ordering of
-// this slice is not guaranteed to be stable across updates.
+// Values returns all known values for DocumentType. Note that this can be
+// expanded in the future, and so it is only as up to date as the client. The
+// ordering of this slice is not guaranteed to be stable across updates.
 func (DocumentType) Values() []DocumentType {
 	return []DocumentType{
 		"Command",
@@ -770,6 +776,11 @@ func (DocumentType) Values() []DocumentType {
 		"DeploymentStrategy",
 		"ChangeCalendar",
 		"Automation.ChangeTemplate",
+		"ProblemAnalysis",
+		"ProblemAnalysisTemplate",
+		"CloudFormation",
+		"ConformancePackTemplate",
+		"QuickSetup",
 	}
 }
 
@@ -791,6 +802,24 @@ func (ExecutionMode) Values() []ExecutionMode {
 	}
 }
 
+type ExternalAlarmState string
+
+// Enum values for ExternalAlarmState
+const (
+	ExternalAlarmStateUnknown ExternalAlarmState = "UNKNOWN"
+	ExternalAlarmStateAlarm   ExternalAlarmState = "ALARM"
+)
+
+// Values returns all known values for ExternalAlarmState. Note that this can be
+// expanded in the future, and so it is only as up to date as the client. The
+// ordering of this slice is not guaranteed to be stable across updates.
+func (ExternalAlarmState) Values() []ExternalAlarmState {
+	return []ExternalAlarmState{
+		"UNKNOWN",
+		"ALARM",
+	}
+}
+
 type Fault string
 
 // Enum values for Fault
@@ -800,8 +829,8 @@ const (
 	FaultUnknown Fault = "Unknown"
 )
 
-// Values returns all known values for Fault. Note that this can be expanded in the
-// future, and so it is only as up to date as the client. The ordering of this
+// Values returns all known values for Fault. Note that this can be expanded in
+// the future, and so it is only as up to date as the client. The ordering of this
 // slice is not guaranteed to be stable across updates.
 func (Fault) Values() []Fault {
 	return []Fault{
@@ -825,9 +854,10 @@ const (
 	InstanceInformationFilterKeyAssociationStatus InstanceInformationFilterKey = "AssociationStatus"
 )
 
-// Values returns all known values for InstanceInformationFilterKey. Note that this
-// can be expanded in the future, and so it is only as up to date as the client.
-// The ordering of this slice is not guaranteed to be stable across updates.
+// Values returns all known values for InstanceInformationFilterKey. Note that
+// this can be expanded in the future, and so it is only as up to date as the
+// client. The ordering of this slice is not guaranteed to be stable across
+// updates.
 func (InstanceInformationFilterKey) Values() []InstanceInformationFilterKey {
 	return []InstanceInformationFilterKey{
 		"InstanceIds",
@@ -1014,6 +1044,25 @@ func (MaintenanceWindowResourceType) Values() []MaintenanceWindowResourceType {
 	}
 }
 
+type MaintenanceWindowTaskCutoffBehavior string
+
+// Enum values for MaintenanceWindowTaskCutoffBehavior
+const (
+	MaintenanceWindowTaskCutoffBehaviorContinueTask MaintenanceWindowTaskCutoffBehavior = "CONTINUE_TASK"
+	MaintenanceWindowTaskCutoffBehaviorCancelTask   MaintenanceWindowTaskCutoffBehavior = "CANCEL_TASK"
+)
+
+// Values returns all known values for MaintenanceWindowTaskCutoffBehavior. Note
+// that this can be expanded in the future, and so it is only as up to date as the
+// client. The ordering of this slice is not guaranteed to be stable across
+// updates.
+func (MaintenanceWindowTaskCutoffBehavior) Values() []MaintenanceWindowTaskCutoffBehavior {
+	return []MaintenanceWindowTaskCutoffBehavior{
+		"CONTINUE_TASK",
+		"CANCEL_TASK",
+	}
+}
+
 type MaintenanceWindowTaskType string
 
 // Enum values for MaintenanceWindowTaskType
@@ -1087,6 +1136,7 @@ const (
 	OperatingSystemWindows               OperatingSystem = "WINDOWS"
 	OperatingSystemAmazonLinux           OperatingSystem = "AMAZON_LINUX"
 	OperatingSystemAmazonLinux2          OperatingSystem = "AMAZON_LINUX_2"
+	OperatingSystemAmazonLinux2022       OperatingSystem = "AMAZON_LINUX_2022"
 	OperatingSystemUbuntu                OperatingSystem = "UBUNTU"
 	OperatingSystemRedhatEnterpriseLinux OperatingSystem = "REDHAT_ENTERPRISE_LINUX"
 	OperatingSystemSuse                  OperatingSystem = "SUSE"
@@ -1094,6 +1144,10 @@ const (
 	OperatingSystemOracleLinux           OperatingSystem = "ORACLE_LINUX"
 	OperatingSystemDebian                OperatingSystem = "DEBIAN"
 	OperatingSystemMacOS                 OperatingSystem = "MACOS"
+	OperatingSystemRaspbian              OperatingSystem = "RASPBIAN"
+	OperatingSystemRockyLinux            OperatingSystem = "ROCKY_LINUX"
+	OperatingSystemAlmaLinux             OperatingSystem = "ALMA_LINUX"
+	OperatingSystemAmazonLinux2023       OperatingSystem = "AMAZON_LINUX_2023"
 )
 
 // Values returns all known values for OperatingSystem. Note that this can be
@@ -1104,6 +1158,7 @@ func (OperatingSystem) Values() []OperatingSystem {
 		"WINDOWS",
 		"AMAZON_LINUX",
 		"AMAZON_LINUX_2",
+		"AMAZON_LINUX_2022",
 		"UBUNTU",
 		"REDHAT_ENTERPRISE_LINUX",
 		"SUSE",
@@ -1111,6 +1166,10 @@ func (OperatingSystem) Values() []OperatingSystem {
 		"ORACLE_LINUX",
 		"DEBIAN",
 		"MACOS",
+		"RASPBIAN",
+		"ROCKY_LINUX",
+		"ALMA_LINUX",
+		"AMAZON_LINUX_2023",
 	}
 }
 
@@ -1126,8 +1185,8 @@ const (
 	OpsFilterOperatorTypeExists      OpsFilterOperatorType = "Exists"
 )
 
-// Values returns all known values for OpsFilterOperatorType. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
+// Values returns all known values for OpsFilterOperatorType. Note that this can
+// be expanded in the future, and so it is only as up to date as the client. The
 // ordering of this slice is not guaranteed to be stable across updates.
 func (OpsFilterOperatorType) Values() []OpsFilterOperatorType {
 	return []OpsFilterOperatorType{
@@ -1165,8 +1224,8 @@ const (
 	OpsItemEventFilterKeyOpsitemId OpsItemEventFilterKey = "OpsItemId"
 )
 
-// Values returns all known values for OpsItemEventFilterKey. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
+// Values returns all known values for OpsItemEventFilterKey. Note that this can
+// be expanded in the future, and so it is only as up to date as the client. The
 // ordering of this slice is not guaranteed to be stable across updates.
 func (OpsItemEventFilterKey) Values() []OpsItemEventFilterKey {
 	return []OpsItemEventFilterKey{
@@ -1220,6 +1279,8 @@ const (
 	OpsItemFilterKeyChangeRequestApproverName         OpsItemFilterKey = "ChangeRequestByApproverName"
 	OpsItemFilterKeyChangeRequestTemplate             OpsItemFilterKey = "ChangeRequestByTemplate"
 	OpsItemFilterKeyChangeRequestTargetsResourceGroup OpsItemFilterKey = "ChangeRequestByTargetsResourceGroup"
+	OpsItemFilterKeyInsightType                       OpsItemFilterKey = "InsightByType"
+	OpsItemFilterKeyAccountId                         OpsItemFilterKey = "AccountId"
 )
 
 // Values returns all known values for OpsItemFilterKey. Note that this can be
@@ -1253,6 +1314,8 @@ func (OpsItemFilterKey) Values() []OpsItemFilterKey {
 		"ChangeRequestByApproverName",
 		"ChangeRequestByTemplate",
 		"ChangeRequestByTargetsResourceGroup",
+		"InsightByType",
+		"AccountId",
 	}
 }
 
@@ -1266,8 +1329,8 @@ const (
 	OpsItemFilterOperatorLessThan    OpsItemFilterOperator = "LessThan"
 )
 
-// Values returns all known values for OpsItemFilterOperator. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
+// Values returns all known values for OpsItemFilterOperator. Note that this can
+// be expanded in the future, and so it is only as up to date as the client. The
 // ordering of this slice is not guaranteed to be stable across updates.
 func (OpsItemFilterOperator) Values() []OpsItemFilterOperator {
 	return []OpsItemFilterOperator{
@@ -1275,6 +1338,44 @@ func (OpsItemFilterOperator) Values() []OpsItemFilterOperator {
 		"Contains",
 		"GreaterThan",
 		"LessThan",
+	}
+}
+
+type OpsItemRelatedItemsFilterKey string
+
+// Enum values for OpsItemRelatedItemsFilterKey
+const (
+	OpsItemRelatedItemsFilterKeyResourceType  OpsItemRelatedItemsFilterKey = "ResourceType"
+	OpsItemRelatedItemsFilterKeyAssociationId OpsItemRelatedItemsFilterKey = "AssociationId"
+	OpsItemRelatedItemsFilterKeyResourceUri   OpsItemRelatedItemsFilterKey = "ResourceUri"
+)
+
+// Values returns all known values for OpsItemRelatedItemsFilterKey. Note that
+// this can be expanded in the future, and so it is only as up to date as the
+// client. The ordering of this slice is not guaranteed to be stable across
+// updates.
+func (OpsItemRelatedItemsFilterKey) Values() []OpsItemRelatedItemsFilterKey {
+	return []OpsItemRelatedItemsFilterKey{
+		"ResourceType",
+		"AssociationId",
+		"ResourceUri",
+	}
+}
+
+type OpsItemRelatedItemsFilterOperator string
+
+// Enum values for OpsItemRelatedItemsFilterOperator
+const (
+	OpsItemRelatedItemsFilterOperatorEqual OpsItemRelatedItemsFilterOperator = "Equal"
+)
+
+// Values returns all known values for OpsItemRelatedItemsFilterOperator. Note
+// that this can be expanded in the future, and so it is only as up to date as the
+// client. The ordering of this slice is not guaranteed to be stable across
+// updates.
+func (OpsItemRelatedItemsFilterOperator) Values() []OpsItemRelatedItemsFilterOperator {
+	return []OpsItemRelatedItemsFilterOperator{
+		"Equal",
 	}
 }
 
@@ -1300,6 +1401,7 @@ const (
 	OpsItemStatusPendingApproval                OpsItemStatus = "PendingApproval"
 	OpsItemStatusApproved                       OpsItemStatus = "Approved"
 	OpsItemStatusRejected                       OpsItemStatus = "Rejected"
+	OpsItemStatusClosed                         OpsItemStatus = "Closed"
 )
 
 // Values returns all known values for OpsItemStatus. Note that this can be
@@ -1325,6 +1427,7 @@ func (OpsItemStatus) Values() []OpsItemStatus {
 		"PendingApproval",
 		"Approved",
 		"Rejected",
+		"Closed",
 	}
 }
 
@@ -1419,9 +1522,9 @@ const (
 	PatchComplianceDataStateFailed                 PatchComplianceDataState = "FAILED"
 )
 
-// Values returns all known values for PatchComplianceDataState. Note that this can
-// be expanded in the future, and so it is only as up to date as the client. The
-// ordering of this slice is not guaranteed to be stable across updates.
+// Values returns all known values for PatchComplianceDataState. Note that this
+// can be expanded in the future, and so it is only as up to date as the client.
+// The ordering of this slice is not guaranteed to be stable across updates.
 func (PatchComplianceDataState) Values() []PatchComplianceDataState {
 	return []PatchComplianceDataState{
 		"INSTALLED",
@@ -1470,8 +1573,8 @@ const (
 	PatchDeploymentStatusExplicitRejected PatchDeploymentStatus = "EXPLICIT_REJECTED"
 )
 
-// Values returns all known values for PatchDeploymentStatus. Note that this can be
-// expanded in the future, and so it is only as up to date as the client. The
+// Values returns all known values for PatchDeploymentStatus. Note that this can
+// be expanded in the future, and so it is only as up to date as the client. The
 // ordering of this slice is not guaranteed to be stable across updates.
 func (PatchDeploymentStatus) Values() []PatchDeploymentStatus {
 	return []PatchDeploymentStatus{
@@ -1622,15 +1725,17 @@ type PlatformType string
 const (
 	PlatformTypeWindows PlatformType = "Windows"
 	PlatformTypeLinux   PlatformType = "Linux"
+	PlatformTypeMacos   PlatformType = "MacOS"
 )
 
-// Values returns all known values for PlatformType. Note that this can be expanded
-// in the future, and so it is only as up to date as the client. The ordering of
-// this slice is not guaranteed to be stable across updates.
+// Values returns all known values for PlatformType. Note that this can be
+// expanded in the future, and so it is only as up to date as the client. The
+// ordering of this slice is not guaranteed to be stable across updates.
 func (PlatformType) Values() []PlatformType {
 	return []PlatformType{
 		"Windows",
 		"Linux",
+		"MacOS",
 	}
 }
 
@@ -1642,9 +1747,9 @@ const (
 	RebootOptionNoReboot       RebootOption = "NoReboot"
 )
 
-// Values returns all known values for RebootOption. Note that this can be expanded
-// in the future, and so it is only as up to date as the client. The ordering of
-// this slice is not guaranteed to be stable across updates.
+// Values returns all known values for RebootOption. Note that this can be
+// expanded in the future, and so it is only as up to date as the client. The
+// ordering of this slice is not guaranteed to be stable across updates.
 func (RebootOption) Values() []RebootOption {
 	return []RebootOption{
 		"RebootIfNeeded",
@@ -1659,9 +1764,9 @@ const (
 	ResourceDataSyncS3FormatJsonSerde ResourceDataSyncS3Format = "JsonSerDe"
 )
 
-// Values returns all known values for ResourceDataSyncS3Format. Note that this can
-// be expanded in the future, and so it is only as up to date as the client. The
-// ordering of this slice is not guaranteed to be stable across updates.
+// Values returns all known values for ResourceDataSyncS3Format. Note that this
+// can be expanded in the future, and so it is only as up to date as the client.
+// The ordering of this slice is not guaranteed to be stable across updates.
 func (ResourceDataSyncS3Format) Values() []ResourceDataSyncS3Format {
 	return []ResourceDataSyncS3Format{
 		"JsonSerDe",
@@ -1673,17 +1778,15 @@ type ResourceType string
 // Enum values for ResourceType
 const (
 	ResourceTypeManagedInstance ResourceType = "ManagedInstance"
-	ResourceTypeDocument        ResourceType = "Document"
 	ResourceTypeEc2Instance     ResourceType = "EC2Instance"
 )
 
-// Values returns all known values for ResourceType. Note that this can be expanded
-// in the future, and so it is only as up to date as the client. The ordering of
-// this slice is not guaranteed to be stable across updates.
+// Values returns all known values for ResourceType. Note that this can be
+// expanded in the future, and so it is only as up to date as the client. The
+// ordering of this slice is not guaranteed to be stable across updates.
 func (ResourceType) Values() []ResourceType {
 	return []ResourceType{
 		"ManagedInstance",
-		"Document",
 		"EC2Instance",
 	}
 }
@@ -1698,6 +1801,9 @@ const (
 	ResourceTypeForTaggingParameter         ResourceTypeForTagging = "Parameter"
 	ResourceTypeForTaggingPatchBaseline     ResourceTypeForTagging = "PatchBaseline"
 	ResourceTypeForTaggingOpsItem           ResourceTypeForTagging = "OpsItem"
+	ResourceTypeForTaggingOpsmetadata       ResourceTypeForTagging = "OpsMetadata"
+	ResourceTypeForTaggingAutomation        ResourceTypeForTagging = "Automation"
+	ResourceTypeForTaggingAssociation       ResourceTypeForTagging = "Association"
 )
 
 // Values returns all known values for ResourceTypeForTagging. Note that this can
@@ -1711,6 +1817,9 @@ func (ResourceTypeForTagging) Values() []ResourceTypeForTagging {
 		"Parameter",
 		"PatchBaseline",
 		"OpsItem",
+		"OpsMetadata",
+		"Automation",
+		"Association",
 	}
 }
 
@@ -1724,9 +1833,9 @@ const (
 	ReviewStatusRejected    ReviewStatus = "REJECTED"
 )
 
-// Values returns all known values for ReviewStatus. Note that this can be expanded
-// in the future, and so it is only as up to date as the client. The ordering of
-// this slice is not guaranteed to be stable across updates.
+// Values returns all known values for ReviewStatus. Note that this can be
+// expanded in the future, and so it is only as up to date as the client. The
+// ordering of this slice is not guaranteed to be stable across updates.
 func (ReviewStatus) Values() []ReviewStatus {
 	return []ReviewStatus{
 		"APPROVED",
@@ -1770,9 +1879,9 @@ const (
 	SessionStateHistory SessionState = "History"
 )
 
-// Values returns all known values for SessionState. Note that this can be expanded
-// in the future, and so it is only as up to date as the client. The ordering of
-// this slice is not guaranteed to be stable across updates.
+// Values returns all known values for SessionState. Note that this can be
+// expanded in the future, and so it is only as up to date as the client. The
+// ordering of this slice is not guaranteed to be stable across updates.
 func (SessionState) Values() []SessionState {
 	return []SessionState{
 		"Active",
@@ -1827,6 +1936,26 @@ func (SignalType) Values() []SignalType {
 		"StartStep",
 		"StopStep",
 		"Resume",
+	}
+}
+
+type SourceType string
+
+// Enum values for SourceType
+const (
+	SourceTypeAwsEc2Instance        SourceType = "AWS::EC2::Instance"
+	SourceTypeAwsIotThing           SourceType = "AWS::IoT::Thing"
+	SourceTypeAwsSsmManagedinstance SourceType = "AWS::SSM::ManagedInstance"
+)
+
+// Values returns all known values for SourceType. Note that this can be expanded
+// in the future, and so it is only as up to date as the client. The ordering of
+// this slice is not guaranteed to be stable across updates.
+func (SourceType) Values() []SourceType {
+	return []SourceType{
+		"AWS::EC2::Instance",
+		"AWS::IoT::Thing",
+		"AWS::SSM::ManagedInstance",
 	}
 }
 

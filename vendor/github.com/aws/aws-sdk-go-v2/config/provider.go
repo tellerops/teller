@@ -11,6 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/processcreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/ssocreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	smithybearer "github.com/aws/smithy-go/auth/bearer"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
 )
@@ -120,6 +122,75 @@ func getRegion(ctx context.Context, configs configs) (value string, found bool, 
 	return
 }
 
+// IgnoreConfiguredEndpointsProvider is needed to search for all providers
+// that provide a flag to disable configured endpoints.
+type IgnoreConfiguredEndpointsProvider interface {
+	GetIgnoreConfiguredEndpoints(ctx context.Context) (bool, bool, error)
+}
+
+// GetIgnoreConfiguredEndpoints is used in knowing when to disable configured
+// endpoints feature.
+func GetIgnoreConfiguredEndpoints(ctx context.Context, configs []interface{}) (value bool, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(IgnoreConfiguredEndpointsProvider); ok {
+			value, found, err = p.GetIgnoreConfiguredEndpoints(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+type baseEndpointProvider interface {
+	getBaseEndpoint(ctx context.Context) (string, bool, error)
+}
+
+func getBaseEndpoint(ctx context.Context, configs configs) (value string, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(baseEndpointProvider); ok {
+			value, found, err = p.getBaseEndpoint(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+type servicesObjectProvider interface {
+	getServicesObject(ctx context.Context) (map[string]map[string]string, bool, error)
+}
+
+func getServicesObject(ctx context.Context, configs configs) (value map[string]map[string]string, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(servicesObjectProvider); ok {
+			value, found, err = p.getServicesObject(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// appIDProvider provides access to the sdk app ID value
+type appIDProvider interface {
+	getAppID(ctx context.Context) (string, bool, error)
+}
+
+func getAppID(ctx context.Context, configs configs) (value string, found bool, err error) {
+	for _, cfg := range configs {
+		if p, ok := cfg.(appIDProvider); ok {
+			value, found, err = p.getAppID(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
 // ec2IMDSRegionProvider provides access to the ec2 imds region
 // configuration value
 type ec2IMDSRegionProvider interface {
@@ -161,6 +232,95 @@ func getCredentialsProvider(ctx context.Context, configs configs) (p aws.Credent
 	}
 	return
 }
+
+// credentialsCacheOptionsProvider is an interface for retrieving a function for setting
+// the aws.CredentialsCacheOptions.
+type credentialsCacheOptionsProvider interface {
+	getCredentialsCacheOptions(ctx context.Context) (func(*aws.CredentialsCacheOptions), bool, error)
+}
+
+// getCredentialsCacheOptionsProvider is an interface for retrieving a function for setting
+// the aws.CredentialsCacheOptions.
+func getCredentialsCacheOptionsProvider(ctx context.Context, configs configs) (
+	f func(*aws.CredentialsCacheOptions), found bool, err error,
+) {
+	for _, config := range configs {
+		if p, ok := config.(credentialsCacheOptionsProvider); ok {
+			f, found, err = p.getCredentialsCacheOptions(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// bearerAuthTokenProviderProvider provides access to the bearer authentication
+// token external configuration value.
+type bearerAuthTokenProviderProvider interface {
+	getBearerAuthTokenProvider(context.Context) (smithybearer.TokenProvider, bool, error)
+}
+
+// getBearerAuthTokenProvider searches the config sources for a
+// bearerAuthTokenProviderProvider and returns the value if found. Returns an
+// error if a provider fails before a value is found.
+func getBearerAuthTokenProvider(ctx context.Context, configs configs) (p smithybearer.TokenProvider, found bool, err error) {
+	for _, cfg := range configs {
+		if provider, ok := cfg.(bearerAuthTokenProviderProvider); ok {
+			p, found, err = provider.getBearerAuthTokenProvider(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// bearerAuthTokenCacheOptionsProvider is an interface for retrieving a function for
+// setting the smithy-go auth/bearer#TokenCacheOptions.
+type bearerAuthTokenCacheOptionsProvider interface {
+	getBearerAuthTokenCacheOptions(context.Context) (func(*smithybearer.TokenCacheOptions), bool, error)
+}
+
+// getBearerAuthTokenCacheOptionsProvider is an interface for retrieving a function for
+// setting the smithy-go auth/bearer#TokenCacheOptions.
+func getBearerAuthTokenCacheOptions(ctx context.Context, configs configs) (
+	f func(*smithybearer.TokenCacheOptions), found bool, err error,
+) {
+	for _, config := range configs {
+		if p, ok := config.(bearerAuthTokenCacheOptionsProvider); ok {
+			f, found, err = p.getBearerAuthTokenCacheOptions(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// ssoTokenProviderOptionsProvider is an interface for retrieving a function for
+// setting the SDK's credentials/ssocreds#SSOTokenProviderOptions.
+type ssoTokenProviderOptionsProvider interface {
+	getSSOTokenProviderOptions(context.Context) (func(*ssocreds.SSOTokenProviderOptions), bool, error)
+}
+
+// getSSOTokenProviderOptions is an interface for retrieving a function for
+// setting the SDK's credentials/ssocreds#SSOTokenProviderOptions.
+func getSSOTokenProviderOptions(ctx context.Context, configs configs) (
+	f func(*ssocreds.SSOTokenProviderOptions), found bool, err error,
+) {
+	for _, config := range configs {
+		if p, ok := config.(ssoTokenProviderOptionsProvider); ok {
+			f, found, err = p.getSSOTokenProviderOptions(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
+// ssoTokenProviderOptionsProvider
 
 // processCredentialOptions is an interface for retrieving a function for setting
 // the processcreds.Options.
@@ -336,6 +496,25 @@ func getEndpointResolver(ctx context.Context, configs configs) (f aws.EndpointRe
 	return
 }
 
+// endpointResolverWithOptionsProvider is an interface for retrieving an aws.EndpointResolverWithOptions from a configuration source
+type endpointResolverWithOptionsProvider interface {
+	getEndpointResolverWithOptions(ctx context.Context) (aws.EndpointResolverWithOptions, bool, error)
+}
+
+// getEndpointResolver searches the provided config sources for a EndpointResolverFunc that can be used
+// to configure the aws.Config.EndpointResolver value.
+func getEndpointResolverWithOptions(ctx context.Context, configs configs) (f aws.EndpointResolverWithOptions, found bool, err error) {
+	for _, c := range configs {
+		if p, ok := c.(endpointResolverWithOptionsProvider); ok {
+			f, found, err = p.getEndpointResolverWithOptions(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
+
 // loggerProvider is an interface for retrieving a logging.Logger from a configuration source.
 type loggerProvider interface {
 	getLogger(ctx context.Context) (logging.Logger, bool, error)
@@ -423,5 +602,69 @@ func getSSOProviderOptions(ctx context.Context, configs configs) (v func(options
 			}
 		}
 	}
-	return
+	return v, found, err
+}
+
+type defaultsModeIMDSClientProvider interface {
+	getDefaultsModeIMDSClient(context.Context) (*imds.Client, bool, error)
+}
+
+func getDefaultsModeIMDSClient(ctx context.Context, configs configs) (v *imds.Client, found bool, err error) {
+	for _, c := range configs {
+		if p, ok := c.(defaultsModeIMDSClientProvider); ok {
+			v, found, err = p.getDefaultsModeIMDSClient(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return v, found, err
+}
+
+type defaultsModeProvider interface {
+	getDefaultsMode(context.Context) (aws.DefaultsMode, bool, error)
+}
+
+func getDefaultsMode(ctx context.Context, configs configs) (v aws.DefaultsMode, found bool, err error) {
+	for _, c := range configs {
+		if p, ok := c.(defaultsModeProvider); ok {
+			v, found, err = p.getDefaultsMode(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return v, found, err
+}
+
+type retryMaxAttemptsProvider interface {
+	GetRetryMaxAttempts(context.Context) (int, bool, error)
+}
+
+func getRetryMaxAttempts(ctx context.Context, configs configs) (v int, found bool, err error) {
+	for _, c := range configs {
+		if p, ok := c.(retryMaxAttemptsProvider); ok {
+			v, found, err = p.GetRetryMaxAttempts(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return v, found, err
+}
+
+type retryModeProvider interface {
+	GetRetryMode(context.Context) (aws.RetryMode, bool, error)
+}
+
+func getRetryMode(ctx context.Context, configs configs) (v aws.RetryMode, found bool, err error) {
+	for _, c := range configs {
+		if p, ok := c.(retryModeProvider); ok {
+			v, found, err = p.GetRetryMode(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return v, found, err
 }

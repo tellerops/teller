@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 var (
@@ -11,94 +12,19 @@ var (
 	runesFalse = []rune("false")
 )
 
-var literalValues = [][]rune{
-	runesTrue,
-	runesFalse,
-}
-
-func isBoolValue(b []rune) bool {
-	for _, lv := range literalValues {
-		if isLitValue(lv, b) {
-			return true
-		}
-	}
-	return false
-}
-
-func isLitValue(want, have []rune) bool {
+// isCaselessLitValue is a caseless value comparison, assumes want is already lower-cased for efficiency.
+func isCaselessLitValue(want, have []rune) bool {
 	if len(have) < len(want) {
 		return false
 	}
 
 	for i := 0; i < len(want); i++ {
-		if want[i] != have[i] {
+		if want[i] != unicode.ToLower(have[i]) {
 			return false
 		}
 	}
 
 	return true
-}
-
-// isNumberValue will return whether not the leading characters in
-// a byte slice is a number. A number is delimited by whitespace or
-// the newline token.
-//
-// A number is defined to be in a binary, octal, decimal (int | float), hex format,
-// or in scientific notation.
-func isNumberValue(b []rune) bool {
-	negativeIndex := 0
-	helper := numberHelper{}
-	needDigit := false
-
-	for i := 0; i < len(b); i++ {
-		negativeIndex++
-
-		switch b[i] {
-		case '-':
-			if helper.IsNegative() || negativeIndex != 1 {
-				return false
-			}
-			helper.Determine(b[i])
-			needDigit = true
-			continue
-		case 'e', 'E':
-			if err := helper.Determine(b[i]); err != nil {
-				return false
-			}
-			negativeIndex = 0
-			needDigit = true
-			continue
-		case 'b':
-			if helper.numberFormat == hex {
-				break
-			}
-			fallthrough
-		case 'o', 'x':
-			needDigit = true
-			if i == 0 {
-				return false
-			}
-
-			fallthrough
-		case '.':
-			if err := helper.Determine(b[i]); err != nil {
-				return false
-			}
-			needDigit = true
-			continue
-		}
-
-		if i > 0 && (isNewline(b[i:]) || isWhitespace(b[i])) {
-			return !needDigit
-		}
-
-		if !helper.CorrectByte(b[i]) {
-			return false
-		}
-		needDigit = false
-	}
-
-	return !needDigit
 }
 
 func isValid(b []rune) (bool, int, error) {
@@ -122,14 +48,8 @@ func (v ValueType) String() string {
 	switch v {
 	case NoneType:
 		return "NONE"
-	case DecimalType:
-		return "FLOAT"
-	case IntegerType:
-		return "INT"
 	case StringType:
 		return "STRING"
-	case BoolType:
-		return "BOOL"
 	}
 
 	return ""
@@ -138,11 +58,8 @@ func (v ValueType) String() string {
 // ValueType enums
 const (
 	NoneType = ValueType(iota)
-	DecimalType
-	IntegerType
 	StringType
 	QuotedStringType
-	BoolType
 )
 
 // Value is a union container
@@ -150,10 +67,8 @@ type Value struct {
 	Type ValueType
 	raw  []rune
 
-	integer int64
-	decimal float64
-	boolean bool
-	str     string
+	str string
+	mp  map[string]string
 }
 
 func newValue(t ValueType, base int, raw []rune) (Value, error) {
@@ -161,36 +76,18 @@ func newValue(t ValueType, base int, raw []rune) (Value, error) {
 		Type: t,
 		raw:  raw,
 	}
-	var err error
 
 	switch t {
-	case DecimalType:
-		v.decimal, err = strconv.ParseFloat(string(raw), 64)
-	case IntegerType:
-		if base != 10 {
-			raw = raw[2:]
-		}
-
-		v.integer, err = strconv.ParseInt(string(raw), base, 64)
 	case StringType:
 		v.str = string(raw)
+		if isSubProperty(raw) {
+			v.mp = v.MapValue()
+		}
 	case QuotedStringType:
 		v.str = string(raw[1 : len(raw)-1])
-	case BoolType:
-		v.boolean = runeCompare(v.raw, runesTrue)
 	}
 
-	// issue 2253
-	//
-	// if the value trying to be parsed is too large, then we will use
-	// the 'StringType' and raw value instead.
-	if nerr, ok := err.(*strconv.NumError); ok && nerr.Err == strconv.ErrRange {
-		v.Type = StringType
-		v.str = string(raw)
-		err = nil
-	}
-
-	return v, err
+	return v, nil
 }
 
 // NewStringValue returns a Value type generated using a string input.
@@ -198,38 +95,12 @@ func NewStringValue(str string) (Value, error) {
 	return newValue(StringType, 10, []rune(str))
 }
 
-// NewIntValue returns a Value type generated using an int64 input.
-func NewIntValue(i int64) (Value, error) {
-	return newValue(IntegerType, 10, []rune{rune(i)})
-}
-
-// Append will append values and change the type to a string
-// type.
-func (v *Value) Append(tok Token) {
-	r := tok.Raw()
-	if v.Type != QuotedStringType {
-		v.Type = StringType
-		r = tok.raw[1 : len(tok.raw)-1]
-	}
-	if tok.Type() != TokenLit {
-		v.raw = append(v.raw, tok.Raw()...)
-	} else {
-		v.raw = append(v.raw, r...)
-	}
-}
-
 func (v Value) String() string {
 	switch v.Type {
-	case DecimalType:
-		return fmt.Sprintf("decimal: %f", v.decimal)
-	case IntegerType:
-		return fmt.Sprintf("integer: %d", v.integer)
 	case StringType:
 		return fmt.Sprintf("string: %s", string(v.raw))
 	case QuotedStringType:
 		return fmt.Sprintf("quoted string: %s", string(v.raw))
-	case BoolType:
-		return fmt.Sprintf("bool: %t", v.boolean)
 	default:
 		return "union not set"
 	}
@@ -245,26 +116,15 @@ func newLitToken(b []rune) (Token, int, error) {
 		if err != nil {
 			return token, n, err
 		}
-
 		token = newToken(TokenLit, b[:n], QuotedStringType)
-	} else if isNumberValue(b) {
-		var base int
-		base, n, err = getNumericalValue(b)
+	} else if isSubProperty(b) {
+		offset := 0
+		end, err := getSubProperty(b, offset)
 		if err != nil {
-			return token, 0, err
+			return token, n, err
 		}
-
-		value := b[:n]
-		vType := IntegerType
-		if contains(value, '.') || hasExponent(value) {
-			vType = DecimalType
-		}
-		token = newToken(TokenLit, value, vType)
-		token.base = base
-	} else if isBoolValue(b) {
-		n, err = getBoolValue(b)
-
-		token = newToken(TokenLit, b[:n], BoolType)
+		token = newToken(TokenLit, b[offset:end], StringType)
+		n = end
 	} else {
 		n, err = getValue(b)
 		token = newToken(TokenLit, b[:n], StringType)
@@ -273,19 +133,98 @@ func newLitToken(b []rune) (Token, int, error) {
 	return token, n, err
 }
 
+// replace with slices.Contains when Go 1.21
+// is min supported Go version in the SDK
+func containsRune(runes []rune, val rune) bool {
+	for i := range runes {
+		if val == runes[i] {
+			return true
+		}
+	}
+	return false
+}
+
+func isSubProperty(runes []rune) bool {
+	// needs at least
+	// (1) newline (2) whitespace (3) literal
+	if len(runes) < 3 {
+		return false
+	}
+
+	// must have an equal expression
+	if !containsRune(runes, '=') && !containsRune(runes, ':') {
+		return false
+	}
+
+	// must start with a new line
+	if !isNewline(runes) {
+		return false
+	}
+	_, n, err := newNewlineToken(runes)
+	if err != nil {
+		return false
+	}
+	// whitespace must follow newline
+	return isWhitespace(runes[n])
+}
+
+// getSubProperty pulls all subproperties and terminates when
+// it hits a newline that is not the start of another subproperty.
+// offset allows for removal of leading newline and whitespace
+// characters
+func getSubProperty(runes []rune, offset int) (int, error) {
+	for idx, val := range runes[offset:] {
+		if val == '\n' && !isSubProperty(runes[offset+idx:]) {
+			return offset + idx, nil
+		}
+	}
+	return 0, fmt.Errorf("no sub property")
+}
+
+// MapValue returns a map value for sub properties
+func (v Value) MapValue() map[string]string {
+	newlineParts := strings.Split(string(v.raw), "\n")
+	mp := make(map[string]string)
+	for _, part := range newlineParts {
+		operandParts := strings.Split(part, "=")
+		if len(operandParts) < 2 {
+			continue
+		}
+		key := strings.TrimSpace(operandParts[0])
+		val := strings.TrimSpace(operandParts[1])
+		mp[key] = val
+	}
+	return mp
+}
+
 // IntValue returns an integer value
-func (v Value) IntValue() int64 {
-	return v.integer
+func (v Value) IntValue() (int64, bool) {
+	i, err := strconv.ParseInt(string(v.raw), 0, 64)
+	if err != nil {
+		return 0, false
+	}
+	return i, true
 }
 
 // FloatValue returns a float value
-func (v Value) FloatValue() float64 {
-	return v.decimal
+func (v Value) FloatValue() (float64, bool) {
+	f, err := strconv.ParseFloat(string(v.raw), 64)
+	if err != nil {
+		return 0, false
+	}
+	return f, true
 }
 
 // BoolValue returns a bool value
-func (v Value) BoolValue() bool {
-	return v.boolean
+func (v Value) BoolValue() (bool, bool) {
+	// we don't use ParseBool as it recognizes more than what we've
+	// historically supported
+	if isCaselessLitValue(runesTrue, v.raw) {
+		return true, true
+	} else if isCaselessLitValue(runesFalse, v.raw) {
+		return false, true
+	}
+	return false, false
 }
 
 func isTrimmable(r rune) bool {
@@ -299,6 +238,7 @@ func isTrimmable(r rune) bool {
 // StringValue returns the string value
 func (v Value) StringValue() string {
 	switch v.Type {
+
 	case StringType:
 		return strings.TrimFunc(string(v.raw), isTrimmable)
 	case QuotedStringType:

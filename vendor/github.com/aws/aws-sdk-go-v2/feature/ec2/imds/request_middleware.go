@@ -1,8 +1,10 @@
 package imds
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"path"
 	"time"
@@ -52,7 +54,7 @@ func addRequestMiddleware(stack *middleware.Stack,
 
 	// Operation timeout
 	err = stack.Initialize.Add(&operationTimeout{
-		Timeout: defaultOperationTimeout,
+		DefaultTimeout: defaultOperationTimeout,
 	}, middleware.Before)
 	if err != nil {
 		return err
@@ -69,7 +71,8 @@ func addRequestMiddleware(stack *middleware.Stack,
 
 	// Operation endpoint resolver
 	err = stack.Serialize.Insert(&resolveEndpoint{
-		Endpoint: options.Endpoint,
+		Endpoint:     options.Endpoint,
+		EndpointMode: options.EndpointMode,
 	}, "OperationSerializer", middleware.Before)
 	if err != nil {
 		return err
@@ -83,11 +86,30 @@ func addRequestMiddleware(stack *middleware.Stack,
 		return err
 	}
 
+	err = stack.Deserialize.Add(&smithyhttp.RequestResponseLogger{
+		LogRequest:          options.ClientLogMode.IsRequest(),
+		LogRequestWithBody:  options.ClientLogMode.IsRequestWithBody(),
+		LogResponse:         options.ClientLogMode.IsResponse(),
+		LogResponseWithBody: options.ClientLogMode.IsResponseWithBody(),
+	}, middleware.After)
+	if err != nil {
+		return err
+	}
+
+	err = addSetLoggerMiddleware(stack, options)
+	if err != nil {
+		return err
+	}
+
 	// Retry support
 	return retry.AddRetryMiddlewares(stack, retry.AddRetryMiddlewaresOptions{
 		Retryer:          options.Retryer,
 		LogRetryAttempts: options.ClientLogMode.IsRetries(),
 	})
+}
+
+func addSetLoggerMiddleware(stack *middleware.Stack, o Options) error {
+	return middleware.AddSetLoggerMiddleware(stack, o.Logger)
 }
 
 type serializeRequest struct {
@@ -141,12 +163,20 @@ func (m *deserializeResponse) HandleDeserialize(
 	resp, ok := out.RawResponse.(*smithyhttp.Response)
 	if !ok {
 		return out, metadata, fmt.Errorf(
-			"unexpected transport response type, %T", out.RawResponse)
+			"unexpected transport response type, %T, want %T", out.RawResponse, resp)
 	}
+	defer resp.Body.Close()
 
-	// Anything thats not 200 |< 300 is error
+	// read the full body so that any operation timeouts cleanup will not race
+	// the body being read.
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return out, metadata, fmt.Errorf("read response body failed, %w", err)
+	}
+	resp.Body = ioutil.NopCloser(bytes.NewReader(body))
+
+	// Anything that's not 200 |< 300 is error
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		resp.Body.Close()
 		return out, metadata, &smithyhttp.ResponseError{
 			Response: resp,
 			Err:      fmt.Errorf("request to EC2 IMDS failed"),
@@ -165,7 +195,8 @@ func (m *deserializeResponse) HandleDeserialize(
 }
 
 type resolveEndpoint struct {
-	Endpoint string
+	Endpoint     string
+	EndpointMode EndpointModeState
 }
 
 func (*resolveEndpoint) ID() string {
@@ -183,7 +214,23 @@ func (m *resolveEndpoint) HandleSerialize(
 		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
 	}
 
-	req.URL, err = url.Parse(m.Endpoint)
+	var endpoint string
+	if len(m.Endpoint) > 0 {
+		endpoint = m.Endpoint
+	} else {
+		switch m.EndpointMode {
+		case EndpointModeStateIPv6:
+			endpoint = defaultIPv6Endpoint
+		case EndpointModeStateIPv4:
+			fallthrough
+		case EndpointModeStateUnset:
+			endpoint = defaultIPv4Endpoint
+		default:
+			return out, metadata, fmt.Errorf("unsupported IMDS endpoint mode")
+		}
+	}
+
+	req.URL, err = url.Parse(endpoint)
 	if err != nil {
 		return out, metadata, fmt.Errorf("failed to parse endpoint URL: %w", err)
 	}
@@ -195,8 +242,19 @@ const (
 	defaultOperationTimeout = 5 * time.Second
 )
 
+// operationTimeout adds a timeout on the middleware stack if the Context the
+// stack was called with does not have a deadline. The next middleware must
+// complete before the timeout, or the context will be canceled.
+//
+// If DefaultTimeout is zero, no default timeout will be used if the Context
+// does not have a timeout.
+//
+// The next middleware must also ensure that any resources that are also
+// canceled by the stack's context are completely consumed before returning.
+// Otherwise the timeout cleanup will race the resource being consumed
+// upstream.
 type operationTimeout struct {
-	Timeout time.Duration
+	DefaultTimeout time.Duration
 }
 
 func (*operationTimeout) ID() string { return "OperationTimeout" }
@@ -206,10 +264,11 @@ func (m *operationTimeout) HandleInitialize(
 ) (
 	output middleware.InitializeOutput, metadata middleware.Metadata, err error,
 ) {
-	var cancelFn func()
-
-	ctx, cancelFn = context.WithTimeout(ctx, m.Timeout)
-	defer cancelFn()
+	if _, ok := ctx.Deadline(); !ok && m.DefaultTimeout != 0 {
+		var cancelFn func()
+		ctx, cancelFn = context.WithTimeout(ctx, m.DefaultTimeout)
+		defer cancelFn()
+	}
 
 	return next.HandleInitialize(ctx, input)
 }
