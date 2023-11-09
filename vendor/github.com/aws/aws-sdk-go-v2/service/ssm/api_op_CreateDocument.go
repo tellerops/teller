@@ -4,29 +4,25 @@ package ssm
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Creates a Amazon Web Services Systems Manager (SSM document). An SSM document
-// defines the actions that Systems Manager performs on your managed nodes. For
-// more information about SSM documents, including information about supported
-// schemas, features, and syntax, see Amazon Web Services Systems Manager Documents (https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-ssm-docs.html)
-// in the Amazon Web Services Systems Manager User Guide.
+// Creates a Systems Manager (SSM) document. An SSM document defines the actions
+// that Systems Manager performs on your managed instances. For more information
+// about SSM documents, including information about supported schemas, features,
+// and syntax, see AWS Systems Manager Documents
+// (https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-ssm-docs.html)
+// in the AWS Systems Manager User Guide.
 func (c *Client) CreateDocument(ctx context.Context, params *CreateDocumentInput, optFns ...func(*Options)) (*CreateDocumentOutput, error) {
 	if params == nil {
 		params = &CreateDocumentInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "CreateDocument", params, optFns, c.addOperationCreateDocumentMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "CreateDocument", params, optFns, addOperationCreateDocumentMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -38,102 +34,106 @@ func (c *Client) CreateDocument(ctx context.Context, params *CreateDocumentInput
 
 type CreateDocumentInput struct {
 
-	// The content for the new SSM document in JSON or YAML format. The content of the
-	// document must not exceed 64KB. This quota also includes the content specified
-	// for input parameters at runtime. We recommend storing the contents for your new
-	// document in an external JSON or YAML file and referencing the file in a command.
-	// For examples, see the following topics in the Amazon Web Services Systems
-	// Manager User Guide.
-	//   - Create an SSM document (Amazon Web Services API) (https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-document-api.html)
-	//   - Create an SSM document (Amazon Web Services CLI) (https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-document-cli.html)
-	//   - Create an SSM document (API) (https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-document-api.html)
+	// The content for the new SSM document in JSON or YAML format. We recommend
+	// storing the contents for your new document in an external JSON or YAML file and
+	// referencing the file in a command. For examples, see the following topics in the
+	// AWS Systems Manager User Guide.
+	//
+	// * Create an SSM document (AWS API)
+	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-document-api.html)
+	//
+	// *
+	// Create an SSM document (AWS CLI)
+	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-document-cli.html)
+	//
+	// *
+	// Create an SSM document (API)
+	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/create-ssm-document-api.html)
 	//
 	// This member is required.
 	Content *string
 
-	// A name for the SSM document. You can't use the following strings as document
-	// name prefixes. These are reserved by Amazon Web Services for use as document
-	// name prefixes:
-	//   - aws
-	//   - amazon
-	//   - amzn
+	// A name for the Systems Manager document. You can't use the following strings as
+	// document name prefixes. These are reserved by AWS for use as document name
+	// prefixes:
+	//
+	// * aws-
+	//
+	// * amazon
+	//
+	// * amzn
 	//
 	// This member is required.
 	Name *string
 
-	// A list of key-value pairs that describe attachments to a version of a document.
+	// A list of key and value pairs that describe attachments to a version of a
+	// document.
 	Attachments []types.AttachmentsSource
-
-	// An optional field where you can specify a friendly name for the SSM document.
-	// This value can differ for each version of the document. You can update this
-	// value at a later time using the UpdateDocument operation.
-	DisplayName *string
 
 	// Specify the document format for the request. The document format can be JSON,
 	// YAML, or TEXT. JSON is the default format.
 	DocumentFormat types.DocumentFormat
 
-	// The type of document to create. The DeploymentStrategy document type is an
-	// internal-use-only document type reserved for AppConfig.
+	// The type of document to create.
 	DocumentType types.DocumentType
 
 	// A list of SSM documents required by a document. This parameter is used
-	// exclusively by AppConfig. When a user creates an AppConfig configuration in an
-	// SSM document, the user must also specify a required document for validation
+	// exclusively by AWS AppConfig. When a user creates an AppConfig configuration in
+	// an SSM document, the user must also specify a required document for validation
 	// purposes. In this case, an ApplicationConfiguration document requires an
 	// ApplicationConfigurationSchema document for validation purposes. For more
-	// information, see What is AppConfig? (https://docs.aws.amazon.com/appconfig/latest/userguide/what-is-appconfig.html)
-	// in the AppConfig User Guide.
+	// information, see AWS AppConfig
+	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/appconfig.html) in
+	// the AWS Systems Manager User Guide.
 	Requires []types.DocumentRequires
 
-	// Optional metadata that you assign to a resource. Tags enable you to categorize
-	// a resource in different ways, such as by purpose, owner, or environment. For
+	// Optional metadata that you assign to a resource. Tags enable you to categorize a
+	// resource in different ways, such as by purpose, owner, or environment. For
 	// example, you might want to tag an SSM document to identify the types of targets
 	// or the environment where it will run. In this case, you could specify the
-	// following key-value pairs:
-	//   - Key=OS,Value=Windows
-	//   - Key=Environment,Value=Production
-	// To add tags to an existing SSM document, use the AddTagsToResource operation.
+	// following key name/value pairs:
+	//
+	// * Key=OS,Value=Windows
+	//
+	// *
+	// Key=Environment,Value=Production
+	//
+	// To add tags to an existing SSM document, use
+	// the AddTagsToResource action.
 	Tags []types.Tag
 
 	// Specify a target type to define the kinds of resources the document can run on.
 	// For example, to run a document on EC2 instances, specify the following value:
-	// /AWS::EC2::Instance . If you specify a value of '/' the document can run on all
+	// /AWS::EC2::Instance. If you specify a value of '/' the document can run on all
 	// types of resources. If you don't specify a value, the document can't run on any
-	// resources. For a list of valid resource types, see Amazon Web Services resource
-	// and property types reference (https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html)
-	// in the CloudFormation User Guide.
+	// resources. For a list of valid resource types, see AWS resource and property
+	// types reference
+	// (http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html)
+	// in the AWS CloudFormation User Guide.
 	TargetType *string
 
 	// An optional field specifying the version of the artifact you are creating with
-	// the document. For example, Release12.1 . This value is unique across all
-	// versions of a document, and can't be changed.
+	// the document. For example, "Release 12, Update 6". This value is unique across
+	// all versions of a document, and cannot be changed.
 	VersionName *string
-
-	noSmithyDocumentSerde
 }
 
 type CreateDocumentOutput struct {
 
-	// Information about the SSM document.
+	// Information about the Systems Manager document.
 	DocumentDescription *types.DocumentDescription
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
-
-	noSmithyDocumentSerde
 }
 
-func (c *Client) addOperationCreateDocumentMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func addOperationCreateDocumentMiddlewares(stack *middleware.Stack, options Options) (err error) {
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpCreateDocument{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpCreateDocument{}, middleware.After)
 	if err != nil {
-		return err
-	}
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -163,7 +163,7 @@ func (c *Client) addOperationCreateDocumentMiddlewares(stack *middleware.Stack, 
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack, options); err != nil {
+	if err = addClientUserAgent(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -172,16 +172,10 @@ func (c *Client) addOperationCreateDocumentMiddlewares(stack *middleware.Stack, 
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addCreateDocumentResolveEndpointMiddleware(stack, options); err != nil {
-		return err
-	}
 	if err = addOpCreateDocumentValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCreateDocument(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -191,9 +185,6 @@ func (c *Client) addOperationCreateDocumentMiddlewares(stack *middleware.Stack, 
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
-		return err
-	}
-	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -206,127 +197,4 @@ func newServiceMetadataMiddleware_opCreateDocument(region string) *awsmiddleware
 		SigningName:   "ssm",
 		OperationName: "CreateDocument",
 	}
-}
-
-type opCreateDocumentResolveEndpointMiddleware struct {
-	EndpointResolver EndpointResolverV2
-	BuiltInResolver  builtInParameterResolver
-}
-
-func (*opCreateDocumentResolveEndpointMiddleware) ID() string {
-	return "ResolveEndpointV2"
-}
-
-func (m *opCreateDocumentResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
-	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
-) {
-	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
-		return next.HandleSerialize(ctx, in)
-	}
-
-	req, ok := in.Request.(*smithyhttp.Request)
-	if !ok {
-		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
-	}
-
-	if m.EndpointResolver == nil {
-		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
-	}
-
-	params := EndpointParameters{}
-
-	m.BuiltInResolver.ResolveBuiltIns(&params)
-
-	var resolvedEndpoint smithyendpoints.Endpoint
-	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
-	if err != nil {
-		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
-	}
-
-	req.URL = &resolvedEndpoint.URI
-
-	for k := range resolvedEndpoint.Headers {
-		req.Header.Set(
-			k,
-			resolvedEndpoint.Headers.Get(k),
-		)
-	}
-
-	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
-	if err != nil {
-		var nfe *internalauth.NoAuthenticationSchemesFoundError
-		if errors.As(err, &nfe) {
-			// if no auth scheme is found, default to sigv4
-			signingName := "ssm"
-			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-
-		}
-		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
-		if errors.As(err, &ue) {
-			return out, metadata, fmt.Errorf(
-				"This operation requests signer version(s) %v but the client only supports %v",
-				ue.UnsupportedSchemes,
-				internalauth.SupportedSchemes,
-			)
-		}
-	}
-
-	for _, authScheme := range authSchemes {
-		switch authScheme.(type) {
-		case *internalauth.AuthenticationSchemeV4:
-			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
-			var signingName, signingRegion string
-			if v4Scheme.SigningName == nil {
-				signingName = "ssm"
-			} else {
-				signingName = *v4Scheme.SigningName
-			}
-			if v4Scheme.SigningRegion == nil {
-				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
-			} else {
-				signingRegion = *v4Scheme.SigningRegion
-			}
-			if v4Scheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-			break
-		case *internalauth.AuthenticationSchemeV4A:
-			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
-			if v4aScheme.SigningName == nil {
-				v4aScheme.SigningName = aws.String("ssm")
-			}
-			if v4aScheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
-			break
-		case *internalauth.AuthenticationSchemeNone:
-			break
-		}
-	}
-
-	return next.HandleSerialize(ctx, in)
-}
-
-func addCreateDocumentResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
-	return stack.Serialize.Insert(&opCreateDocumentResolveEndpointMiddleware{
-		EndpointResolver: options.EndpointResolverV2,
-		BuiltInResolver: &builtInResolver{
-			Region:       options.Region,
-			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
-			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
-			Endpoint:     options.BaseEndpoint,
-		},
-	}, "ResolveEndpoint", middleware.After)
 }

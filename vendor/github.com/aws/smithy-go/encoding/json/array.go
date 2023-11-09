@@ -4,7 +4,7 @@ import (
 	"bytes"
 )
 
-// Array represents the encoding of a JSON Array
+// Array represent the encoding of a JSON Array
 type Array struct {
 	w          *bytes.Buffer
 	writeComma bool

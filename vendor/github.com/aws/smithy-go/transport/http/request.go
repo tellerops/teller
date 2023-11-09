@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 
 	iointernal "github.com/aws/smithy-go/transport/http/internal/io"
 )
@@ -21,7 +20,7 @@ type Request struct {
 	streamStartPos   int64
 }
 
-// NewStackRequest returns an initialized request ready to be populated with the
+// NewStackRequest returns an initialized request ready to populated with the
 // HTTP request details. Returns empty interface so the function can be used as
 // a parameter to the Smithy middleware Stack constructor.
 func NewStackRequest() interface{} {
@@ -32,14 +31,6 @@ func NewStackRequest() interface{} {
 			ContentLength: -1, // default to unknown length
 		},
 	}
-}
-
-// IsHTTPS returns if the request is HTTPS. Returns false if no endpoint URL is set.
-func (r *Request) IsHTTPS() bool {
-	if r.URL == nil {
-		return false
-	}
-	return strings.EqualFold(r.URL.Scheme, "https")
 }
 
 // Clone returns a deep copy of the Request for the new context. A reference to
@@ -54,23 +45,19 @@ func (r *Request) Clone() *Request {
 // to the request and ok set. If the length cannot be determined, an error will
 // be returned.
 func (r *Request) StreamLength() (size int64, ok bool, err error) {
-	return streamLength(r.stream, r.isStreamSeekable, r.streamStartPos)
-}
-
-func streamLength(stream io.Reader, seekable bool, startPos int64) (size int64, ok bool, err error) {
-	if stream == nil {
+	if r.stream == nil {
 		return 0, true, nil
 	}
 
-	if l, ok := stream.(interface{ Len() int }); ok {
+	if l, ok := r.stream.(interface{ Len() int }); ok {
 		return int64(l.Len()), true, nil
 	}
 
-	if !seekable {
+	if !r.isStreamSeekable {
 		return 0, false, nil
 	}
 
-	s := stream.(io.Seeker)
+	s := r.stream.(io.Seeker)
 	endOffset, err := s.Seek(0, io.SeekEnd)
 	if err != nil {
 		return 0, false, err
@@ -82,12 +69,12 @@ func streamLength(stream io.Reader, seekable bool, startPos int64) (size int64, 
 	// file, and wants to skip the first N bytes uploading the rest. The
 	// application would move the file's offset N bytes, then hand it off to
 	// the SDK to send the remaining. The SDK should respect that initial offset.
-	_, err = s.Seek(startPos, io.SeekStart)
+	_, err = s.Seek(r.streamStartPos, io.SeekStart)
 	if err != nil {
 		return 0, false, err
 	}
 
-	return endOffset - startPos, true, nil
+	return endOffset - r.streamStartPos, true, nil
 }
 
 // RewindStream will rewind the io.Reader to the relative start position if it
@@ -111,46 +98,28 @@ func (r *Request) GetStream() io.Reader {
 	return r.stream
 }
 
-// IsStreamSeekable returns whether the stream is seekable.
+// IsStreamSeekable returns if the stream is seekable.
 func (r *Request) IsStreamSeekable() bool {
 	return r.isStreamSeekable
 }
 
-// SetStream returns a clone of the request with the stream set to the provided
-// reader. May return an error if the provided reader is seekable but returns
-// an error.
+// SetStream returns a clone of the request with the stream set to the provided reader.
+// May return an error if the provided reader is seekable but returns an error.
 func (r *Request) SetStream(reader io.Reader) (rc *Request, err error) {
 	rc = r.Clone()
 
-	if reader == http.NoBody {
-		reader = nil
-	}
-
-	var isStreamSeekable bool
-	var streamStartPos int64
 	switch v := reader.(type) {
 	case io.Seeker:
 		n, err := v.Seek(0, io.SeekCurrent)
 		if err != nil {
 			return r, err
 		}
-		isStreamSeekable = true
-		streamStartPos = n
+		rc.isStreamSeekable = true
+		rc.streamStartPos = n
 	default:
-		// If the stream length can be determined, and is determined to be empty,
-		// use a nil stream to prevent confusion between empty vs not-empty
-		// streams.
-		length, ok, err := streamLength(reader, false, 0)
-		if err != nil {
-			return nil, err
-		} else if ok && length == 0 {
-			reader = nil
-		}
+		rc.isStreamSeekable = false
 	}
-
 	rc.stream = reader
-	rc.isStreamSeekable = isStreamSeekable
-	rc.streamStartPos = streamStartPos
 
 	return rc, err
 }
@@ -161,29 +130,19 @@ func (r *Request) SetStream(reader io.Reader) (rc *Request, err error) {
 func (r *Request) Build(ctx context.Context) *http.Request {
 	req := r.Request.Clone(ctx)
 
-	if r.stream == nil && req.ContentLength == -1 {
+	if r.stream != nil {
+		req.Body = iointernal.NewSafeReadCloser(ioutil.NopCloser(r.stream))
+	} else {
+		// we update the content-length to 0,
+		// if request stream was not set.
 		req.ContentLength = 0
-	}
-
-	switch stream := r.stream.(type) {
-	case *io.PipeReader:
-		req.Body = ioutil.NopCloser(stream)
-		req.ContentLength = -1
-	default:
-		// HTTP Client Request must only have a non-nil body if the
-		// ContentLength is explicitly unknown (-1) or non-zero. The HTTP
-		// Client will interpret a non-nil body and ContentLength 0 as
-		// "unknown". This is unwanted behavior.
-		if req.ContentLength != 0 && r.stream != nil {
-			req.Body = iointernal.NewSafeReadCloser(ioutil.NopCloser(stream))
-		}
 	}
 
 	return req
 }
 
 // RequestCloner is a function that can take an input request type and clone the request
-// for use in a subsequent retry attempt.
+// for use in a subsequent retry attempt
 func RequestCloner(v interface{}) interface{} {
 	return v.(*Request).Clone()
 }

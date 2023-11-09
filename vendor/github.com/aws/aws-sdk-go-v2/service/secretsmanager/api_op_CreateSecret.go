@@ -4,59 +4,94 @@ package secretsmanager
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Creates a new secret. A secret can be a password, a set of credentials such as
-// a user name and password, an OAuth token, or other secret information that you
-// store in an encrypted form in Secrets Manager. The secret also includes the
-// connection information to access a database or other service, which Secrets
-// Manager doesn't encrypt. A secret in Secrets Manager consists of both the
-// protected secret data and the important information needed to manage the secret.
-// For secrets that use managed rotation, you need to create the secret through the
-// managing service. For more information, see Secrets Manager secrets managed by
-// other Amazon Web Services services (https://docs.aws.amazon.com/secretsmanager/latest/userguide/service-linked-secrets.html)
-// . For information about creating a secret in the console, see Create a secret (https://docs.aws.amazon.com/secretsmanager/latest/userguide/manage_create-basic-secret.html)
-// . To create a secret, you can provide the secret value to be encrypted in either
-// the SecretString parameter or the SecretBinary parameter, but not both. If you
-// include SecretString or SecretBinary then Secrets Manager creates an initial
-// secret version and automatically attaches the staging label AWSCURRENT to it.
-// For database credentials you want to rotate, for Secrets Manager to be able to
-// rotate the secret, you must make sure the JSON you store in the SecretString
-// matches the JSON structure of a database secret (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_secret_json_structure.html)
-// . If you don't specify an KMS encryption key, Secrets Manager uses the Amazon
-// Web Services managed key aws/secretsmanager . If this key doesn't already exist
-// in your account, then Secrets Manager creates it for you automatically. All
-// users and roles in the Amazon Web Services account automatically have access to
-// use aws/secretsmanager . Creating aws/secretsmanager can result in a one-time
-// significant delay in returning the result. If the secret is in a different
-// Amazon Web Services account from the credentials calling the API, then you can't
-// use aws/secretsmanager to encrypt the secret, and you must create and use a
-// customer managed KMS key. Secrets Manager generates a CloudTrail log entry when
-// you call this action. Do not include sensitive information in request parameters
-// except SecretBinary or SecretString because it might be logged. For more
-// information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
-// . Required permissions: secretsmanager:CreateSecret . If you include tags in the
-// secret, you also need secretsmanager:TagResource . For more information, see
-// IAM policy actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
-// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
-// . To encrypt the secret with a KMS key other than aws/secretsmanager , you need
-// kms:GenerateDataKey and kms:Decrypt permission to the key.
+// Creates a new secret. A secret in Secrets Manager consists of both the protected
+// secret data and the important information needed to manage the secret. Secrets
+// Manager stores the encrypted secret data in one of a collection of "versions"
+// associated with the secret. Each version contains a copy of the encrypted secret
+// data. Each version is associated with one or more "staging labels" that identify
+// where the version is in the rotation cycle. The SecretVersionsToStages field of
+// the secret contains the mapping of staging labels to the active versions of the
+// secret. Versions without a staging label are considered deprecated and not
+// included in the list. You provide the secret data to be encrypted by putting
+// text in either the SecretString parameter or binary data in the SecretBinary
+// parameter, but not both. If you include SecretString or SecretBinary then
+// Secrets Manager also creates an initial secret version and automatically
+// attaches the staging label AWSCURRENT to the new version.
+//
+// * If you call an
+// operation to encrypt or decrypt the SecretString or SecretBinary for a secret in
+// the same account as the calling user and that secret doesn't specify a AWS KMS
+// encryption key, Secrets Manager uses the account's default AWS managed customer
+// master key (CMK) with the alias aws/secretsmanager. If this key doesn't already
+// exist in your account then Secrets Manager creates it for you automatically. All
+// users and roles in the same AWS account automatically have access to use the
+// default CMK. Note that if an Secrets Manager API call results in AWS creating
+// the account's AWS-managed CMK, it can result in a one-time significant delay in
+// returning the result.
+//
+// * If the secret resides in a different AWS account from
+// the credentials calling an API that requires encryption or decryption of the
+// secret value then you must create and use a custom AWS KMS CMK because you can't
+// access the default CMK for the account using credentials from a different AWS
+// account. Store the ARN of the CMK in the secret when you create the secret or
+// when you update it by including it in the KMSKeyId. If you call an API that must
+// encrypt or decrypt SecretString or SecretBinary using credentials from a
+// different account then the AWS KMS key policy must grant cross-account access to
+// that other account's user or role for both the kms:GenerateDataKey and
+// kms:Decrypt operations.
+//
+// Minimum permissions To run this command, you must have
+// the following permissions:
+//
+// * secretsmanager:CreateSecret
+//
+// * kms:GenerateDataKey
+// - needed only if you use a customer-managed AWS KMS key to encrypt the secret.
+// You do not need this permission to use the account default AWS managed CMK for
+// Secrets Manager.
+//
+// * kms:Decrypt - needed only if you use a customer-managed AWS
+// KMS key to encrypt the secret. You do not need this permission to use the
+// account default AWS managed CMK for Secrets Manager.
+//
+// *
+// secretsmanager:TagResource - needed only if you include the Tags
+// parameter.
+//
+// Related operations
+//
+// * To delete a secret, use DeleteSecret.
+//
+// * To
+// modify an existing secret, use UpdateSecret.
+//
+// * To create a new version of a
+// secret, use PutSecretValue.
+//
+// * To retrieve the encrypted secure string and
+// secure binary values, use GetSecretValue.
+//
+// * To retrieve all other details for a
+// secret, use DescribeSecret. This does not include the encrypted secure string
+// and secure binary values.
+//
+// * To retrieve the list of secret versions associated
+// with the current secret, use DescribeSecret and examine the
+// SecretVersionsToStages response value.
 func (c *Client) CreateSecret(ctx context.Context, params *CreateSecretInput, optFns ...func(*Options)) (*CreateSecretOutput, error) {
 	if params == nil {
 		params = &CreateSecretInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "CreateSecret", params, optFns, c.addOperationCreateSecretMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "CreateSecret", params, optFns, addOperationCreateSecretMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -68,138 +103,168 @@ func (c *Client) CreateSecret(ctx context.Context, params *CreateSecretInput, op
 
 type CreateSecretInput struct {
 
-	// The name of the new secret. The secret name can contain ASCII letters, numbers,
-	// and the following characters: /_+=.@- Do not end your secret name with a hyphen
-	// followed by six characters. If you do so, you risk confusion and unexpected
-	// results when searching for a secret by partial ARN. Secrets Manager
-	// automatically adds a hyphen and six random characters after the secret name at
-	// the end of the ARN.
+	// Specifies the friendly name of the new secret. The secret name must be ASCII
+	// letters, digits, or the following characters : /_+=.@- Do not end your secret
+	// name with a hyphen followed by six characters. If you do so, you risk confusion
+	// and unexpected results when searching for a secret by partial ARN. Secrets
+	// Manager automatically adds a hyphen and six random characters at the end of the
+	// ARN.
 	//
 	// This member is required.
 	Name *string
 
-	// A list of Regions and KMS keys to replicate secrets.
-	AddReplicaRegions []types.ReplicaRegionType
-
-	// If you include SecretString or SecretBinary , then Secrets Manager creates an
-	// initial version for the secret, and this parameter specifies the unique
-	// identifier for the new version. If you use the Amazon Web Services CLI or one of
-	// the Amazon Web Services SDKs to call this operation, then you can leave this
-	// parameter empty. The CLI or SDK generates a random UUID for you and includes it
-	// as the value for this parameter in the request. If you generate a raw HTTP
-	// request to the Secrets Manager service endpoint, then you must generate a
-	// ClientRequestToken and include it in the request. This value helps ensure
-	// idempotency. Secrets Manager uses this value to prevent the accidental creation
-	// of duplicate versions if there are failures and retries during a rotation. We
-	// recommend that you generate a UUID-type (https://wikipedia.org/wiki/Universally_unique_identifier)
-	// value to ensure uniqueness of your versions within the specified secret.
-	//   - If the ClientRequestToken value isn't already associated with a version of
-	//   the secret then a new version of the secret is created.
-	//   - If a version with this value already exists and the version SecretString and
-	//   SecretBinary values are the same as those in the request, then the request is
-	//   ignored.
-	//   - If a version with this value already exists and that version's SecretString
-	//   and SecretBinary values are different from those in the request, then the
-	//   request fails because you cannot modify an existing version. Instead, use
-	//   PutSecretValue to create a new version.
+	// (Optional) If you include SecretString or SecretBinary, then an initial version
+	// is created as part of the secret, and this parameter specifies a unique
+	// identifier for the new version. If you use the AWS CLI or one of the AWS SDK to
+	// call this operation, then you can leave this parameter empty. The CLI or SDK
+	// generates a random UUID for you and includes it as the value for this parameter
+	// in the request. If you don't use the SDK and instead generate a raw HTTP request
+	// to the Secrets Manager service endpoint, then you must generate a
+	// ClientRequestToken yourself for the new version and include the value in the
+	// request. This value helps ensure idempotency. Secrets Manager uses this value to
+	// prevent the accidental creation of duplicate versions if there are failures and
+	// retries during a rotation. We recommend that you generate a UUID-type
+	// (https://wikipedia.org/wiki/Universally_unique_identifier) value to ensure
+	// uniqueness of your versions within the specified secret.
+	//
+	// * If the
+	// ClientRequestToken value isn't already associated with a version of the secret
+	// then a new version of the secret is created.
+	//
+	// * If a version with this value
+	// already exists and the version SecretString and SecretBinary values are the same
+	// as those in the request, then the request is ignored.
+	//
+	// * If a version with this
+	// value already exists and that version's SecretString and SecretBinary values are
+	// different from those in the request then the request fails because you cannot
+	// modify an existing version. Instead, use PutSecretValue to create a new
+	// version.
+	//
 	// This value becomes the VersionId of the new version.
 	ClientRequestToken *string
 
-	// The description of the secret.
+	// (Optional) Specifies a user-provided description of the secret.
 	Description *string
 
-	// Specifies whether to overwrite a secret with the same name in the destination
-	// Region. By default, secrets aren't overwritten.
-	ForceOverwriteReplicaSecret bool
-
-	// The ARN, key ID, or alias of the KMS key that Secrets Manager uses to encrypt
-	// the secret value in the secret. An alias is always prefixed by alias/ , for
-	// example alias/aws/secretsmanager . For more information, see About aliases (https://docs.aws.amazon.com/kms/latest/developerguide/alias-about.html)
-	// . To use a KMS key in a different account, use the key ARN or the alias ARN. If
-	// you don't specify this value, then Secrets Manager uses the key
-	// aws/secretsmanager . If that key doesn't yet exist, then Secrets Manager creates
-	// it for you automatically the first time it encrypts the secret value. If the
-	// secret is in a different Amazon Web Services account from the credentials
-	// calling the API, then you can't use aws/secretsmanager to encrypt the secret,
-	// and you must create and use a customer managed KMS key.
+	// (Optional) Specifies the ARN, Key ID, or alias of the AWS KMS customer master
+	// key (CMK) to be used to encrypt the SecretString or SecretBinary values in the
+	// versions stored in this secret. You can specify any of the supported ways to
+	// identify a AWS KMS key ID. If you need to reference a CMK in a different
+	// account, you can use only the key ARN or the alias ARN. If you don't specify
+	// this value, then Secrets Manager defaults to using the AWS account's default CMK
+	// (the one named aws/secretsmanager). If a AWS KMS CMK with that name doesn't yet
+	// exist, then Secrets Manager creates it for you automatically the first time it
+	// needs to encrypt a version's SecretString or SecretBinary fields. You can use
+	// the account default CMK to encrypt and decrypt only if you call this operation
+	// using credentials from the same account that owns the secret. If the secret
+	// resides in a different account, then you must create a custom CMK and specify
+	// the ARN in this field.
 	KmsKeyId *string
 
-	// The binary data to encrypt and store in the new version of the secret. We
-	// recommend that you store your binary data in a file and then pass the contents
-	// of the file as a parameter. Either SecretString or SecretBinary must have a
-	// value, but not both. This parameter is not available in the Secrets Manager
-	// console.
+	// (Optional) Specifies binary data that you want to encrypt and store in the new
+	// version of the secret. To use this parameter in the command-line tools, we
+	// recommend that you store your binary data in a file and then use the appropriate
+	// technique for your tool to pass the contents of the file as a parameter. Either
+	// SecretString or SecretBinary must have a value, but not both. They cannot both
+	// be empty. This parameter is not available using the Secrets Manager console. It
+	// can be accessed only by using the AWS CLI or one of the AWS SDKs.
 	SecretBinary []byte
 
-	// The text data to encrypt and store in this new version of the secret. We
-	// recommend you use a JSON structure of key/value pairs for your secret value.
-	// Either SecretString or SecretBinary must have a value, but not both. If you
-	// create a secret by using the Secrets Manager console then Secrets Manager puts
-	// the protected secret text in only the SecretString parameter. The Secrets
-	// Manager console stores the information as a JSON structure of key/value pairs
-	// that a Lambda rotation function can parse.
+	// (Optional) Specifies text data that you want to encrypt and store in this new
+	// version of the secret. Either SecretString or SecretBinary must have a value,
+	// but not both. They cannot both be empty. If you create a secret by using the
+	// Secrets Manager console then Secrets Manager puts the protected secret text in
+	// only the SecretString parameter. The Secrets Manager console stores the
+	// information as a JSON structure of key/value pairs that the Lambda rotation
+	// function knows how to parse. For storing multiple values, we recommend that you
+	// use a JSON text string argument and specify key/value pairs. For information on
+	// how to format a JSON parameter for the various command line tool environments,
+	// see Using JSON for Parameters
+	// (https://docs.aws.amazon.com/cli/latest/userguide/cli-using-param.html#cli-using-param-json)
+	// in the AWS CLI User Guide. For example:
+	// {"username":"bob","password":"abc123xyz456"} If your command-line tool or SDK
+	// requires quotation marks around the parameter, you should use single quotes to
+	// avoid confusion with the double quotes required in the JSON text.
 	SecretString *string
 
-	// A list of tags to attach to the secret. Each tag is a key and value pair of
-	// strings in a JSON text string, for example:
+	// (Optional) Specifies a list of user-defined tags that are attached to the
+	// secret. Each tag is a "Key" and "Value" pair of strings. This operation only
+	// appends tags to the existing list of tags. To remove tags, you must use
+	// UntagResource.
+	//
+	// * Secrets Manager tag key names are case sensitive. A tag with
+	// the key "ABC" is a different tag from one with key "abc".
+	//
+	// * If you check tags
+	// in IAM policy Condition elements as part of your security strategy, then adding
+	// or removing a tag can change permissions. If the successful completion of this
+	// operation would result in you losing your permissions for this secret, then this
+	// operation is blocked and returns an Access Denied error.
+	//
+	// This parameter
+	// requires a JSON text string argument. For information on how to format a JSON
+	// parameter for the various command line tool environments, see Using JSON for
+	// Parameters
+	// (https://docs.aws.amazon.com/cli/latest/userguide/cli-using-param.html#cli-using-param-json)
+	// in the AWS CLI User Guide. For example:
 	// [{"Key":"CostCenter","Value":"12345"},{"Key":"environment","Value":"production"}]
-	// Secrets Manager tag key names are case sensitive. A tag with the key "ABC" is a
-	// different tag from one with key "abc". If you check tags in permissions policies
-	// as part of your security strategy, then adding or removing a tag can change
-	// permissions. If the completion of this operation would result in you losing your
-	// permissions for this secret, then Secrets Manager blocks the operation and
-	// returns an Access Denied error. For more information, see Control access to
-	// secrets using tags (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access_examples.html#tag-secrets-abac)
-	// and Limit access to identities with tags that match secrets' tags (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access_examples.html#auth-and-access_tags2)
-	// . For information about how to format a JSON parameter for the various command
-	// line tool environments, see Using JSON for Parameters (https://docs.aws.amazon.com/cli/latest/userguide/cli-using-param.html#cli-using-param-json)
-	// . If your command-line tool or SDK requires quotation marks around the
-	// parameter, you should use single quotes to avoid confusion with the double
-	// quotes required in the JSON text. For tag quotas and naming restrictions, see
-	// Service quotas for Tagging (https://docs.aws.amazon.com/general/latest/gr/arg.html#taged-reference-quotas)
-	// in the Amazon Web Services General Reference guide.
+	// If your command-line tool or SDK requires quotation marks around the parameter,
+	// you should use single quotes to avoid confusion with the double quotes required
+	// in the JSON text. The following basic restrictions apply to tags:
+	//
+	// * Maximum
+	// number of tags per secret—50
+	//
+	// * Maximum key length—127 Unicode characters in
+	// UTF-8
+	//
+	// * Maximum value length—255 Unicode characters in UTF-8
+	//
+	// * Tag keys and
+	// values are case sensitive.
+	//
+	// * Do not use the aws: prefix in your tag names or
+	// values because AWS reserves it for AWS use. You can't edit or delete tag names
+	// or values with this prefix. Tags with this prefix do not count against your tags
+	// per secret limit.
+	//
+	// * If you use your tagging schema across multiple services and
+	// resources, remember other services might have restrictions on allowed
+	// characters. Generally allowed characters: letters, spaces, and numbers
+	// representable in UTF-8, plus the following special characters: + - = . _ : / @.
 	Tags []types.Tag
-
-	noSmithyDocumentSerde
 }
 
 type CreateSecretOutput struct {
 
-	// The ARN of the new secret. The ARN includes the name of the secret followed by
-	// six random characters. This ensures that if you create a new secret with the
-	// same name as a deleted secret, then users with access to the old secret don't
-	// get access to the new secret because the ARNs are different.
+	// The Amazon Resource Name (ARN) of the secret that you just created. Secrets
+	// Manager automatically adds several random characters to the name at the end of
+	// the ARN when you initially create a secret. This affects only the ARN and not
+	// the actual friendly name. This ensures that if you create a new secret with the
+	// same name as an old secret that you previously deleted, then users with access
+	// to the old secret don't automatically get access to the new secret because the
+	// ARNs are different.
 	ARN *string
 
-	// The name of the new secret.
+	// The friendly name of the secret that you just created.
 	Name *string
 
-	// A list of the replicas of this secret and their status:
-	//   - Failed , which indicates that the replica was not created.
-	//   - InProgress , which indicates that Secrets Manager is in the process of
-	//   creating the replica.
-	//   - InSync , which indicates that the replica was created.
-	ReplicationStatus []types.ReplicationStatusType
-
-	// The unique identifier associated with the version of the new secret.
+	// The unique identifier associated with the version of the secret you just
+	// created.
 	VersionId *string
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
-
-	noSmithyDocumentSerde
 }
 
-func (c *Client) addOperationCreateSecretMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func addOperationCreateSecretMiddlewares(stack *middleware.Stack, options Options) (err error) {
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpCreateSecret{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpCreateSecret{}, middleware.After)
 	if err != nil {
-		return err
-	}
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -229,16 +294,13 @@ func (c *Client) addOperationCreateSecretMiddlewares(stack *middleware.Stack, op
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack, options); err != nil {
+	if err = addClientUserAgent(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addCreateSecretResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addIdempotencyToken_opCreateSecretMiddleware(stack, options); err != nil {
@@ -250,9 +312,6 @@ func (c *Client) addOperationCreateSecretMiddlewares(stack *middleware.Stack, op
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCreateSecret(options.Region), middleware.Before); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
-		return err
-	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
 		return err
 	}
@@ -260,9 +319,6 @@ func (c *Client) addOperationCreateSecretMiddlewares(stack *middleware.Stack, op
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
-		return err
-	}
-	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -308,127 +364,4 @@ func newServiceMetadataMiddleware_opCreateSecret(region string) *awsmiddleware.R
 		SigningName:   "secretsmanager",
 		OperationName: "CreateSecret",
 	}
-}
-
-type opCreateSecretResolveEndpointMiddleware struct {
-	EndpointResolver EndpointResolverV2
-	BuiltInResolver  builtInParameterResolver
-}
-
-func (*opCreateSecretResolveEndpointMiddleware) ID() string {
-	return "ResolveEndpointV2"
-}
-
-func (m *opCreateSecretResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
-	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
-) {
-	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
-		return next.HandleSerialize(ctx, in)
-	}
-
-	req, ok := in.Request.(*smithyhttp.Request)
-	if !ok {
-		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
-	}
-
-	if m.EndpointResolver == nil {
-		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
-	}
-
-	params := EndpointParameters{}
-
-	m.BuiltInResolver.ResolveBuiltIns(&params)
-
-	var resolvedEndpoint smithyendpoints.Endpoint
-	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
-	if err != nil {
-		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
-	}
-
-	req.URL = &resolvedEndpoint.URI
-
-	for k := range resolvedEndpoint.Headers {
-		req.Header.Set(
-			k,
-			resolvedEndpoint.Headers.Get(k),
-		)
-	}
-
-	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
-	if err != nil {
-		var nfe *internalauth.NoAuthenticationSchemesFoundError
-		if errors.As(err, &nfe) {
-			// if no auth scheme is found, default to sigv4
-			signingName := "secretsmanager"
-			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-
-		}
-		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
-		if errors.As(err, &ue) {
-			return out, metadata, fmt.Errorf(
-				"This operation requests signer version(s) %v but the client only supports %v",
-				ue.UnsupportedSchemes,
-				internalauth.SupportedSchemes,
-			)
-		}
-	}
-
-	for _, authScheme := range authSchemes {
-		switch authScheme.(type) {
-		case *internalauth.AuthenticationSchemeV4:
-			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
-			var signingName, signingRegion string
-			if v4Scheme.SigningName == nil {
-				signingName = "secretsmanager"
-			} else {
-				signingName = *v4Scheme.SigningName
-			}
-			if v4Scheme.SigningRegion == nil {
-				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
-			} else {
-				signingRegion = *v4Scheme.SigningRegion
-			}
-			if v4Scheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-			break
-		case *internalauth.AuthenticationSchemeV4A:
-			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
-			if v4aScheme.SigningName == nil {
-				v4aScheme.SigningName = aws.String("secretsmanager")
-			}
-			if v4aScheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
-			break
-		case *internalauth.AuthenticationSchemeNone:
-			break
-		}
-	}
-
-	return next.HandleSerialize(ctx, in)
-}
-
-func addCreateSecretResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
-	return stack.Serialize.Insert(&opCreateSecretResolveEndpointMiddleware{
-		EndpointResolver: options.EndpointResolverV2,
-		BuiltInResolver: &builtInResolver{
-			Region:       options.Region,
-			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
-			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
-			Endpoint:     options.BaseEndpoint,
-		},
-	}, "ResolveEndpoint", middleware.After)
 }

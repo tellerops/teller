@@ -6,16 +6,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"net/http"
-	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	v4Internal "github.com/aws/aws-sdk-go-v2/aws/signer/internal/v4"
-	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/internal/sdk"
 	"github.com/aws/smithy-go/middleware"
-	smithyhttp "github.com/aws/smithy-go/transport/http"
+	smithyHTTP "github.com/aws/smithy-go/transport/http"
 )
 
 const computePayloadHashMiddlewareID = "ComputePayloadHash"
@@ -47,48 +44,6 @@ func (e *SigningError) Error() string {
 // Unwrap returns the underlying error cause
 func (e *SigningError) Unwrap() error {
 	return e.Err
-}
-
-// UseDynamicPayloadSigningMiddleware swaps the compute payload sha256 middleware with a resolver middleware that
-// switches between unsigned and signed payload based on TLS state for request.
-// This middleware should not be used for AWS APIs that do not support unsigned payload signing auth.
-// By default, SDK uses this middleware for known AWS APIs that support such TLS based auth selection .
-//
-// Usage example -
-// S3 PutObject API allows unsigned payload signing auth usage when TLS is enabled, and uses this middleware to
-// dynamically switch between unsigned and signed payload based on TLS state for request.
-func UseDynamicPayloadSigningMiddleware(stack *middleware.Stack) error {
-	_, err := stack.Build.Swap(computePayloadHashMiddlewareID, &dynamicPayloadSigningMiddleware{})
-	return err
-}
-
-// dynamicPayloadSigningMiddleware dynamically resolves the middleware that computes and set payload sha256 middleware.
-type dynamicPayloadSigningMiddleware struct {
-}
-
-// ID returns the resolver identifier
-func (m *dynamicPayloadSigningMiddleware) ID() string {
-	return computePayloadHashMiddlewareID
-}
-
-// HandleBuild sets a resolver that directs to the payload sha256 compute handler.
-func (m *dynamicPayloadSigningMiddleware) HandleBuild(
-	ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,
-) (
-	out middleware.BuildOutput, metadata middleware.Metadata, err error,
-) {
-	req, ok := in.Request.(*smithyhttp.Request)
-	if !ok {
-		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
-	}
-
-	// if TLS is enabled, use unsigned payload when supported
-	if req.IsHTTPS() {
-		return (&unsignedPayload{}).HandleBuild(ctx, in, next)
-	}
-
-	// else fall back to signed payload
-	return (&computePayloadSHA256{}).HandleBuild(ctx, in, next)
 }
 
 // unsignedPayload sets the SigV4 request payload hash to unsigned.
@@ -165,7 +120,7 @@ func (m *computePayloadSHA256) HandleBuild(
 ) (
 	out middleware.BuildOutput, metadata middleware.Metadata, err error,
 ) {
-	req, ok := in.Request.(*smithyhttp.Request)
+	req, ok := in.Request.(*smithyHTTP.Request)
 	if !ok {
 		return out, metadata, &HashComputationError{
 			Err: fmt.Errorf("unexpected request middleware type %T", in.Request),
@@ -201,16 +156,6 @@ func (m *computePayloadSHA256) HandleBuild(
 	return next.HandleBuild(ctx, in)
 }
 
-// SwapComputePayloadSHA256ForUnsignedPayloadMiddleware replaces the
-// ComputePayloadSHA256 middleware with the UnsignedPayload middleware.
-//
-// Use this to disable computing the Payload SHA256 checksum and instead use
-// UNSIGNED-PAYLOAD for the SHA256 value.
-func SwapComputePayloadSHA256ForUnsignedPayloadMiddleware(stack *middleware.Stack) error {
-	_, err := stack.Build.Swap(computePayloadHashMiddlewareID, &unsignedPayload{})
-	return err
-}
-
 // contentSHA256Header sets the X-Amz-Content-Sha256 header value to
 // the Payload hash stored in the context.
 type contentSHA256Header struct{}
@@ -240,7 +185,7 @@ func (m *contentSHA256Header) HandleBuild(
 ) (
 	out middleware.BuildOutput, metadata middleware.Metadata, err error,
 ) {
-	req, ok := in.Request.(*smithyhttp.Request)
+	req, ok := in.Request.(*smithyHTTP.Request)
 	if !ok {
 		return out, metadata, &HashComputationError{Err: fmt.Errorf("unexpected request middleware type %T", in.Request)}
 	}
@@ -286,7 +231,7 @@ func (s *SignHTTPRequestMiddleware) HandleFinalize(ctx context.Context, in middl
 		return next.HandleFinalize(ctx, in)
 	}
 
-	req, ok := in.Request.(*smithyhttp.Request)
+	req, ok := in.Request.(*smithyHTTP.Request)
 	if !ok {
 		return out, metadata, &SigningError{Err: fmt.Errorf("unexpected request middleware type %T", in.Request)}
 	}
@@ -302,90 +247,29 @@ func (s *SignHTTPRequestMiddleware) HandleFinalize(ctx context.Context, in middl
 		return out, metadata, &SigningError{Err: fmt.Errorf("failed to retrieve credentials: %w", err)}
 	}
 
-	signerOptions := []func(o *SignerOptions){
+	err = s.signer.SignHTTP(ctx, credentials, req.Request, payloadHash, signingName, signingRegion, sdk.NowTime(),
 		func(o *SignerOptions) {
 			o.Logger = middleware.GetLogger(ctx)
 			o.LogSigning = s.logSigning
-		},
-	}
-
-	// existing DisableURIPathEscaping is equivalent in purpose
-	// to authentication scheme property DisableDoubleEncoding
-	disableDoubleEncoding, overridden := internalauth.GetDisableDoubleEncoding(ctx)
-	if overridden {
-		signerOptions = append(signerOptions, func(o *SignerOptions) {
-			o.DisableURIPathEscaping = disableDoubleEncoding
 		})
-	}
-
-	err = s.signer.SignHTTP(ctx, credentials, req.Request, payloadHash, signingName, signingRegion, sdk.NowTime(), signerOptions...)
 	if err != nil {
 		return out, metadata, &SigningError{Err: fmt.Errorf("failed to sign http request, %w", err)}
 	}
 
-	ctx = awsmiddleware.SetSigningCredentials(ctx, credentials)
-
 	return next.HandleFinalize(ctx, in)
-}
-
-type streamingEventsPayload struct{}
-
-// AddStreamingEventsPayload adds the streamingEventsPayload middleware to the stack.
-func AddStreamingEventsPayload(stack *middleware.Stack) error {
-	return stack.Build.Add(&streamingEventsPayload{}, middleware.After)
-}
-
-func (s *streamingEventsPayload) ID() string {
-	return computePayloadHashMiddlewareID
-}
-
-func (s *streamingEventsPayload) HandleBuild(
-	ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,
-) (
-	out middleware.BuildOutput, metadata middleware.Metadata, err error,
-) {
-	contentSHA := GetPayloadHash(ctx)
-	if len(contentSHA) == 0 {
-		contentSHA = v4Internal.StreamingEventsPayload
-	}
-
-	ctx = SetPayloadHash(ctx, contentSHA)
-
-	return next.HandleBuild(ctx, in)
-}
-
-// GetSignedRequestSignature attempts to extract the signature of the request.
-// Returning an error if the request is unsigned, or unable to extract the
-// signature.
-func GetSignedRequestSignature(r *http.Request) ([]byte, error) {
-	const authHeaderSignatureElem = "Signature="
-
-	if auth := r.Header.Get(authorizationHeader); len(auth) != 0 {
-		ps := strings.Split(auth, ", ")
-		for _, p := range ps {
-			if idx := strings.Index(p, authHeaderSignatureElem); idx >= 0 {
-				sig := p[len(authHeaderSignatureElem):]
-				if len(sig) == 0 {
-					return nil, fmt.Errorf("invalid request signature authorization header")
-				}
-				return hex.DecodeString(sig)
-			}
-		}
-	}
-
-	if sig := r.URL.Query().Get("X-Amz-Signature"); len(sig) != 0 {
-		return hex.DecodeString(sig)
-	}
-
-	return nil, fmt.Errorf("request not signed")
 }
 
 func haveCredentialProvider(p aws.CredentialsProvider) bool {
 	if p == nil {
 		return false
 	}
+	switch p.(type) {
+	case aws.AnonymousCredentials,
+		*aws.AnonymousCredentials:
+		return false
+	}
 
-	return !aws.IsCredentialsProvider(p, (*aws.AnonymousCredentials)(nil))
+	return true
 }
 
 type payloadHashKey struct{}

@@ -46,13 +46,11 @@ func (r *RequestResponseLogger) HandleDeserialize(
 
 		logger.Logf(logging.Debug, "Request\n%v", string(reqBytes))
 
-		if r.LogRequestWithBody {
-			smithyRequest, err = smithyRequest.SetStream(rc.Body)
-			if err != nil {
-				return out, metadata, err
-			}
-			in.Request = smithyRequest
+		smithyRequest, err = smithyRequest.SetStream(rc.Body)
+		if err != nil {
+			return out, metadata, err
 		}
+		in.Request = smithyRequest
 	}
 
 	out, metadata, err = next.HandleDeserialize(ctx, in)

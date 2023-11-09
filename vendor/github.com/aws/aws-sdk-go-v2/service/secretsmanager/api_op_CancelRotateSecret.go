@@ -4,40 +4,57 @@ package secretsmanager
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Turns off automatic rotation, and if a rotation is currently in progress,
-// cancels the rotation. If you cancel a rotation in progress, it can leave the
-// VersionStage labels in an unexpected state. You might need to remove the staging
-// label AWSPENDING from the partially created version. You also need to determine
-// whether to roll back to the previous version of the secret by moving the staging
-// label AWSCURRENT to the version that has AWSPENDING . To determine which version
-// has a specific staging label, call ListSecretVersionIds . Then use
-// UpdateSecretVersionStage to change staging labels. For more information, see
-// How rotation works (https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotate-secrets_how.html)
-// . To turn on automatic rotation again, call RotateSecret . Secrets Manager
-// generates a CloudTrail log entry when you call this action. Do not include
-// sensitive information in request parameters because it might be logged. For more
-// information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
-// . Required permissions: secretsmanager:CancelRotateSecret . For more
-// information, see IAM policy actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
-// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
-// .
+// Disables automatic scheduled rotation and cancels the rotation of a secret if
+// currently in progress. To re-enable scheduled rotation, call RotateSecret with
+// AutomaticallyRotateAfterDays set to a value greater than 0. This immediately
+// rotates your secret and then enables the automatic schedule. If you cancel a
+// rotation while in progress, it can leave the VersionStage labels in an
+// unexpected state. Depending on the step of the rotation in progress, you might
+// need to remove the staging label AWSPENDING from the partially created version,
+// specified by the VersionId response value. You should also evaluate the
+// partially rotated new version to see if it should be deleted, which you can do
+// by removing all staging labels from the new version VersionStage field. To
+// successfully start a rotation, the staging label AWSPENDING must be in one of
+// the following states:
+//
+// * Not attached to any version at all
+//
+// * Attached to the
+// same version as the staging label AWSCURRENT
+//
+// If the staging label AWSPENDING
+// attached to a different version than the version with AWSCURRENT then the
+// attempt to rotate fails. Minimum permissions To run this command, you must have
+// the following permissions:
+//
+// * secretsmanager:CancelRotateSecret
+//
+// Related
+// operations
+//
+// * To configure rotation for a secret or to manually trigger a
+// rotation, use RotateSecret.
+//
+// * To get the rotation configuration details for a
+// secret, use DescribeSecret.
+//
+// * To list all of the currently available secrets,
+// use ListSecrets.
+//
+// * To list all of the versions currently associated with a
+// secret, use ListSecretVersionIds.
 func (c *Client) CancelRotateSecret(ctx context.Context, params *CancelRotateSecretInput, optFns ...func(*Options)) (*CancelRotateSecretOutput, error) {
 	if params == nil {
 		params = &CancelRotateSecretInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "CancelRotateSecret", params, optFns, c.addOperationCancelRotateSecretMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "CancelRotateSecret", params, optFns, addOperationCancelRotateSecretMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -49,47 +66,54 @@ func (c *Client) CancelRotateSecret(ctx context.Context, params *CancelRotateSec
 
 type CancelRotateSecretInput struct {
 
-	// The ARN or name of the secret. For an ARN, we recommend that you specify a
-	// complete ARN rather than a partial ARN. See Finding a secret from a partial ARN (https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html#ARN_secretnamehyphen)
-	// .
+	// Specifies the secret to cancel a rotation request. You can specify either the
+	// Amazon Resource Name (ARN) or the friendly name of the secret. If you specify an
+	// ARN, we generally recommend that you specify a complete ARN. You can specify a
+	// partial ARN too—for example, if you don’t include the final hyphen and six
+	// random characters that Secrets Manager adds at the end of the ARN when you
+	// created the secret. A partial ARN match can work as long as it uniquely matches
+	// only one secret. However, if your secret has a name that ends in a hyphen
+	// followed by six characters (before Secrets Manager adds the hyphen and six
+	// characters to the ARN) and you try to use that as a partial ARN, then those
+	// characters cause Secrets Manager to assume that you’re specifying a complete
+	// ARN. This confusion can cause unexpected results. To avoid this situation, we
+	// recommend that you don’t create secret names ending with a hyphen followed by
+	// six characters. If you specify an incomplete ARN without the random suffix, and
+	// instead provide the 'friendly name', you must not include the random suffix. If
+	// you do include the random suffix added by Secrets Manager, you receive either a
+	// ResourceNotFoundException or an AccessDeniedException error, depending on your
+	// permissions.
 	//
 	// This member is required.
 	SecretId *string
-
-	noSmithyDocumentSerde
 }
 
 type CancelRotateSecretOutput struct {
 
-	// The ARN of the secret.
+	// The ARN of the secret for which rotation was canceled.
 	ARN *string
 
-	// The name of the secret.
+	// The friendly name of the secret for which rotation was canceled.
 	Name *string
 
 	// The unique identifier of the version of the secret created during the rotation.
 	// This version might not be complete, and should be evaluated for possible
-	// deletion. We recommend that you remove the VersionStage value AWSPENDING from
-	// this version so that Secrets Manager can delete it. Failing to clean up a
-	// cancelled rotation can block you from starting future rotations.
+	// deletion. At the very least, you should remove the VersionStage value AWSPENDING
+	// to enable this version to be deleted. Failing to clean up a cancelled rotation
+	// can block you from successfully starting future rotations.
 	VersionId *string
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
-
-	noSmithyDocumentSerde
 }
 
-func (c *Client) addOperationCancelRotateSecretMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func addOperationCancelRotateSecretMiddlewares(stack *middleware.Stack, options Options) (err error) {
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpCancelRotateSecret{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpCancelRotateSecret{}, middleware.After)
 	if err != nil {
-		return err
-	}
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -119,7 +143,7 @@ func (c *Client) addOperationCancelRotateSecretMiddlewares(stack *middleware.Sta
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack, options); err != nil {
+	if err = addClientUserAgent(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -128,16 +152,10 @@ func (c *Client) addOperationCancelRotateSecretMiddlewares(stack *middleware.Sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addCancelRotateSecretResolveEndpointMiddleware(stack, options); err != nil {
-		return err
-	}
 	if err = addOpCancelRotateSecretValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCancelRotateSecret(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -147,9 +165,6 @@ func (c *Client) addOperationCancelRotateSecretMiddlewares(stack *middleware.Sta
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
-		return err
-	}
-	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -162,127 +177,4 @@ func newServiceMetadataMiddleware_opCancelRotateSecret(region string) *awsmiddle
 		SigningName:   "secretsmanager",
 		OperationName: "CancelRotateSecret",
 	}
-}
-
-type opCancelRotateSecretResolveEndpointMiddleware struct {
-	EndpointResolver EndpointResolverV2
-	BuiltInResolver  builtInParameterResolver
-}
-
-func (*opCancelRotateSecretResolveEndpointMiddleware) ID() string {
-	return "ResolveEndpointV2"
-}
-
-func (m *opCancelRotateSecretResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
-	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
-) {
-	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
-		return next.HandleSerialize(ctx, in)
-	}
-
-	req, ok := in.Request.(*smithyhttp.Request)
-	if !ok {
-		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
-	}
-
-	if m.EndpointResolver == nil {
-		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
-	}
-
-	params := EndpointParameters{}
-
-	m.BuiltInResolver.ResolveBuiltIns(&params)
-
-	var resolvedEndpoint smithyendpoints.Endpoint
-	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
-	if err != nil {
-		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
-	}
-
-	req.URL = &resolvedEndpoint.URI
-
-	for k := range resolvedEndpoint.Headers {
-		req.Header.Set(
-			k,
-			resolvedEndpoint.Headers.Get(k),
-		)
-	}
-
-	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
-	if err != nil {
-		var nfe *internalauth.NoAuthenticationSchemesFoundError
-		if errors.As(err, &nfe) {
-			// if no auth scheme is found, default to sigv4
-			signingName := "secretsmanager"
-			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-
-		}
-		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
-		if errors.As(err, &ue) {
-			return out, metadata, fmt.Errorf(
-				"This operation requests signer version(s) %v but the client only supports %v",
-				ue.UnsupportedSchemes,
-				internalauth.SupportedSchemes,
-			)
-		}
-	}
-
-	for _, authScheme := range authSchemes {
-		switch authScheme.(type) {
-		case *internalauth.AuthenticationSchemeV4:
-			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
-			var signingName, signingRegion string
-			if v4Scheme.SigningName == nil {
-				signingName = "secretsmanager"
-			} else {
-				signingName = *v4Scheme.SigningName
-			}
-			if v4Scheme.SigningRegion == nil {
-				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
-			} else {
-				signingRegion = *v4Scheme.SigningRegion
-			}
-			if v4Scheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-			break
-		case *internalauth.AuthenticationSchemeV4A:
-			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
-			if v4aScheme.SigningName == nil {
-				v4aScheme.SigningName = aws.String("secretsmanager")
-			}
-			if v4aScheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
-			break
-		case *internalauth.AuthenticationSchemeNone:
-			break
-		}
-	}
-
-	return next.HandleSerialize(ctx, in)
-}
-
-func addCancelRotateSecretResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
-	return stack.Serialize.Insert(&opCancelRotateSecretResolveEndpointMiddleware{
-		EndpointResolver: options.EndpointResolverV2,
-		BuiltInResolver: &builtInResolver{
-			Region:       options.Region,
-			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
-			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
-			Endpoint:     options.BaseEndpoint,
-		},
-	}, "ResolveEndpoint", middleware.After)
 }

@@ -4,26 +4,20 @@ package ssm
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Information about approval reviews for a version of a change template in Change
-// Manager.
+// Information about approval reviews for a version of an SSM document.
 func (c *Client) ListDocumentMetadataHistory(ctx context.Context, params *ListDocumentMetadataHistoryInput, optFns ...func(*Options)) (*ListDocumentMetadataHistoryOutput, error) {
 	if params == nil {
 		params = &ListDocumentMetadataHistoryInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "ListDocumentMetadataHistory", params, optFns, c.addOperationListDocumentMetadataHistoryMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "ListDocumentMetadataHistory", params, optFns, addOperationListDocumentMetadataHistoryMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -36,43 +30,40 @@ func (c *Client) ListDocumentMetadataHistory(ctx context.Context, params *ListDo
 type ListDocumentMetadataHistoryInput struct {
 
 	// The type of data for which details are being requested. Currently, the only
-	// supported value is DocumentReviews .
+	// supported value is DocumentReviews.
 	//
 	// This member is required.
 	Metadata types.DocumentMetadataEnum
 
-	// The name of the change template.
+	// The name of the document.
 	//
 	// This member is required.
 	Name *string
 
-	// The version of the change template.
+	// The version of the document.
 	DocumentVersion *string
 
 	// The maximum number of items to return for this call. The call also returns a
 	// token that you can specify in a subsequent call to get the next set of results.
-	MaxResults *int32
+	MaxResults int32
 
 	// The token for the next set of items to return. (You received this token from a
 	// previous call.)
 	NextToken *string
-
-	noSmithyDocumentSerde
 }
 
 type ListDocumentMetadataHistoryOutput struct {
 
-	// The user ID of the person in the organization who requested the review of the
-	// change template.
+	// The user ID of the person in the organization who requested the document review.
 	Author *string
 
-	// The version of the change template.
+	// The version of the document.
 	DocumentVersion *string
 
-	// Information about the response to the change template approval request.
+	// Information about the response to the document approval request.
 	Metadata *types.DocumentMetadataResponseInfo
 
-	// The name of the change template.
+	// The name of the document.
 	Name *string
 
 	// The maximum number of items to return for this call. The call also returns a
@@ -81,20 +72,15 @@ type ListDocumentMetadataHistoryOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
-
-	noSmithyDocumentSerde
 }
 
-func (c *Client) addOperationListDocumentMetadataHistoryMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func addOperationListDocumentMetadataHistoryMiddlewares(stack *middleware.Stack, options Options) (err error) {
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListDocumentMetadataHistory{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpListDocumentMetadataHistory{}, middleware.After)
 	if err != nil {
-		return err
-	}
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -124,7 +110,7 @@ func (c *Client) addOperationListDocumentMetadataHistoryMiddlewares(stack *middl
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack, options); err != nil {
+	if err = addClientUserAgent(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -133,16 +119,10 @@ func (c *Client) addOperationListDocumentMetadataHistoryMiddlewares(stack *middl
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addListDocumentMetadataHistoryResolveEndpointMiddleware(stack, options); err != nil {
-		return err
-	}
 	if err = addOpListDocumentMetadataHistoryValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListDocumentMetadataHistory(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -152,9 +132,6 @@ func (c *Client) addOperationListDocumentMetadataHistoryMiddlewares(stack *middl
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
-		return err
-	}
-	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -167,127 +144,4 @@ func newServiceMetadataMiddleware_opListDocumentMetadataHistory(region string) *
 		SigningName:   "ssm",
 		OperationName: "ListDocumentMetadataHistory",
 	}
-}
-
-type opListDocumentMetadataHistoryResolveEndpointMiddleware struct {
-	EndpointResolver EndpointResolverV2
-	BuiltInResolver  builtInParameterResolver
-}
-
-func (*opListDocumentMetadataHistoryResolveEndpointMiddleware) ID() string {
-	return "ResolveEndpointV2"
-}
-
-func (m *opListDocumentMetadataHistoryResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
-	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
-) {
-	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
-		return next.HandleSerialize(ctx, in)
-	}
-
-	req, ok := in.Request.(*smithyhttp.Request)
-	if !ok {
-		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
-	}
-
-	if m.EndpointResolver == nil {
-		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
-	}
-
-	params := EndpointParameters{}
-
-	m.BuiltInResolver.ResolveBuiltIns(&params)
-
-	var resolvedEndpoint smithyendpoints.Endpoint
-	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
-	if err != nil {
-		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
-	}
-
-	req.URL = &resolvedEndpoint.URI
-
-	for k := range resolvedEndpoint.Headers {
-		req.Header.Set(
-			k,
-			resolvedEndpoint.Headers.Get(k),
-		)
-	}
-
-	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
-	if err != nil {
-		var nfe *internalauth.NoAuthenticationSchemesFoundError
-		if errors.As(err, &nfe) {
-			// if no auth scheme is found, default to sigv4
-			signingName := "ssm"
-			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-
-		}
-		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
-		if errors.As(err, &ue) {
-			return out, metadata, fmt.Errorf(
-				"This operation requests signer version(s) %v but the client only supports %v",
-				ue.UnsupportedSchemes,
-				internalauth.SupportedSchemes,
-			)
-		}
-	}
-
-	for _, authScheme := range authSchemes {
-		switch authScheme.(type) {
-		case *internalauth.AuthenticationSchemeV4:
-			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
-			var signingName, signingRegion string
-			if v4Scheme.SigningName == nil {
-				signingName = "ssm"
-			} else {
-				signingName = *v4Scheme.SigningName
-			}
-			if v4Scheme.SigningRegion == nil {
-				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
-			} else {
-				signingRegion = *v4Scheme.SigningRegion
-			}
-			if v4Scheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-			break
-		case *internalauth.AuthenticationSchemeV4A:
-			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
-			if v4aScheme.SigningName == nil {
-				v4aScheme.SigningName = aws.String("ssm")
-			}
-			if v4aScheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
-			break
-		case *internalauth.AuthenticationSchemeNone:
-			break
-		}
-	}
-
-	return next.HandleSerialize(ctx, in)
-}
-
-func addListDocumentMetadataHistoryResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
-	return stack.Serialize.Insert(&opListDocumentMetadataHistoryResolveEndpointMiddleware{
-		EndpointResolver: options.EndpointResolverV2,
-		BuiltInResolver: &builtInResolver{
-			Region:       options.Region,
-			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
-			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
-			Endpoint:     options.BaseEndpoint,
-		},
-	}, "ResolveEndpoint", middleware.After)
 }

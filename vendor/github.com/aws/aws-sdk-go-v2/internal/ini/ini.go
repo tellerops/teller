@@ -1,27 +1,18 @@
 package ini
 
 import (
-	"fmt"
 	"io"
 	"os"
 )
 
 // OpenFile takes a path to a given file, and will open  and parse
 // that file.
-func OpenFile(path string) (sections Sections, err error) {
-	f, oerr := os.Open(path)
-	if oerr != nil {
-		return Sections{}, &UnableToReadFile{Err: oerr}
+func OpenFile(path string) (Sections, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return Sections{}, &UnableToReadFile{Err: err}
 	}
-
-	defer func() {
-		closeErr := f.Close()
-		if err == nil {
-			err = closeErr
-		} else if closeErr != nil {
-			err = fmt.Errorf("close error: %v, original error: %w", closeErr, err)
-		}
-	}()
+	defer f.Close()
 
 	return Parse(f, path)
 }

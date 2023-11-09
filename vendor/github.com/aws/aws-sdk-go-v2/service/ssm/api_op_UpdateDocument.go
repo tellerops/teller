@@ -4,14 +4,9 @@ package ssm
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -22,7 +17,7 @@ func (c *Client) UpdateDocument(ctx context.Context, params *UpdateDocumentInput
 		params = &UpdateDocumentInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "UpdateDocument", params, optFns, c.addOperationUpdateDocumentMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "UpdateDocument", params, optFns, addOperationUpdateDocumentMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -39,30 +34,22 @@ type UpdateDocumentInput struct {
 	// This member is required.
 	Content *string
 
-	// The name of the SSM document that you want to update.
+	// The name of the document that you want to update.
 	//
 	// This member is required.
 	Name *string
 
-	// A list of key-value pairs that describe attachments to a version of a document.
+	// A list of key and value pairs that describe attachments to a version of a
+	// document.
 	Attachments []types.AttachmentsSource
-
-	// The friendly name of the SSM document that you want to update. This value can
-	// differ for each version of the document. If you don't specify a value for this
-	// parameter in your request, the existing value is applied to the new document
-	// version.
-	DisplayName *string
 
 	// Specify the document format for the new document version. Systems Manager
 	// supports JSON and YAML documents. JSON is the default format.
 	DocumentFormat types.DocumentFormat
 
-	// The version of the document that you want to update. Currently, Systems Manager
-	// supports updating only the latest version of the document. You can specify the
-	// version number of the latest version or use the $LATEST variable. If you change
-	// a document version for a State Manager association, Systems Manager immediately
-	// runs the association unless you previously specifed the
-	// apply-only-at-cron-interval parameter.
+	// (Required) The latest version of the document that you want to update. The
+	// latest document version can be specified using the $LATEST variable or by the
+	// version number. Updating a previous version of a document is not supported.
 	DocumentVersion *string
 
 	// Specify a new target type for the document.
@@ -70,10 +57,8 @@ type UpdateDocumentInput struct {
 
 	// An optional field specifying the version of the artifact you are updating with
 	// the document. For example, "Release 12, Update 6". This value is unique across
-	// all versions of a document, and can't be changed.
+	// all versions of a document, and cannot be changed.
 	VersionName *string
-
-	noSmithyDocumentSerde
 }
 
 type UpdateDocumentOutput struct {
@@ -83,20 +68,15 @@ type UpdateDocumentOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
-
-	noSmithyDocumentSerde
 }
 
-func (c *Client) addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, options Options) (err error) {
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdateDocument{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpUpdateDocument{}, middleware.After)
 	if err != nil {
-		return err
-	}
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -126,7 +106,7 @@ func (c *Client) addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, 
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack, options); err != nil {
+	if err = addClientUserAgent(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -135,16 +115,10 @@ func (c *Client) addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, 
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addUpdateDocumentResolveEndpointMiddleware(stack, options); err != nil {
-		return err
-	}
 	if err = addOpUpdateDocumentValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdateDocument(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -154,9 +128,6 @@ func (c *Client) addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, 
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
-		return err
-	}
-	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -169,127 +140,4 @@ func newServiceMetadataMiddleware_opUpdateDocument(region string) *awsmiddleware
 		SigningName:   "ssm",
 		OperationName: "UpdateDocument",
 	}
-}
-
-type opUpdateDocumentResolveEndpointMiddleware struct {
-	EndpointResolver EndpointResolverV2
-	BuiltInResolver  builtInParameterResolver
-}
-
-func (*opUpdateDocumentResolveEndpointMiddleware) ID() string {
-	return "ResolveEndpointV2"
-}
-
-func (m *opUpdateDocumentResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
-	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
-) {
-	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
-		return next.HandleSerialize(ctx, in)
-	}
-
-	req, ok := in.Request.(*smithyhttp.Request)
-	if !ok {
-		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
-	}
-
-	if m.EndpointResolver == nil {
-		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
-	}
-
-	params := EndpointParameters{}
-
-	m.BuiltInResolver.ResolveBuiltIns(&params)
-
-	var resolvedEndpoint smithyendpoints.Endpoint
-	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
-	if err != nil {
-		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
-	}
-
-	req.URL = &resolvedEndpoint.URI
-
-	for k := range resolvedEndpoint.Headers {
-		req.Header.Set(
-			k,
-			resolvedEndpoint.Headers.Get(k),
-		)
-	}
-
-	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
-	if err != nil {
-		var nfe *internalauth.NoAuthenticationSchemesFoundError
-		if errors.As(err, &nfe) {
-			// if no auth scheme is found, default to sigv4
-			signingName := "ssm"
-			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-
-		}
-		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
-		if errors.As(err, &ue) {
-			return out, metadata, fmt.Errorf(
-				"This operation requests signer version(s) %v but the client only supports %v",
-				ue.UnsupportedSchemes,
-				internalauth.SupportedSchemes,
-			)
-		}
-	}
-
-	for _, authScheme := range authSchemes {
-		switch authScheme.(type) {
-		case *internalauth.AuthenticationSchemeV4:
-			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
-			var signingName, signingRegion string
-			if v4Scheme.SigningName == nil {
-				signingName = "ssm"
-			} else {
-				signingName = *v4Scheme.SigningName
-			}
-			if v4Scheme.SigningRegion == nil {
-				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
-			} else {
-				signingRegion = *v4Scheme.SigningRegion
-			}
-			if v4Scheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-			break
-		case *internalauth.AuthenticationSchemeV4A:
-			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
-			if v4aScheme.SigningName == nil {
-				v4aScheme.SigningName = aws.String("ssm")
-			}
-			if v4aScheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
-			break
-		case *internalauth.AuthenticationSchemeNone:
-			break
-		}
-	}
-
-	return next.HandleSerialize(ctx, in)
-}
-
-func addUpdateDocumentResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
-	return stack.Serialize.Insert(&opUpdateDocumentResolveEndpointMiddleware{
-		EndpointResolver: options.EndpointResolverV2,
-		BuiltInResolver: &builtInResolver{
-			Region:       options.Region,
-			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
-			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
-			Endpoint:     options.BaseEndpoint,
-		},
-	}, "ResolveEndpoint", middleware.After)
 }

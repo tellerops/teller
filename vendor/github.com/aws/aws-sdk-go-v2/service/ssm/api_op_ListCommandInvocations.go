@@ -4,29 +4,25 @@ package ssm
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// An invocation is copy of a command sent to a specific managed node. A command
-// can apply to one or more managed nodes. A command invocation applies to one
-// managed node. For example, if a user runs SendCommand against three managed
-// nodes, then a command invocation is created for each requested managed node ID.
-// ListCommandInvocations provide status about command execution.
+// An invocation is copy of a command sent to a specific instance. A command can
+// apply to one or more instances. A command invocation applies to one instance.
+// For example, if a user runs SendCommand against three instances, then a command
+// invocation is created for each requested instance ID. ListCommandInvocations
+// provide status about command execution.
 func (c *Client) ListCommandInvocations(ctx context.Context, params *ListCommandInvocationsInput, optFns ...func(*Options)) (*ListCommandInvocationsOutput, error) {
 	if params == nil {
 		params = &ListCommandInvocationsInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "ListCommandInvocations", params, optFns, c.addOperationListCommandInvocationsMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "ListCommandInvocations", params, optFns, addOperationListCommandInvocationsMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -42,26 +38,24 @@ type ListCommandInvocationsInput struct {
 	CommandId *string
 
 	// (Optional) If set this returns the response of the command executions and any
-	// command output. The default value is false .
+	// command output. By default this is set to False.
 	Details bool
 
 	// (Optional) One or more filters. Use a filter to return a more specific list of
 	// results.
 	Filters []types.CommandFilter
 
-	// (Optional) The command execution details for a specific managed node ID.
+	// (Optional) The command execution details for a specific instance ID.
 	InstanceId *string
 
 	// (Optional) The maximum number of items to return for this call. The call also
 	// returns a token that you can specify in a subsequent call to get the next set of
 	// results.
-	MaxResults *int32
+	MaxResults int32
 
 	// (Optional) The token for the next set of items to return. (You received this
 	// token from a previous call.)
 	NextToken *string
-
-	noSmithyDocumentSerde
 }
 
 type ListCommandInvocationsOutput struct {
@@ -75,20 +69,15 @@ type ListCommandInvocationsOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
-
-	noSmithyDocumentSerde
 }
 
-func (c *Client) addOperationListCommandInvocationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func addOperationListCommandInvocationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListCommandInvocations{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpListCommandInvocations{}, middleware.After)
 	if err != nil {
-		return err
-	}
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -118,7 +107,7 @@ func (c *Client) addOperationListCommandInvocationsMiddlewares(stack *middleware
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack, options); err != nil {
+	if err = addClientUserAgent(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -127,16 +116,10 @@ func (c *Client) addOperationListCommandInvocationsMiddlewares(stack *middleware
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addListCommandInvocationsResolveEndpointMiddleware(stack, options); err != nil {
-		return err
-	}
 	if err = addOpListCommandInvocationsValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListCommandInvocations(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -146,9 +129,6 @@ func (c *Client) addOperationListCommandInvocationsMiddlewares(stack *middleware
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
-		return err
-	}
-	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -186,17 +166,17 @@ type ListCommandInvocationsPaginator struct {
 
 // NewListCommandInvocationsPaginator returns a new ListCommandInvocationsPaginator
 func NewListCommandInvocationsPaginator(client ListCommandInvocationsAPIClient, params *ListCommandInvocationsInput, optFns ...func(*ListCommandInvocationsPaginatorOptions)) *ListCommandInvocationsPaginator {
-	if params == nil {
-		params = &ListCommandInvocationsInput{}
-	}
-
 	options := ListCommandInvocationsPaginatorOptions{}
-	if params.MaxResults != nil {
-		options.Limit = *params.MaxResults
+	if params.MaxResults != 0 {
+		options.Limit = params.MaxResults
 	}
 
 	for _, fn := range optFns {
 		fn(&options)
+	}
+
+	if params == nil {
+		params = &ListCommandInvocationsInput{}
 	}
 
 	return &ListCommandInvocationsPaginator{
@@ -204,13 +184,12 @@ func NewListCommandInvocationsPaginator(client ListCommandInvocationsAPIClient, 
 		client:    client,
 		params:    params,
 		firstPage: true,
-		nextToken: params.NextToken,
 	}
 }
 
 // HasMorePages returns a boolean indicating whether more pages are available
 func (p *ListCommandInvocationsPaginator) HasMorePages() bool {
-	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
+	return p.firstPage || p.nextToken != nil
 }
 
 // NextPage retrieves the next ListCommandInvocations page.
@@ -222,11 +201,7 @@ func (p *ListCommandInvocationsPaginator) NextPage(ctx context.Context, optFns .
 	params := *p.params
 	params.NextToken = p.nextToken
 
-	var limit *int32
-	if p.options.Limit > 0 {
-		limit = &p.options.Limit
-	}
-	params.MaxResults = limit
+	params.MaxResults = p.options.Limit
 
 	result, err := p.client.ListCommandInvocations(ctx, &params, optFns...)
 	if err != nil {
@@ -237,10 +212,7 @@ func (p *ListCommandInvocationsPaginator) NextPage(ctx context.Context, optFns .
 	prevToken := p.nextToken
 	p.nextToken = result.NextToken
 
-	if p.options.StopOnDuplicateToken &&
-		prevToken != nil &&
-		p.nextToken != nil &&
-		*prevToken == *p.nextToken {
+	if p.options.StopOnDuplicateToken && prevToken != nil && p.nextToken != nil && *prevToken == *p.nextToken {
 		p.nextToken = nil
 	}
 
@@ -254,127 +226,4 @@ func newServiceMetadataMiddleware_opListCommandInvocations(region string) *awsmi
 		SigningName:   "ssm",
 		OperationName: "ListCommandInvocations",
 	}
-}
-
-type opListCommandInvocationsResolveEndpointMiddleware struct {
-	EndpointResolver EndpointResolverV2
-	BuiltInResolver  builtInParameterResolver
-}
-
-func (*opListCommandInvocationsResolveEndpointMiddleware) ID() string {
-	return "ResolveEndpointV2"
-}
-
-func (m *opListCommandInvocationsResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
-	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
-) {
-	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
-		return next.HandleSerialize(ctx, in)
-	}
-
-	req, ok := in.Request.(*smithyhttp.Request)
-	if !ok {
-		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
-	}
-
-	if m.EndpointResolver == nil {
-		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
-	}
-
-	params := EndpointParameters{}
-
-	m.BuiltInResolver.ResolveBuiltIns(&params)
-
-	var resolvedEndpoint smithyendpoints.Endpoint
-	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
-	if err != nil {
-		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
-	}
-
-	req.URL = &resolvedEndpoint.URI
-
-	for k := range resolvedEndpoint.Headers {
-		req.Header.Set(
-			k,
-			resolvedEndpoint.Headers.Get(k),
-		)
-	}
-
-	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
-	if err != nil {
-		var nfe *internalauth.NoAuthenticationSchemesFoundError
-		if errors.As(err, &nfe) {
-			// if no auth scheme is found, default to sigv4
-			signingName := "ssm"
-			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-
-		}
-		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
-		if errors.As(err, &ue) {
-			return out, metadata, fmt.Errorf(
-				"This operation requests signer version(s) %v but the client only supports %v",
-				ue.UnsupportedSchemes,
-				internalauth.SupportedSchemes,
-			)
-		}
-	}
-
-	for _, authScheme := range authSchemes {
-		switch authScheme.(type) {
-		case *internalauth.AuthenticationSchemeV4:
-			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
-			var signingName, signingRegion string
-			if v4Scheme.SigningName == nil {
-				signingName = "ssm"
-			} else {
-				signingName = *v4Scheme.SigningName
-			}
-			if v4Scheme.SigningRegion == nil {
-				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
-			} else {
-				signingRegion = *v4Scheme.SigningRegion
-			}
-			if v4Scheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-			break
-		case *internalauth.AuthenticationSchemeV4A:
-			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
-			if v4aScheme.SigningName == nil {
-				v4aScheme.SigningName = aws.String("ssm")
-			}
-			if v4aScheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
-			break
-		case *internalauth.AuthenticationSchemeNone:
-			break
-		}
-	}
-
-	return next.HandleSerialize(ctx, in)
-}
-
-func addListCommandInvocationsResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
-	return stack.Serialize.Insert(&opListCommandInvocationsResolveEndpointMiddleware{
-		EndpointResolver: options.EndpointResolverV2,
-		BuiltInResolver: &builtInResolver{
-			Region:       options.Region,
-			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
-			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
-			Endpoint:     options.BaseEndpoint,
-		},
-	}, "ResolveEndpoint", middleware.After)
 }

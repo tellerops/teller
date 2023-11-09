@@ -63,10 +63,7 @@ func (v *DefaultVisitor) VisitExpr(expr AST) error {
 
 			rhs := children[1]
 
-			// The right-hand value side the equality expression is allowed to contain '[', ']', ':', '=' in the values.
-			// If the token is not either a literal or one of the token types that identifies those four additional
-			// tokens then error.
-			if !(rhs.Root.Type() == TokenLit || rhs.Root.Type() == TokenOp || rhs.Root.Type() == TokenSep) {
+			if rhs.Root.Type() != TokenLit {
 				return NewParseError("unexpected token type")
 			}
 
@@ -123,6 +120,8 @@ func (v *DefaultVisitor) VisitStatement(stmt AST) error {
 			name = names[0] + " " + strings.TrimLeft(names[1], " ")
 		}
 
+		// lower casing name to handle duplicates correctly.
+		name = strings.ToLower(name)
 		// attach profile name on section
 		if !v.Sections.HasSection(name) {
 			v.Sections.container[name] = NewSection(name)
@@ -220,20 +219,6 @@ func NewSection(name string) Section {
 	}
 }
 
-// List will return a list of all
-// services in values
-func (t Section) List() []string {
-	keys := make([]string, len(t.values))
-	i := 0
-	for k := range t.values {
-		keys[i] = k
-		i++
-	}
-
-	sort.Strings(keys)
-	return keys
-}
-
 // UpdateSourceFile updates source file for a property to provided filepath.
 func (t Section) UpdateSourceFile(property string, filepath string) {
 	t.SourceFile[property] = filepath
@@ -259,22 +244,17 @@ func (t Section) ValueType(k string) (ValueType, bool) {
 }
 
 // Bool returns a bool value at k
-func (t Section) Bool(k string) (bool, bool) {
+func (t Section) Bool(k string) bool {
 	return t.values[k].BoolValue()
 }
 
 // Int returns an integer value at k
-func (t Section) Int(k string) (int64, bool) {
+func (t Section) Int(k string) int64 {
 	return t.values[k].IntValue()
 }
 
-// Map returns a map value at k
-func (t Section) Map(k string) map[string]string {
-	return t.values[k].MapValue()
-}
-
 // Float64 returns a float value at k
-func (t Section) Float64(k string) (float64, bool) {
+func (t Section) Float64(k string) float64 {
 	return t.values[k].FloatValue()
 }
 

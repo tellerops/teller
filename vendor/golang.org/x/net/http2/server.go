@@ -843,13 +843,8 @@ type frameWriteResult struct {
 // and then reports when it's done.
 // At most one goroutine can be running writeFrameAsync at a time per
 // serverConn.
-func (sc *serverConn) writeFrameAsync(wr FrameWriteRequest, wd *writeData) {
-	var err error
-	if wd == nil {
-		err = wr.write.writeFrame(sc)
-	} else {
-		err = sc.framer.endWrite()
-	}
+func (sc *serverConn) writeFrameAsync(wr FrameWriteRequest) {
+	err := wr.write.writeFrame(sc)
 	sc.wroteFrameCh <- frameWriteResult{wr: wr, err: err}
 }
 
@@ -1256,16 +1251,9 @@ func (sc *serverConn) startFrameWrite(wr FrameWriteRequest) {
 		sc.writingFrameAsync = false
 		err := wr.write.writeFrame(sc)
 		sc.wroteFrame(frameWriteResult{wr: wr, err: err})
-	} else if wd, ok := wr.write.(*writeData); ok {
-		// Encode the frame in the serve goroutine, to ensure we don't have
-		// any lingering asynchronous references to data passed to Write.
-		// See https://go.dev/issue/58446.
-		sc.framer.startWriteDataPadded(wd.streamID, wd.endStream, wd.p, nil)
-		sc.writingFrameAsync = true
-		go sc.writeFrameAsync(wr, wd)
 	} else {
 		sc.writingFrameAsync = true
-		go sc.writeFrameAsync(wr, nil)
+		go sc.writeFrameAsync(wr)
 	}
 }
 
@@ -1822,18 +1810,15 @@ func (sc *serverConn) processData(f *DataFrame) error {
 		}
 
 		if len(data) > 0 {
-			st.bodyBytes += int64(len(data))
 			wrote, err := st.body.Write(data)
 			if err != nil {
-				// The handler has closed the request body.
-				// Return the connection-level flow control for the discarded data,
-				// but not the stream-level flow control.
 				sc.sendWindowUpdate(nil, int(f.Length)-wrote)
-				return nil
+				return sc.countError("body_write_err", streamError(id, ErrCodeStreamClosed))
 			}
 			if wrote != len(data) {
 				panic("internal error: bad Writer")
 			}
+			st.bodyBytes += int64(len(data))
 		}
 
 		// Return any padded flow control now, since we won't

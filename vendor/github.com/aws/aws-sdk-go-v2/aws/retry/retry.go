@@ -1,7 +1,6 @@
 package retry
 
 import (
-	"context"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -18,13 +17,13 @@ func AddWithErrorCodes(r aws.Retryer, codes ...string) aws.Retryer {
 	}
 
 	return &withIsErrorRetryable{
-		RetryerV2: wrapAsRetryerV2(r),
+		Retryer:   r,
 		Retryable: retryable,
 	}
 }
 
 type withIsErrorRetryable struct {
-	aws.RetryerV2
+	aws.Retryer
 	Retryable IsErrorRetryable
 }
 
@@ -32,20 +31,20 @@ func (r *withIsErrorRetryable) IsErrorRetryable(err error) bool {
 	if v := r.Retryable.IsErrorRetryable(err); v != aws.UnknownTernary {
 		return v.Bool()
 	}
-	return r.RetryerV2.IsErrorRetryable(err)
+	return r.Retryer.IsErrorRetryable(err)
 }
 
 // AddWithMaxAttempts returns a Retryer with MaxAttempts set to the value
 // specified.
 func AddWithMaxAttempts(r aws.Retryer, max int) aws.Retryer {
 	return &withMaxAttempts{
-		RetryerV2: wrapAsRetryerV2(r),
-		Max:       max,
+		Retryer: r,
+		Max:     max,
 	}
 }
 
 type withMaxAttempts struct {
-	aws.RetryerV2
+	aws.Retryer
 	Max int
 }
 
@@ -58,33 +57,16 @@ func (w *withMaxAttempts) MaxAttempts() int {
 // delay.
 func AddWithMaxBackoffDelay(r aws.Retryer, delay time.Duration) aws.Retryer {
 	return &withMaxBackoffDelay{
-		RetryerV2: wrapAsRetryerV2(r),
-		backoff:   NewExponentialJitterBackoff(delay),
+		Retryer: r,
+		backoff: NewExponentialJitterBackoff(delay),
 	}
 }
 
 type withMaxBackoffDelay struct {
-	aws.RetryerV2
+	aws.Retryer
 	backoff *ExponentialJitterBackoff
 }
 
 func (r *withMaxBackoffDelay) RetryDelay(attempt int, err error) (time.Duration, error) {
 	return r.backoff.BackoffDelay(attempt, err)
-}
-
-type wrappedAsRetryerV2 struct {
-	aws.Retryer
-}
-
-func wrapAsRetryerV2(r aws.Retryer) aws.RetryerV2 {
-	v, ok := r.(aws.RetryerV2)
-	if !ok {
-		v = wrappedAsRetryerV2{Retryer: r}
-	}
-
-	return v
-}
-
-func (w wrappedAsRetryerV2) GetAttemptToken(context.Context) (func(error) error, error) {
-	return w.Retryer.GetInitialToken(), nil
 }

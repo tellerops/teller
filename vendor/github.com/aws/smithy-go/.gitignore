@@ -20,7 +20,3 @@ target/
 build/
 */out/
 */*/out/
-
-# VS Code
-bin/
-.vscode/

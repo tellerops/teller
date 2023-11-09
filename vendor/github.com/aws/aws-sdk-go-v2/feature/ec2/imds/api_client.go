@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
-	internalconfig "github.com/aws/aws-sdk-go-v2/feature/ec2/imds/internal/config"
 	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
@@ -30,34 +29,21 @@ type Client struct {
 
 // ClientEnableState provides an enumeration if the client is enabled,
 // disabled, or default behavior.
-type ClientEnableState = internalconfig.ClientEnableState
+type ClientEnableState uint
 
 // Enumeration values for ClientEnableState
 const (
-	ClientDefaultEnableState ClientEnableState = internalconfig.ClientDefaultEnableState // default behavior
-	ClientDisabled           ClientEnableState = internalconfig.ClientDisabled           // client disabled
-	ClientEnabled            ClientEnableState = internalconfig.ClientEnabled            // client enabled
-)
-
-// EndpointModeState is an enum configuration variable describing the client endpoint mode.
-// Not configurable directly, but used when using the NewFromConfig.
-type EndpointModeState = internalconfig.EndpointModeState
-
-// Enumeration values for EndpointModeState
-const (
-	EndpointModeStateUnset EndpointModeState = internalconfig.EndpointModeStateUnset
-	EndpointModeStateIPv4  EndpointModeState = internalconfig.EndpointModeStateIPv4
-	EndpointModeStateIPv6  EndpointModeState = internalconfig.EndpointModeStateIPv6
+	ClientDefaultEnableState ClientEnableState = iota // default behavior
+	ClientDisabled                                    // client disabled
+	ClientEnabled                                     // client enabled
 )
 
 const (
 	disableClientEnvVar = "AWS_EC2_METADATA_DISABLED"
 
 	// Client endpoint options
-	endpointEnvVar = "AWS_EC2_METADATA_SERVICE_ENDPOINT"
-
-	defaultIPv4Endpoint = "http://169.254.169.254"
-	defaultIPv6Endpoint = "http://[fd00:ec2::254]"
+	endpointEnvVar  = "AWS_EC2_METADATA_SERVICE_ENDPOINT"
+	defaultEndpoint = "http://169.254.169.254"
 )
 
 // New returns an initialized Client based on the functional options. Provide
@@ -86,6 +72,8 @@ func New(options Options, optFns ...func(*Options)) *Client {
 	if len(options.Endpoint) == 0 {
 		if v := os.Getenv(endpointEnvVar); len(v) != 0 {
 			options.Endpoint = v
+		} else {
+			options.Endpoint = defaultEndpoint
 		}
 	}
 
@@ -106,20 +94,13 @@ func New(options Options, optFns ...func(*Options)) *Client {
 // or adding custom middleware behavior.
 func NewFromConfig(cfg aws.Config, optFns ...func(*Options)) *Client {
 	opts := Options{
-		APIOptions:    append([]func(*middleware.Stack) error{}, cfg.APIOptions...),
-		HTTPClient:    cfg.HTTPClient,
-		ClientLogMode: cfg.ClientLogMode,
-		Logger:        cfg.Logger,
+		APIOptions: append([]func(*middleware.Stack) error{}, cfg.APIOptions...),
+		HTTPClient: cfg.HTTPClient,
 	}
 
 	if cfg.Retryer != nil {
 		opts.Retryer = cfg.Retryer()
 	}
-
-	resolveClientEnableState(cfg, &opts)
-	resolveEndpointConfig(cfg, &opts)
-	resolveEndpointModeConfig(cfg, &opts)
-	resolveEnableFallback(cfg, &opts)
 
 	return New(opts, optFns...)
 }
@@ -132,8 +113,7 @@ type Options struct {
 	APIOptions []func(*middleware.Stack) error
 
 	// The endpoint the client will use to retrieve EC2 instance metadata.
-	//
-	// Specifies the EC2 Instance Metadata Service endpoint to use. If specified it overrides EndpointMode.
+
 	//
 	// If unset, and the environment variable AWS_EC2_METADATA_SERVICE_ENDPOINT
 	// has a value the client will use the value of the environment variable as
@@ -141,14 +121,6 @@ type Options struct {
 	//
 	//    AWS_EC2_METADATA_SERVICE_ENDPOINT=http://[::1]
 	Endpoint string
-
-	// The endpoint selection mode the client will use if no explicit endpoint is provided using the Endpoint field.
-	//
-	// Setting EndpointMode to EndpointModeStateIPv4 will configure the client to use the default EC2 IPv4 endpoint.
-	// Setting EndpointMode to EndpointModeStateIPv6 will configure the client to use the default EC2 IPv6 endpoint.
-	//
-	// By default if EndpointMode is not set (EndpointModeStateUnset) than the default endpoint selection mode EndpointModeStateIPv4.
-	EndpointMode EndpointModeState
 
 	// The HTTP client to invoke API calls with. Defaults to client's default
 	// HTTP implementation if nil.
@@ -174,16 +146,6 @@ type Options struct {
 
 	// The logger writer interface to write logging messages to.
 	Logger logging.Logger
-
-	// Configure IMDSv1 fallback behavior. By default, the client will attempt
-	// to fall back to IMDSv1 as needed for backwards compatibility. When set to [aws.FalseTernary]
-	// the client will return any errors encountered from attempting to fetch a token
-	// instead of silently using the insecure data flow of IMDSv1.
-	//
-	// See [configuring IMDS] for more information.
-	//
-	// [configuring IMDS]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html
-	EnableFallback aws.Ternary
 
 	// provides the caching of API tokens used for operation calls. If unset,
 	// the API token will not be retrieved for the operation.
@@ -292,57 +254,4 @@ func resolveHTTPClient(client HTTPClient) HTTPClient {
 	}
 
 	return client
-}
-
-func resolveClientEnableState(cfg aws.Config, options *Options) error {
-	if options.ClientEnableState != ClientDefaultEnableState {
-		return nil
-	}
-	value, found, err := internalconfig.ResolveClientEnableState(cfg.ConfigSources)
-	if err != nil || !found {
-		return err
-	}
-	options.ClientEnableState = value
-	return nil
-}
-
-func resolveEndpointModeConfig(cfg aws.Config, options *Options) error {
-	if options.EndpointMode != EndpointModeStateUnset {
-		return nil
-	}
-	value, found, err := internalconfig.ResolveEndpointModeConfig(cfg.ConfigSources)
-	if err != nil || !found {
-		return err
-	}
-	options.EndpointMode = value
-	return nil
-}
-
-func resolveEndpointConfig(cfg aws.Config, options *Options) error {
-	if len(options.Endpoint) != 0 {
-		return nil
-	}
-	value, found, err := internalconfig.ResolveEndpointConfig(cfg.ConfigSources)
-	if err != nil || !found {
-		return err
-	}
-	options.Endpoint = value
-	return nil
-}
-
-func resolveEnableFallback(cfg aws.Config, options *Options) {
-	if options.EnableFallback != aws.UnknownTernary {
-		return
-	}
-
-	disabled, ok := internalconfig.ResolveV1FallbackDisabled(cfg.ConfigSources)
-	if !ok {
-		return
-	}
-
-	if disabled {
-		options.EnableFallback = aws.FalseTernary
-	} else {
-		options.EnableFallback = aws.TrueTernary
-	}
 }

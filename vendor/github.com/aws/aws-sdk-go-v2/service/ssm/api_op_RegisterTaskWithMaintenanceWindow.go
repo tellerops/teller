@@ -4,14 +4,10 @@ package ssm
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	internalauth "github.com/aws/aws-sdk-go-v2/internal/auth"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
-	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -22,7 +18,7 @@ func (c *Client) RegisterTaskWithMaintenanceWindow(ctx context.Context, params *
 		params = &RegisterTaskWithMaintenanceWindowInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "RegisterTaskWithMaintenanceWindow", params, optFns, c.addOperationRegisterTaskWithMaintenanceWindowMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "RegisterTaskWithMaintenanceWindow", params, optFns, addOperationRegisterTaskWithMaintenanceWindowMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -49,55 +45,30 @@ type RegisterTaskWithMaintenanceWindowInput struct {
 	// This member is required.
 	WindowId *string
 
-	// The CloudWatch alarm you want to apply to your maintenance window task.
-	AlarmConfiguration *types.AlarmConfiguration
-
 	// User-provided idempotency token.
 	ClientToken *string
-
-	// Indicates whether tasks should continue to run after the cutoff time specified
-	// in the maintenance windows is reached.
-	//   - CONTINUE_TASK : When the cutoff time is reached, any tasks that are running
-	//   continue. The default value.
-	//   - CANCEL_TASK :
-	//   - For Automation, Lambda, Step Functions tasks: When the cutoff time is
-	//   reached, any task invocations that are already running continue, but no new task
-	//   invocations are started.
-	//   - For Run Command tasks: When the cutoff time is reached, the system sends a
-	//   CancelCommand operation that attempts to cancel the command associated with
-	//   the task. However, there is no guarantee that the command will be terminated and
-	//   the underlying process stopped. The status for tasks that are not completed
-	//   is TIMED_OUT .
-	CutoffBehavior types.MaintenanceWindowTaskCutoffBehavior
 
 	// An optional description for the task.
 	Description *string
 
-	// A structure containing information about an Amazon Simple Storage Service
-	// (Amazon S3) bucket to write managed node-level logs to. LoggingInfo has been
-	// deprecated. To specify an Amazon Simple Storage Service (Amazon S3) bucket to
-	// contain logs, instead use the OutputS3BucketName and OutputS3KeyPrefix options
-	// in the TaskInvocationParameters structure. For information about how Amazon Web
-	// Services Systems Manager handles these options for the supported maintenance
-	// window task types, see MaintenanceWindowTaskInvocationParameters .
+	// A structure containing information about an S3 bucket to write instance-level
+	// logs to. LoggingInfo has been deprecated. To specify an S3 bucket to contain
+	// logs, instead use the OutputS3BucketName and OutputS3KeyPrefix options in the
+	// TaskInvocationParameters structure. For information about how Systems Manager
+	// handles these options for the supported maintenance window task types, see
+	// MaintenanceWindowTaskInvocationParameters.
 	LoggingInfo *types.LoggingInfo
 
-	// The maximum number of targets this task can be run for, in parallel. Although
-	// this element is listed as "Required: No", a value can be omitted only when you
-	// are registering or updating a targetless task (https://docs.aws.amazon.com/systems-manager/latest/userguide/maintenance-windows-targetless-tasks.html)
-	// You must provide a value in all other cases. For maintenance window tasks
-	// without a target specified, you can't supply a value for this option. Instead,
-	// the system inserts a placeholder value of 1 . This value doesn't affect the
-	// running of your task.
+	// The maximum number of targets this task can be run for in parallel. For
+	// maintenance window tasks without a target specified, you cannot supply a value
+	// for this option. Instead, the system inserts a placeholder value of 1. This
+	// value does not affect the running of your task.
 	MaxConcurrency *string
 
-	// The maximum number of errors allowed before this task stops being scheduled.
-	// Although this element is listed as "Required: No", a value can be omitted only
-	// when you are registering or updating a targetless task (https://docs.aws.amazon.com/systems-manager/latest/userguide/maintenance-windows-targetless-tasks.html)
-	// You must provide a value in all other cases. For maintenance window tasks
-	// without a target specified, you can't supply a value for this option. Instead,
-	// the system inserts a placeholder value of 1 . This value doesn't affect the
-	// running of your task.
+	// The maximum number of errors allowed before this task stops being scheduled. For
+	// maintenance window tasks without a target specified, you cannot supply a value
+	// for this option. Instead, the system inserts a placeholder value of 1. This
+	// value does not affect the running of your task.
 	MaxErrors *string
 
 	// An optional name for the task.
@@ -106,29 +77,35 @@ type RegisterTaskWithMaintenanceWindowInput struct {
 	// The priority of the task in the maintenance window, the lower the number the
 	// higher the priority. Tasks in a maintenance window are scheduled in priority
 	// order with tasks that have the same priority scheduled in parallel.
-	Priority *int32
+	Priority int32
 
-	// The Amazon Resource Name (ARN) of the IAM service role for Amazon Web Services
-	// Systems Manager to assume when running a maintenance window task. If you do not
-	// specify a service role ARN, Systems Manager uses your account's service-linked
-	// role. If no service-linked role for Systems Manager exists in your account, it
-	// is created when you run RegisterTaskWithMaintenanceWindow . For more
-	// information, see the following topics in the in the Amazon Web Services Systems
-	// Manager User Guide:
-	//   - Using service-linked roles for Systems Manager (https://docs.aws.amazon.com/systems-manager/latest/userguide/using-service-linked-roles.html#slr-permissions)
-	//   - Should I use a service-linked role or a custom service role to run
-	//   maintenance window tasks?  (https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-maintenance-permissions.html#maintenance-window-tasks-service-role)
+	// The ARN of the IAM service role for Systems Manager to assume when running a
+	// maintenance window task. If you do not specify a service role ARN, Systems
+	// Manager uses your account's service-linked role. If no service-linked role for
+	// Systems Manager exists in your account, it is created when you run
+	// RegisterTaskWithMaintenanceWindow. For more information, see the following
+	// topics in the in the AWS Systems Manager User Guide:
+	//
+	// * Using service-linked
+	// roles for Systems Manager
+	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/using-service-linked-roles.html#slr-permissions)
+	//
+	// *
+	// Should I use a service-linked role or a custom service role to run maintenance
+	// window tasks?
+	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-maintenance-permissions.html#maintenance-window-tasks-service-role)
 	ServiceRoleArn *string
 
-	// The targets (either managed nodes or maintenance window targets). One or more
+	// The targets (either instances or maintenance window targets). One or more
 	// targets must be specified for maintenance window Run Command-type tasks.
 	// Depending on the task, targets are optional for other maintenance window task
-	// types (Automation, Lambda, and Step Functions). For more information about
-	// running tasks that don't specify targets, see Registering maintenance window
-	// tasks without targets (https://docs.aws.amazon.com/systems-manager/latest/userguide/maintenance-windows-targetless-tasks.html)
-	// in the Amazon Web Services Systems Manager User Guide. Specify managed nodes
-	// using the following format: Key=InstanceIds,Values=, Specify maintenance window
-	// targets using the following format: Key=WindowTargetIds,Values=,
+	// types (Automation, AWS Lambda, and AWS Step Functions). For more information
+	// about running tasks that do not specify targets, see see Registering maintenance
+	// window tasks without targets
+	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/maintenance-windows-targetless-tasks.html)
+	// in the AWS Systems Manager User Guide. Specify instances using the following
+	// format: Key=InstanceIds,Values=, Specify maintenance window targets using the
+	// following format: Key=WindowTargetIds,Values=,
 	Targets []types.Target
 
 	// The parameters that the task should use during execution. Populate only the
@@ -137,13 +114,10 @@ type RegisterTaskWithMaintenanceWindowInput struct {
 
 	// The parameters that should be passed to the task when it is run. TaskParameters
 	// has been deprecated. To specify parameters to pass to a task when it runs,
-	// instead use the Parameters option in the TaskInvocationParameters structure.
-	// For information about how Systems Manager handles these options for the
-	// supported maintenance window task types, see
-	// MaintenanceWindowTaskInvocationParameters .
+	// instead use the Parameters option in the TaskInvocationParameters structure. For
+	// information about how Systems Manager handles these options for the supported
+	// maintenance window task types, see MaintenanceWindowTaskInvocationParameters.
 	TaskParameters map[string]types.MaintenanceWindowTaskParameterValueExpression
-
-	noSmithyDocumentSerde
 }
 
 type RegisterTaskWithMaintenanceWindowOutput struct {
@@ -153,20 +127,15 @@ type RegisterTaskWithMaintenanceWindowOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
-
-	noSmithyDocumentSerde
 }
 
-func (c *Client) addOperationRegisterTaskWithMaintenanceWindowMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func addOperationRegisterTaskWithMaintenanceWindowMiddlewares(stack *middleware.Stack, options Options) (err error) {
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpRegisterTaskWithMaintenanceWindow{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpRegisterTaskWithMaintenanceWindow{}, middleware.After)
 	if err != nil {
-		return err
-	}
-	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -196,16 +165,13 @@ func (c *Client) addOperationRegisterTaskWithMaintenanceWindowMiddlewares(stack 
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack, options); err != nil {
+	if err = addClientUserAgent(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
-		return err
-	}
-	if err = addRegisterTaskWithMaintenanceWindowResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
 	if err = addIdempotencyToken_opRegisterTaskWithMaintenanceWindowMiddleware(stack, options); err != nil {
@@ -217,9 +183,6 @@ func (c *Client) addOperationRegisterTaskWithMaintenanceWindowMiddlewares(stack 
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opRegisterTaskWithMaintenanceWindow(options.Region), middleware.Before); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
-		return err
-	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
 		return err
 	}
@@ -227,9 +190,6 @@ func (c *Client) addOperationRegisterTaskWithMaintenanceWindowMiddlewares(stack 
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
-		return err
-	}
-	if err = addendpointDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -275,127 +235,4 @@ func newServiceMetadataMiddleware_opRegisterTaskWithMaintenanceWindow(region str
 		SigningName:   "ssm",
 		OperationName: "RegisterTaskWithMaintenanceWindow",
 	}
-}
-
-type opRegisterTaskWithMaintenanceWindowResolveEndpointMiddleware struct {
-	EndpointResolver EndpointResolverV2
-	BuiltInResolver  builtInParameterResolver
-}
-
-func (*opRegisterTaskWithMaintenanceWindowResolveEndpointMiddleware) ID() string {
-	return "ResolveEndpointV2"
-}
-
-func (m *opRegisterTaskWithMaintenanceWindowResolveEndpointMiddleware) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (
-	out middleware.SerializeOutput, metadata middleware.Metadata, err error,
-) {
-	if awsmiddleware.GetRequiresLegacyEndpoints(ctx) {
-		return next.HandleSerialize(ctx, in)
-	}
-
-	req, ok := in.Request.(*smithyhttp.Request)
-	if !ok {
-		return out, metadata, fmt.Errorf("unknown transport type %T", in.Request)
-	}
-
-	if m.EndpointResolver == nil {
-		return out, metadata, fmt.Errorf("expected endpoint resolver to not be nil")
-	}
-
-	params := EndpointParameters{}
-
-	m.BuiltInResolver.ResolveBuiltIns(&params)
-
-	var resolvedEndpoint smithyendpoints.Endpoint
-	resolvedEndpoint, err = m.EndpointResolver.ResolveEndpoint(ctx, params)
-	if err != nil {
-		return out, metadata, fmt.Errorf("failed to resolve service endpoint, %w", err)
-	}
-
-	req.URL = &resolvedEndpoint.URI
-
-	for k := range resolvedEndpoint.Headers {
-		req.Header.Set(
-			k,
-			resolvedEndpoint.Headers.Get(k),
-		)
-	}
-
-	authSchemes, err := internalauth.GetAuthenticationSchemes(&resolvedEndpoint.Properties)
-	if err != nil {
-		var nfe *internalauth.NoAuthenticationSchemesFoundError
-		if errors.As(err, &nfe) {
-			// if no auth scheme is found, default to sigv4
-			signingName := "ssm"
-			signingRegion := m.BuiltInResolver.(*builtInResolver).Region
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-
-		}
-		var ue *internalauth.UnSupportedAuthenticationSchemeSpecifiedError
-		if errors.As(err, &ue) {
-			return out, metadata, fmt.Errorf(
-				"This operation requests signer version(s) %v but the client only supports %v",
-				ue.UnsupportedSchemes,
-				internalauth.SupportedSchemes,
-			)
-		}
-	}
-
-	for _, authScheme := range authSchemes {
-		switch authScheme.(type) {
-		case *internalauth.AuthenticationSchemeV4:
-			v4Scheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4)
-			var signingName, signingRegion string
-			if v4Scheme.SigningName == nil {
-				signingName = "ssm"
-			} else {
-				signingName = *v4Scheme.SigningName
-			}
-			if v4Scheme.SigningRegion == nil {
-				signingRegion = m.BuiltInResolver.(*builtInResolver).Region
-			} else {
-				signingRegion = *v4Scheme.SigningRegion
-			}
-			if v4Scheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4Scheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, signingName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, signingRegion)
-			break
-		case *internalauth.AuthenticationSchemeV4A:
-			v4aScheme, _ := authScheme.(*internalauth.AuthenticationSchemeV4A)
-			if v4aScheme.SigningName == nil {
-				v4aScheme.SigningName = aws.String("ssm")
-			}
-			if v4aScheme.DisableDoubleEncoding != nil {
-				// The signer sets an equivalent value at client initialization time.
-				// Setting this context value will cause the signer to extract it
-				// and override the value set at client initialization time.
-				ctx = internalauth.SetDisableDoubleEncoding(ctx, *v4aScheme.DisableDoubleEncoding)
-			}
-			ctx = awsmiddleware.SetSigningName(ctx, *v4aScheme.SigningName)
-			ctx = awsmiddleware.SetSigningRegion(ctx, v4aScheme.SigningRegionSet[0])
-			break
-		case *internalauth.AuthenticationSchemeNone:
-			break
-		}
-	}
-
-	return next.HandleSerialize(ctx, in)
-}
-
-func addRegisterTaskWithMaintenanceWindowResolveEndpointMiddleware(stack *middleware.Stack, options Options) error {
-	return stack.Serialize.Insert(&opRegisterTaskWithMaintenanceWindowResolveEndpointMiddleware{
-		EndpointResolver: options.EndpointResolverV2,
-		BuiltInResolver: &builtInResolver{
-			Region:       options.Region,
-			UseDualStack: options.EndpointOptions.UseDualStackEndpoint,
-			UseFIPS:      options.EndpointOptions.UseFIPSEndpoint,
-			Endpoint:     options.BaseEndpoint,
-		},
-	}, "ResolveEndpoint", middleware.After)
 }

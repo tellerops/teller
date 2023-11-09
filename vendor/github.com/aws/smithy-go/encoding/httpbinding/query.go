@@ -2,7 +2,6 @@ package httpbinding
 
 import (
 	"encoding/base64"
-	"math"
 	"math/big"
 	"net/url"
 	"strconv"
@@ -80,16 +79,7 @@ func (qv QueryValue) Double(v float64) {
 }
 
 func (qv QueryValue) float(v float64, bitSize int) {
-	switch {
-	case math.IsNaN(v):
-		qv.String(floatNaN)
-	case math.IsInf(v, 1):
-		qv.String(floatInfinity)
-	case math.IsInf(v, -1):
-		qv.String(floatNegInfinity)
-	default:
-		qv.updateKey(strconv.FormatFloat(v, 'f', -1, bitSize))
-	}
+	qv.updateKey(strconv.FormatFloat(v, 'f', -1, bitSize))
 }
 
 // BigInteger encodes v as a query string value
