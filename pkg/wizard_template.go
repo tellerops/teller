@@ -7,7 +7,7 @@ confirm: Are you sure you want to run on {{"{{stage}}"}}?
 {{ end }}
 
 # Set this if you want to carry over parent process' environment variables
-# carry_env: true 
+# carry_env: true
 
 
 #
@@ -25,7 +25,7 @@ opts:
 # Providers
 #
 providers:
-	
+
 {{- if index .ProviderKeys "heroku" }}
   # requires an API key in: HEROKU_API_KEY (you can fetch yours from ~/.netrc)
   heroku:
@@ -40,7 +40,7 @@ providers:
 {{end}}
 
 {{- if index .ProviderKeys "vercel" }}
-  # requires an API token in: VERCEL_TOKEN 
+  # requires an API token in: VERCEL_TOKEN
   vercel:
 	# sync a complete environment
     env_sync:
@@ -275,13 +275,13 @@ providers:
 
   ansible_vault:
     env_sync:
-       path: ansible/vars/vault_{{stage}}.yml
+       path: ansible/vars/vault_{{"{{stage}}"}}.yml
 
     env:
       KEY1:
-        path: ansible/vars/vault_{{stage}}.yml
+        path: ansible/vars/vault_{{"{{stage}}"}}.yml
       NONEXIST_KEY:
-        path: ansible/vars/vault_{{stage}}.yml
+        path: ansible/vars/vault_{{"{{stage}}"}}.yml
 
 {{end}}
 `
