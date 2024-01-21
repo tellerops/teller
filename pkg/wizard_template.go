@@ -284,4 +284,20 @@ providers:
         path: ansible/vars/vault_{{"{{stage}}"}}.yml
 
 {{end}}
+
+{{- if index .ProviderKeys "keeper_secretsmanager" }}
+
+  # requires a configuration in: KSM_CONFIG=base64_config or file path KSM_CONFIG_FILE=ksm_config.json
+  keeper_secretsmanager:
+    env_sync:
+      path: RECORD_UID
+      # all non-empty fields are mapped by their labels, if empty then by field type, and index 1,2,...,N
+
+    env:
+      USER:
+        path: RECORD_UID/field/login
+        # use Keeper Notation to select individual field values
+        # https://docs.keeper.io/secrets-manager/secrets-manager/about/keeper-notation
+
+{{end}}
 `
