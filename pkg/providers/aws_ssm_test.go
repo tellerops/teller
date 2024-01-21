@@ -21,6 +21,7 @@ func TestAWSSSM(t *testing.T) {
 	client := mock_providers.NewMockAWSSSMClient(ctrl)
 	path := "settings/prod/billing-svc"
 	val := "shazam"
+
 	in := ssm.GetParameterInput{Name: &path, WithDecryption: aws.Bool(true)}
 	out := ssm.GetParameterOutput{
 		Parameter: &types.Parameter{

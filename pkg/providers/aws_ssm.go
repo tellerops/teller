@@ -25,7 +25,7 @@ type AWSSSM struct {
 
 const awsssmName = "aws_ssm"
 
-// nolint
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "AWS SSM (aka paramstore)",
@@ -70,10 +70,11 @@ func NewAWSSSM(logger logging.Logger) (core.Provider, error) {
 }
 
 func (a *AWSSSM) Put(kp core.KeyPath, val string) error {
+
 	_, err := a.client.PutParameter(context.TODO(), &ssm.PutParameterInput{
 		Name:      &kp.Path,
 		Value:     &val,
-		Overwrite: true,
+		Overwrite: aws.Bool(true),
 		Type:      types.ParameterTypeString,
 	})
 	if err != nil {
