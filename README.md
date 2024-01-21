@@ -702,6 +702,19 @@ google_secretmanager:
       path: projects/44882/secrets/MG_KEY/versions/1
 ```
 
+if your secrets in google secret manager are stored as JSON or K:V you can add the field property to query the secret body
+```yaml
+google_secretmanager:
+  env_sync:
+    # secrets version is not relevant here since we are getting the latest version
+    path: projects/44882
+  env:
+    MG_KEY:
+      # need to supply the relevant version (versions/1)
+      path: projects/44882/secrets/MG_KEY/versions/1
+      field: MG_KEY
+```
+
 ## .ENV (dotenv)
 
 ### Authentication
