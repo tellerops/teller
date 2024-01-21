@@ -1,5 +1,22 @@
-Generated from https://github.com/Azure/azure-rest-api-specs/tree/3c764635e7d442b3e74caf593029fcd440b3ef82//specification/keyvault/data-plane/readme.md tag: `package-2016-10`
+# Change History
 
-Code generator @microsoft.azure/autorest.go@2.1.175
+## Additive Changes
 
+### New Funcs
 
+1. BackupKeyResult.MarshalJSON() ([]byte, error)
+1. BackupSecretResult.MarshalJSON() ([]byte, error)
+1. CertificateIssuerListResult.MarshalJSON() ([]byte, error)
+1. CertificateListResult.MarshalJSON() ([]byte, error)
+1. DeletedCertificateListResult.MarshalJSON() ([]byte, error)
+1. DeletedKeyListResult.MarshalJSON() ([]byte, error)
+1. DeletedSecretListResult.MarshalJSON() ([]byte, error)
+1. Error.MarshalJSON() ([]byte, error)
+1. ErrorType.MarshalJSON() ([]byte, error)
+1. KeyListResult.MarshalJSON() ([]byte, error)
+1. KeyOperationResult.MarshalJSON() ([]byte, error)
+1. KeyVerifyResult.MarshalJSON() ([]byte, error)
+1. PendingCertificateSigningRequestResult.MarshalJSON() ([]byte, error)
+1. SasDefinitionListResult.MarshalJSON() ([]byte, error)
+1. SecretListResult.MarshalJSON() ([]byte, error)
+1. StorageListResult.MarshalJSON() ([]byte, error)

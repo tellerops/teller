@@ -23,7 +23,7 @@ github.com/1Password/connect-sdk-go/onepassword
 github.com/AlecAivazis/survey/v2
 github.com/AlecAivazis/survey/v2/core
 github.com/AlecAivazis/survey/v2/terminal
-# github.com/Azure/azure-sdk-for-go v52.5.0+incompatible
+# github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 ## explicit
 github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/keyvault
 github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault
@@ -781,8 +781,6 @@ golang.org/x/text/width
 # golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.6.0
-## explicit; go 1.18
 # google.golang.org/api v0.40.0
 ## explicit; go 1.11
 google.golang.org/api/internal
