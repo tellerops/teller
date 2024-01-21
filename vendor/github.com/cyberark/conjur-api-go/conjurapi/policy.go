@@ -37,7 +37,7 @@ type PolicyResponse struct {
 //
 // The required permission depends on the mode.
 func (c *Client) LoadPolicy(mode PolicyMode, policyID string, policy io.Reader) (*PolicyResponse, error) {
-	req, err := c.router.LoadPolicyRequest(mode, policyID, policy)
+	req, err := c.LoadPolicyRequest(mode, policyID, policy)
 	if err != nil {
 		return nil, err
 	}

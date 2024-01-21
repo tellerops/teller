@@ -2,7 +2,6 @@ package conjurapi
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -14,20 +13,24 @@ import (
 	"github.com/cyberark/conjur-api-go/conjurapi/logging"
 )
 
+var supportedAuthnTypes = []string{"authn", "ldap", "oidc"}
+
 type Config struct {
-	Account      string `yaml:"account,omitempty"`
-	ApplianceURL string `yaml:"appliance_url,omitempty"`
-	NetRCPath    string `yaml:"netrc_path,omitempty"`
-	SSLCert      string `yaml:"-"`
-	SSLCertPath  string `yaml:"cert_file,omitempty"`
-	V4           bool   `yaml:"v4"`
+	Account           string `yaml:"account,omitempty"`
+	ApplianceURL      string `yaml:"appliance_url,omitempty"`
+	NetRCPath         string `yaml:"netrc_path,omitempty"`
+	SSLCert           string `yaml:"-"`
+	SSLCertPath       string `yaml:"cert_file,omitempty"`
+	AuthnType         string `yaml:"authn_type,omitempty"`
+	ServiceID         string `yaml:"service_id,omitempty"`
+	CredentialStorage string `yaml:"credential_storage,omitempty"`
 }
 
 func (c *Config) IsHttps() bool {
 	return c.SSLCertPath != "" || c.SSLCert != ""
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	errors := []string{}
 
 	if c.ApplianceURL == "" {
@@ -36,6 +39,14 @@ func (c *Config) validate() error {
 
 	if c.Account == "" {
 		errors = append(errors, "Must specify an Account")
+	}
+
+	if c.AuthnType != "" && !contains(supportedAuthnTypes, c.AuthnType) {
+		errors = append(errors, fmt.Sprintf("AuthnType must be one of %v", supportedAuthnTypes))
+	}
+
+	if (c.AuthnType == "ldap" || c.AuthnType == "oidc") && c.ServiceID == "" {
+		errors = append(errors, fmt.Sprintf("Must specify a ServiceID when using %s", c.AuthnType))
 	}
 
 	if len(errors) == 0 {
@@ -50,7 +61,7 @@ func (c *Config) ReadSSLCert() ([]byte, error) {
 	if c.SSLCert != "" {
 		return []byte(c.SSLCert), nil
 	}
-	return ioutil.ReadFile(c.SSLCertPath)
+	return os.ReadFile(c.SSLCertPath)
 }
 
 func (c *Config) BaseURL() string {
@@ -78,11 +89,14 @@ func (c *Config) merge(o *Config) {
 	c.SSLCert = mergeValue(c.SSLCert, o.SSLCert)
 	c.SSLCertPath = mergeValue(c.SSLCertPath, o.SSLCertPath)
 	c.NetRCPath = mergeValue(c.NetRCPath, o.NetRCPath)
-	c.V4 = c.V4 || o.V4
+	c.CredentialStorage = mergeValue(c.CredentialStorage, o.CredentialStorage)
+	c.AuthnType = mergeValue(c.AuthnType, o.AuthnType)
+	c.ServiceID = mergeValue(c.ServiceID, o.ServiceID)
 }
 
 func (c *Config) mergeYAML(filename string) error {
-	buf, err := ioutil.ReadFile(filename)
+	// Read the YAML file
+	buf, err := os.ReadFile(filename)
 
 	if err != nil {
 		logging.ApiLog.Debugf("Failed reading %s, %v\n", filename, err)
@@ -90,37 +104,61 @@ func (c *Config) mergeYAML(filename string) error {
 		return nil
 	}
 
+	// Parse the YAML file into a new struct containing the same
+	// fields as Config, plus a few extra fields for compatibility
 	aux := struct {
 		ConjurVersion string `yaml:"version"`
 		Config        `yaml:",inline"`
+		// BEGIN COMPATIBILITY WITH PYTHON CLI
+		ConjurURL     string `yaml:"conjur_url"`
+		ConjurAccount string `yaml:"conjur_account"`
+		// END COMPATIBILITY WITH PYTHON CLI
 	}{}
 
 	if err := yaml.Unmarshal(buf, &aux); err != nil {
 		logging.ApiLog.Errorf("Parsing error %s: %s\n", filename, err)
 		return err
 	}
-	aux.Config.V4 = aux.ConjurVersion == "4"
 
+	// Now merge the parsed config into the current config object
 	logging.ApiLog.Debugf("Config from %s: %+v\n", filename, aux.Config)
 	c.merge(&aux.Config)
+
+	// BEGIN COMPATIBILITY WITH PYTHON CLI
+	// The Python CLI uses the keys conjur_url and conjur_account
+	// instead of appliance_url and account. Check if those keys
+	// are present and use them if the new keys are not present.
+	if c.ApplianceURL == "" && aux.ConjurURL != "" {
+		c.ApplianceURL = aux.ConjurURL
+	}
+
+	if c.Account == "" && aux.ConjurAccount != "" {
+		c.Account = aux.ConjurAccount
+	}
+	// END COMPATIBILITY WITH PYTHON CLI
 
 	return nil
 }
 
 func (c *Config) mergeEnv() {
-	majorVersion4 := os.Getenv("CONJUR_MAJOR_VERSION") == "4" || os.Getenv("CONJUR_VERSION") == "4"
-
 	env := Config{
-		ApplianceURL: os.Getenv("CONJUR_APPLIANCE_URL"),
-		SSLCert:      os.Getenv("CONJUR_SSL_CERTIFICATE"),
-		SSLCertPath:  os.Getenv("CONJUR_CERT_FILE"),
-		Account:      os.Getenv("CONJUR_ACCOUNT"),
-		NetRCPath:    os.Getenv("CONJUR_NETRC_PATH"),
-		V4:           majorVersion4,
+		ApplianceURL:      os.Getenv("CONJUR_APPLIANCE_URL"),
+		SSLCert:           os.Getenv("CONJUR_SSL_CERTIFICATE"),
+		SSLCertPath:       os.Getenv("CONJUR_CERT_FILE"),
+		Account:           os.Getenv("CONJUR_ACCOUNT"),
+		NetRCPath:         os.Getenv("CONJUR_NETRC_PATH"),
+		CredentialStorage: os.Getenv("CONJUR_CREDENTIAL_STORAGE"),
+		AuthnType:         os.Getenv("CONJUR_AUTHN_TYPE"),
+		ServiceID:         os.Getenv("CONJUR_SERVICE_ID"),
 	}
 
 	logging.ApiLog.Debugf("Config from environment: %+v\n", env)
 	c.merge(&env)
+}
+
+func (c *Config) Conjurrc() []byte {
+	data, _ := yaml.Marshal(&c)
+	return data
 }
 
 func LoadConfig() (Config, error) {
@@ -164,4 +202,14 @@ func getSystemPath() string {
 	} else {
 		return "/etc"
 	}
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }

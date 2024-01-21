@@ -2,7 +2,6 @@ package authn
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 )
@@ -23,7 +22,7 @@ waiting_loop:
 			if _, err := os.Stat(fileName); os.IsNotExist(err) {
 				time.Sleep(100 * time.Millisecond)
 			} else {
-				fileBytes, err = ioutil.ReadFile(fileName)
+				fileBytes, err = os.ReadFile(fileName)
 				break waiting_loop
 			}
 		}

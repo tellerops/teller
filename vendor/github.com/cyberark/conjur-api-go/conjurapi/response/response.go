@@ -3,7 +3,6 @@ package response
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/cyberark/conjur-api-go/conjurapi/logging"
@@ -12,7 +11,7 @@ import (
 func readBody(resp *http.Response) ([]byte, error) {
 	defer resp.Body.Close()
 
-	responseText, err := ioutil.ReadAll(resp.Body)
+	responseText, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

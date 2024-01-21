@@ -2,11 +2,15 @@ package keyring
 
 type mockProvider struct {
 	mockStore map[string]map[string]string
+	mockError error
 }
 
 // Set stores user and pass in the keyring under the defined service
 // name.
 func (m *mockProvider) Set(service, user, pass string) error {
+	if m.mockError != nil {
+		return m.mockError
+	}
 	if m.mockStore == nil {
 		m.mockStore = make(map[string]map[string]string)
 	}
@@ -19,6 +23,9 @@ func (m *mockProvider) Set(service, user, pass string) error {
 
 // Get gets a secret from the keyring given a service name and a user.
 func (m *mockProvider) Get(service, user string) (string, error) {
+	if m.mockError != nil {
+		return "", m.mockError
+	}
 	if b, ok := m.mockStore[service]; ok {
 		if v, ok := b[user]; ok {
 			return v, nil
@@ -29,6 +36,9 @@ func (m *mockProvider) Get(service, user string) (string, error) {
 
 // Delete deletes a secret, identified by service & user, from the keyring.
 func (m *mockProvider) Delete(service, user string) error {
+	if m.mockError != nil {
+		return m.mockError
+	}
 	if m.mockStore != nil {
 		if _, ok := m.mockStore[service]; ok {
 			if _, ok := m.mockStore[service][user]; ok {
@@ -43,4 +53,10 @@ func (m *mockProvider) Delete(service, user string) error {
 // MockInit sets the provider to a mocked memory store
 func MockInit() {
 	provider = &mockProvider{}
+}
+
+// MockInitWithError sets the provider to a mocked memory store
+// that returns the given error on all operations
+func MockInitWithError(err error) {
+	provider = &mockProvider{mockError: err}
 }

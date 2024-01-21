@@ -1,11 +1,11 @@
 package conjurapi
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
-
-	"encoding/json"
-	"encoding/base64"
 
 	"github.com/cyberark/conjur-api-go/conjurapi/response"
 )
@@ -78,8 +78,34 @@ func (c *Client) RetrieveSecretReader(variableID string) (io.ReadCloser, error) 
 	return response.SecretDataResponse(resp)
 }
 
+// RetrieveSecretWithVersion fetches a specific version of a secret from a
+// variable.
+//
+// The authenticated user must have execute privilege on the variable.
+func (c *Client) RetrieveSecretWithVersion(variableID string, version int) ([]byte, error) {
+	resp, err := c.retrieveSecretWithVersion(variableID, version)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.DataResponse(resp)
+}
+
+// RetrieveSecretWithVersionReader fetches a specific version of a secret from a
+// variable and returns it as a data stream.
+//
+// The authenticated user must have execute privilege on the variable.
+func (c *Client) RetrieveSecretWithVersionReader(variableID string, version int) (io.ReadCloser, error) {
+	resp, err := c.retrieveSecretWithVersion(variableID, version)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.SecretDataResponse(resp)
+}
+
 func (c *Client) retrieveBatchSecrets(variableIDs []string, base64Flag bool) (map[string]string, error) {
-	req, err := c.router.RetrieveBatchSecretsRequest(variableIDs, base64Flag)
+	req, err := c.RetrieveBatchSecretsRequest(variableIDs, base64Flag)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +120,13 @@ func (c *Client) retrieveBatchSecrets(variableIDs []string, base64Flag bool) (ma
 		return nil, err
 	}
 
+	if base64Flag && resp.Header.Get("Content-Encoding") != "base64" {
+		return nil, errors.New(
+			"Conjur response is not Base64-encoded. " +
+			"The Conjur version may not be compatible with this function - " +
+			"try using RetrieveBatchSecrets instead." )
+	}
+
 	jsonResponse := map[string]string{}
 	err = json.Unmarshal(data, &jsonResponse)
 	if err != nil {
@@ -104,7 +137,16 @@ func (c *Client) retrieveBatchSecrets(variableIDs []string, base64Flag bool) (ma
 }
 
 func (c *Client) retrieveSecret(variableID string) (*http.Response, error) {
-	req, err := c.router.RetrieveSecretRequest(variableID)
+	req, err := c.RetrieveSecretRequest(variableID)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.SubmitRequest(req)
+}
+
+func (c *Client) retrieveSecretWithVersion(variableID string, version int) (*http.Response, error) {
+	req, err := c.RetrieveSecretWithVersionRequest(variableID, version)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +158,7 @@ func (c *Client) retrieveSecret(variableID string) (*http.Response, error) {
 //
 // The authenticated user must have update privilege on the variable.
 func (c *Client) AddSecret(variableID string, secretValue string) error {
-	req, err := c.router.AddSecretRequest(variableID, secretValue)
+	req, err := c.AddSecretRequest(variableID, secretValue)
 	if err != nil {
 		return err
 	}

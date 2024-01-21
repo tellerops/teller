@@ -11,6 +11,7 @@ type TokenFileAuthenticator struct {
 	MaxWaitTime time.Duration
 }
 
+//  TODO: is this implementation concurrent ?
 func (a *TokenFileAuthenticator) RefreshToken() ([]byte, error) {
 	maxWaitTime := a.MaxWaitTime
 	var timeout <-chan time.Time

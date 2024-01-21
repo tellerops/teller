@@ -2,7 +2,7 @@ package response
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -24,7 +24,7 @@ type ConjurErrorDetails struct {
 
 func NewConjurError(resp *http.Response) error {
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,8 @@ import (
 // its messages is controlled by the environment variable
 // CONJURAPI_LOG. CONJRAPI_LOG can be "stdout", "stderr", or the path
 // to a file. If it's a path, the file's contents will be overwritten
-// with new messages.
+// with new messages. If the environment variable is not set, logging
+// is disabled.
 var ApiLog = logrus.New()
 
 func init() {
