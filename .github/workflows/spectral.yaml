@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Spectral
-      uses: spectralops/spectral-github-action@v1
+      uses: spectralops/spectral-github-action@v4
       with:
         spectral-dsn: ${{ secrets.SPECTRAL_DSN }}
     - name: Spectral Scan
