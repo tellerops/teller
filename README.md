@@ -1187,6 +1187,37 @@ providers:
         path: bar
 ```
 
+## Keeper Secrets Manager
+
+### Authentication
+
+Configuration is environment based - you should populate `KSM_CONFIG=base64_config` or `KSM_CONFIG_FILE=ksm_config.json` in your environment with a valid [Secrets Manager Configuration](https://docs.keeper.io/secrets-manager/secrets-manager/about/secrets-manager-configuration#creating-a-secrets-manager-configuration). If both environment variables are set then `KSM_CONFIG` is used.
+
+Note:
+- _Secrets Manager CLI configuration file format (INI) is different from KSM SDK configuration format (JSON) but the CLI [command](https://docs.keeper.io/secrets-manager/secrets-manager/secrets-manager-command-line-interface/profile-command#export) `ksm profile export profile_name` can be used to export some of the individual profiles into JSON config file compatible with the provider._
+
+### Features
+
+- Sync - `yes`
+- Mapping - `yes`
+- Modes - `read`
+- Key format
+  - `env_sync` - path is single record UID. Field labels (if empty -> field types) are used as keys, any duplicates will have a numeric suffix.
+  - `env` - any string, conforming to Keeper [Notation](https://docs.keeper.io/secrets-manager/secrets-manager/about/keeper-notation) _(`keeper://` prefix not required)_
+
+### Example Config
+
+```yaml
+keeper_secretsmanager:
+  env_sync:
+    path: ABCDEFGHIJKLMNOPQRSTUV
+  env:
+    PGUSER:
+      path: ABCDEFGHIJKLMNOPQRSTUV/field/login
+    CERT:
+      path: ABCDEFGHIJKLMNOPQRSTUV/custom_field/ssl_cert
+```
+
 # Semantics
 
 ## Addressing

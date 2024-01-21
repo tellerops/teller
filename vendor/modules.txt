@@ -501,6 +501,10 @@ github.com/karrick/godirwalk
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 ## explicit
 github.com/kballard/go-shellquote
+# github.com/keeper-security/secrets-manager-go/core v1.6.2
+## explicit; go 1.14
+github.com/keeper-security/secrets-manager-go/core
+github.com/keeper-security/secrets-manager-go/core/logger
 # github.com/mattn/go-colorable v0.1.13
 ## explicit; go 1.15
 github.com/mattn/go-colorable
@@ -781,8 +785,6 @@ golang.org/x/text/width
 # golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.6.0
-## explicit; go 1.18
 # google.golang.org/api v0.40.0
 ## explicit; go 1.11
 google.golang.org/api/internal
