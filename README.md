@@ -648,7 +648,7 @@ aws_secretsmanager:
       path: /prod/billing-svc/vars/mg
 ```
 
-## AWS Paramstore
+## AWS Parameter store
 
 ### Authentication
 
@@ -657,8 +657,8 @@ Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 ### Features
 
 - Sync - `no`
-- Mapping - `yes`
-- Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
+- Mapping - `no`
+- Modes - `read+write+delete`
 - Key format
   - `env` - path based
   - `decrypt` - available in this provider, will use KMS automatically
