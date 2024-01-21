@@ -35,6 +35,26 @@ func (m *MockAWSSSMClient) EXPECT() *MockAWSSSMClientMockRecorder {
 	return m.recorder
 }
 
+// DeleteParameter mocks base method.
+func (m *MockAWSSSMClient) DeleteParameter(ctx context.Context, params *ssm.DeleteParameterInput, optFns ...func(*ssm.Options)) (*ssm.DeleteParameterOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteParameter", varargs...)
+	ret0, _ := ret[0].(*ssm.DeleteParameterOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteParameter indicates an expected call of DeleteParameter.
+func (mr *MockAWSSSMClientMockRecorder) DeleteParameter(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteParameter", reflect.TypeOf((*MockAWSSSMClient)(nil).DeleteParameter), varargs...)
+}
+
 // GetParameter mocks base method.
 func (m *MockAWSSSMClient) GetParameter(ctx context.Context, params *ssm.GetParameterInput, optFns ...func(*ssm.Options)) (*ssm.GetParameterOutput, error) {
 	m.ctrl.T.Helper()
@@ -53,4 +73,24 @@ func (mr *MockAWSSSMClientMockRecorder) GetParameter(ctx, params interface{}, op
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, params}, optFns...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetParameter", reflect.TypeOf((*MockAWSSSMClient)(nil).GetParameter), varargs...)
+}
+
+// PutParameter mocks base method.
+func (m *MockAWSSSMClient) PutParameter(ctx context.Context, params *ssm.PutParameterInput, optFns ...func(*ssm.Options)) (*ssm.PutParameterOutput, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, params}
+	for _, a := range optFns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "PutParameter", varargs...)
+	ret0, _ := ret[0].(*ssm.PutParameterOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PutParameter indicates an expected call of PutParameter.
+func (mr *MockAWSSSMClientMockRecorder) PutParameter(ctx, params interface{}, optFns ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, params}, optFns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutParameter", reflect.TypeOf((*MockAWSSSMClient)(nil).PutParameter), varargs...)
 }
