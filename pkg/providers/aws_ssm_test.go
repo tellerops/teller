@@ -2,8 +2,9 @@ package providers
 
 import (
 	"errors"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
 
 	"github.com/alecthomas/assert"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
