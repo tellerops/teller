@@ -21,6 +21,8 @@
 package proto
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/encoding"
 )
@@ -35,12 +37,20 @@ func init() {
 // codec is a Codec implementation with protobuf. It is the default codec for gRPC.
 type codec struct{}
 
-func (codec) Marshal(v interface{}) ([]byte, error) {
-	return proto.Marshal(v.(proto.Message))
+func (codec) Marshal(v any) ([]byte, error) {
+	vv, ok := v.(proto.Message)
+	if !ok {
+		return nil, fmt.Errorf("failed to marshal, message is %T, want proto.Message", v)
+	}
+	return proto.Marshal(vv)
 }
 
-func (codec) Unmarshal(data []byte, v interface{}) error {
-	return proto.Unmarshal(data, v.(proto.Message))
+func (codec) Unmarshal(data []byte, v any) error {
+	vv, ok := v.(proto.Message)
+	if !ok {
+		return fmt.Errorf("failed to unmarshal, message is %T, want proto.Message", v)
+	}
+	return proto.Unmarshal(data, vv)
 }
 
 func (codec) Name() string {
