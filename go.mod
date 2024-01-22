@@ -10,7 +10,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.18
 	github.com/DopplerHQ/cli v0.0.0-20210309042056-414bede8a50e
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
-	github.com/alecthomas/kong v0.2.15
+	github.com/alecthomas/kong v0.8.1
 	github.com/aws/aws-sdk-go-v2 v1.2.0
 	github.com/aws/aws-sdk-go-v2/config v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.1.1
@@ -65,7 +65,7 @@ require (
 	github.com/aead/argon2 v0.0.0-20180111183520-a87724528b07 // indirect
 	github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
-	github.com/alecthomas/repr v0.0.0-20201120212035-bb82daffcca2 // indirect
+	github.com/alecthomas/repr v0.1.0 // indirect
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect

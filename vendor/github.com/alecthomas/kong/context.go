@@ -1,14 +1,13 @@
 package kong
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Path records the nodes and parsed values from the current command-line.
@@ -111,10 +110,17 @@ func (c *Context) Bind(args ...interface{}) {
 //
 // This will typically have to be called like so:
 //
-//    BindTo(impl, (*MyInterface)(nil))
+//	BindTo(impl, (*MyInterface)(nil))
 func (c *Context) BindTo(impl, iface interface{}) {
-	valueOf := reflect.ValueOf(impl)
-	c.bindings[reflect.TypeOf(iface).Elem()] = func() (reflect.Value, error) { return valueOf, nil }
+	c.bindings.addTo(impl, iface)
+}
+
+// BindToProvider allows binding of provider functions.
+//
+// This is useful when the Run() function of different commands require different values that may
+// not all be initialisable from the main() function.
+func (c *Context) BindToProvider(provider interface{}) error {
+	return c.bindings.addProvider(provider)
 }
 
 // Value returns the value for a particular path element.
@@ -159,16 +165,16 @@ func (c *Context) Validate() error { // nolint: gocyclo
 	err := Visit(c.Model, func(node Visitable, next Next) error {
 		switch node := node.(type) {
 		case *Value:
-			_, ok := os.LookupEnv(node.Tag.Env)
-			if node.Enum != "" && (!node.Required || node.Default != "" || (node.Tag.Env != "" && ok)) {
+			ok := atLeastOneEnvSet(node.Tag.Envs)
+			if node.Enum != "" && (!node.Required || node.HasDefault || (len(node.Tag.Envs) != 0 && ok)) {
 				if err := checkEnum(node, node.Target); err != nil {
 					return err
 				}
 			}
 
 		case *Flag:
-			_, ok := os.LookupEnv(node.Tag.Env)
-			if node.Enum != "" && (!node.Required || node.Default != "" || (node.Tag.Env != "" && ok)) {
+			ok := atLeastOneEnvSet(node.Tag.Envs)
+			if node.Enum != "" && (!node.Required || node.HasDefault || (len(node.Tag.Envs) != 0 && ok)) {
 				if err := checkEnum(node.Value, node.Target); err != nil {
 					return err
 				}
@@ -195,16 +201,18 @@ func (c *Context) Validate() error { // nolint: gocyclo
 
 		case *Application:
 			value = node.Target
-			desc = node.Name
+			desc = ""
 
 		case *Node:
 			value = node.Target
 			desc = node.Path()
 		}
 		if validate := isValidatable(value); validate != nil {
-			err := validate.Validate()
-			if err != nil {
-				return errors.Wrap(err, desc)
+			if err := validate.Validate(); err != nil {
+				if desc != "" {
+					return fmt.Errorf("%s: %w", desc, err)
+				}
+				return err
 			}
 		}
 	}
@@ -324,12 +332,39 @@ func (c *Context) Reset() error {
 	})
 }
 
+func (c *Context) endParsing() {
+	args := []string{}
+	for {
+		token := c.scan.Pop()
+		if token.Type == EOLToken {
+			break
+		}
+		args = append(args, token.String())
+	}
+	// Note: tokens must be pushed in reverse order.
+	for i := range args {
+		c.scan.PushTyped(args[len(args)-1-i], PositionalArgumentToken)
+	}
+}
+
 func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 	positional := 0
+	node.Active = true
 
 	flags := []*Flag{}
-	for _, group := range node.AllFlags(false) {
+	flagNode := node
+	if node.DefaultCmd != nil && node.DefaultCmd.Tag.Default == "withargs" {
+		// Add flags of the default command if the current node has one
+		// and that default command allows args / flags without explicitly
+		// naming the command on the CLI.
+		flagNode = node.DefaultCmd
+	}
+	for _, group := range flagNode.AllFlags(false) {
 		flags = append(flags, group...)
+	}
+
+	if node.Passthrough {
+		c.endParsing()
 	}
 
 	for !c.scan.Peek().IsEOL() {
@@ -349,18 +384,7 @@ func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 				// Indicates end of parsing. All remaining arguments are treated as positional arguments only.
 				case v == "--":
 					c.scan.Pop()
-					args := []string{}
-					for {
-						token = c.scan.Pop()
-						if token.Type == EOLToken {
-							break
-						}
-						args = append(args, token.String())
-					}
-					// Note: tokens must be pushed in reverse order.
-					for i := range args {
-						c.scan.PushTyped(args[len(args)-1-i], PositionalArgumentToken)
-					}
+					c.endParsing()
 
 				// Long flag.
 				case strings.HasPrefix(v, "--"):
@@ -413,6 +437,12 @@ func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 			// Ensure we've consumed all positional arguments.
 			if positional < len(node.Positional) {
 				arg := node.Positional[positional]
+
+				if arg.Passthrough {
+					c.endParsing()
+				}
+
+				arg.Active = true
 				err := arg.Parse(c.scan, c.getValue(arg))
 				if err != nil {
 					return err
@@ -474,6 +504,17 @@ func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 				}
 			}
 
+			// If there is a default command that allows args and nothing else
+			// matches, take the branch of the default command
+			if node.DefaultCmd != nil && node.DefaultCmd.Tag.Default == "withargs" {
+				c.Path = append(c.Path, &Path{
+					Parent:  node,
+					Command: node.DefaultCmd,
+					Flags:   node.DefaultCmd.Flags,
+				})
+				return c.trace(node.DefaultCmd)
+			}
+
 			return findPotentialCandidates(token.String(), candidates, "unexpected argument %s", token)
 		default:
 			return fmt.Errorf("unexpected token %s", token)
@@ -490,21 +531,12 @@ func (c *Context) maybeSelectDefault(flags []*Flag, node *Node) error {
 			return nil
 		}
 	}
-	var defaultNode *Path
-	for _, child := range node.Children {
-		if child.Type == CommandNode && child.Tag.Default != "" {
-			if defaultNode != nil {
-				return fmt.Errorf("can't have more than one default command under %s", node.Summary())
-			}
-			defaultNode = &Path{
-				Parent:  child,
-				Command: child,
-				Flags:   child.Flags,
-			}
-		}
-	}
-	if defaultNode != nil {
-		c.Path = append(c.Path, defaultNode)
+	if node.DefaultCmd != nil {
+		c.Path = append(c.Path, &Path{
+			Parent:  node.DefaultCmd,
+			Command: node.DefaultCmd,
+			Flags:   node.DefaultCmd.Flags,
+		})
 	}
 	return nil
 }
@@ -529,7 +561,7 @@ func (c *Context) Resolve() error {
 			for _, resolver := range resolvers {
 				s, err := resolver.Resolve(c, path, flag)
 				if err != nil {
-					return errors.Wrap(err, flag.ShortSummary())
+					return fmt.Errorf("%s: %w", flag.ShortSummary(), err)
 				}
 				if s == nil {
 					continue
@@ -553,7 +585,7 @@ func (c *Context) Resolve() error {
 			})
 		}
 	}
-	c.Path = append(inserted, c.Path...)
+	c.Path = append(c.Path, inserted...)
 	return nil
 }
 
@@ -576,6 +608,7 @@ func (c *Context) getValue(value *Value) reflect.Value {
 			v.Set(reflect.MakeSlice(v.Type(), 0, 0))
 		case reflect.Map:
 			v.Set(reflect.MakeMap(v.Type()))
+		default:
 		}
 		c.values[value] = v
 	}
@@ -633,32 +666,67 @@ func (c *Context) Apply() (string, error) {
 	return strings.Join(path, " "), nil
 }
 
+func flipBoolValue(value reflect.Value) error {
+	if value.Kind() == reflect.Bool {
+		value.SetBool(!value.Bool())
+		return nil
+	}
+
+	if value.Kind() == reflect.Ptr {
+		if !value.IsNil() {
+			return flipBoolValue(value.Elem())
+		}
+		return nil
+	}
+
+	return fmt.Errorf("cannot negate a value of %s", value.Type().String())
+}
+
 func (c *Context) parseFlag(flags []*Flag, match string) (err error) {
-	defer catch(&err)
 	candidates := []string{}
 	for _, flag := range flags {
 		long := "--" + flag.Name
 		short := "-" + string(flag.Short)
+		neg := "--no-" + flag.Name
 		candidates = append(candidates, long)
 		if flag.Short != 0 {
 			candidates = append(candidates, short)
 		}
-		if short != match && long != match {
+		if short != match && long != match && !(match == neg && flag.Tag.Negatable) {
 			continue
 		}
 		// Found a matching flag.
 		c.scan.Pop()
+		if match == neg && flag.Tag.Negatable {
+			flag.Negated = true
+		}
 		err := flag.Parse(c.scan, c.getValue(flag.Value))
 		if err != nil {
-			if e, ok := errors.Cause(err).(*expectedError); ok && e.token.InferredType().IsAny(FlagToken, ShortFlagToken) {
-				return errors.Errorf("%s; perhaps try %s=%q?", err, flag.ShortSummary(), e.token)
+			var expected *expectedError
+			if errors.As(err, &expected) && expected.token.InferredType().IsAny(FlagToken, ShortFlagToken) {
+				return fmt.Errorf("%s; perhaps try %s=%q?", err.Error(), flag.ShortSummary(), expected.token)
 			}
 			return err
+		}
+		if flag.Negated {
+			value := c.getValue(flag.Value)
+			err := flipBoolValue(value)
+			if err != nil {
+				return err
+			}
+			flag.Value.Apply(value)
 		}
 		c.Path = append(c.Path, &Path{Flag: flag})
 		return nil
 	}
 	return findPotentialCandidates(match, candidates, "unknown flag %s", match)
+}
+
+// Call an arbitrary function filling arguments with bound values.
+func (c *Context) Call(fn any, binds ...interface{}) (out []interface{}, err error) {
+	fv := reflect.ValueOf(fn)
+	bindings := c.Kong.bindings.clone().add(binds...).add(c).merge(c.bindings) //nolint:govet
+	return callAnyFunction(fv, bindings)
 }
 
 // RunNode calls the Run() method on an arbitrary node.
@@ -694,7 +762,7 @@ func (c *Context) RunNode(node *Node, binds ...interface{}) (err error) {
 	}
 
 	for _, method := range methods {
-		if err = callMethod("Run", method.node.Target, method.method, method.binds); err != nil {
+		if err = callFunction(method.method, method.binds); err != nil {
 			return err
 		}
 	}
@@ -706,9 +774,17 @@ func (c *Context) RunNode(node *Node, binds ...interface{}) (err error) {
 // Any passed values will be bindable to arguments of the target Run() method. Additionally,
 // all parent nodes in the command structure will be bound.
 func (c *Context) Run(binds ...interface{}) (err error) {
-	defer catch(&err)
 	node := c.Selected()
 	if node == nil {
+		if len(c.Path) > 0 {
+			selected := c.Path[0].Node()
+			if selected.Type == ApplicationNode {
+				method := getMethod(selected.Target, "Run")
+				if method.IsValid() {
+					return c.RunNode(selected, binds...)
+				}
+			}
+		}
 		return fmt.Errorf("no command selected")
 	}
 	return c.RunNode(node, binds...)
@@ -724,16 +800,40 @@ func (c *Context) PrintUsage(summary bool) error {
 }
 
 func checkMissingFlags(flags []*Flag) error {
+	xorGroupSet := map[string]bool{}
+	xorGroup := map[string][]string{}
 	missing := []string{}
 	for _, flag := range flags {
+		if flag.Set {
+			for _, xor := range flag.Xor {
+				xorGroupSet[xor] = true
+			}
+		}
 		if !flag.Required || flag.Set {
 			continue
 		}
-		missing = append(missing, flag.Summary())
+		if len(flag.Xor) > 0 {
+			for _, xor := range flag.Xor {
+				if xorGroupSet[xor] {
+					continue
+				}
+				xorGroup[xor] = append(xorGroup[xor], flag.Summary())
+			}
+		} else {
+			missing = append(missing, flag.Summary())
+		}
 	}
+	for xor, flags := range xorGroup {
+		if !xorGroupSet[xor] && len(flags) > 1 {
+			missing = append(missing, strings.Join(flags, " or "))
+		}
+	}
+
 	if len(missing) == 0 {
 		return nil
 	}
+
+	sort.Strings(missing)
 
 	return fmt.Errorf("missing flags: %s", strings.Join(missing, ", "))
 }
@@ -751,7 +851,6 @@ func checkMissingChildren(node *Node) error {
 		missing = append(missing, strconv.Quote(strings.Join(missingArgs, " ")))
 	}
 
-	haveDefault := 0
 	for _, child := range node.Children {
 		if child.Hidden {
 			continue
@@ -762,19 +861,10 @@ func checkMissingChildren(node *Node) error {
 			}
 			missing = append(missing, strconv.Quote(child.Summary()))
 		} else {
-			if child.Tag.Default != "" {
-				if len(child.Children) > 0 {
-					return fmt.Errorf("default command %s must not have subcommands or arguments", child.Summary())
-				}
-				haveDefault++
-			}
 			missing = append(missing, strconv.Quote(child.Name))
 		}
 	}
-	if haveDefault > 1 {
-		return fmt.Errorf("more than one default command found under %s", node.Summary())
-	}
-	if len(missing) == 0 || haveDefault > 0 {
+	if len(missing) == 0 {
 		return nil
 	}
 
@@ -801,7 +891,17 @@ func checkMissingPositionals(positional int, values []*Value) error {
 
 	missing := []string{}
 	for ; positional < len(values); positional++ {
-		missing = append(missing, "<"+values[positional].Name+">")
+		arg := values[positional]
+		// TODO(aat): Fix hardcoding of these env checks all over the place :\
+		if len(arg.Tag.Envs) != 0 {
+			if atLeastOneEnvSet(arg.Tag.Envs) {
+				continue
+			}
+		}
+		missing = append(missing, "<"+arg.Name+">")
+	}
+	if len(missing) == 0 {
+		return nil
 	}
 	return fmt.Errorf("missing positional arguments %s", strings.Join(missing, " "))
 }
@@ -817,20 +917,34 @@ func checkEnum(value *Value, target reflect.Value) error {
 		return nil
 
 	case reflect.Map, reflect.Struct:
-		return errors.Errorf("enum can only be applied to a slice or value")
+		return errors.New("enum can only be applied to a slice or value")
 
-	default:
-		enumMap := value.EnumMap()
-		v := fmt.Sprintf("%v", target)
-		if enumMap[v] {
+	case reflect.Ptr:
+		if target.IsNil() {
 			return nil
 		}
+		return checkEnum(value, target.Elem())
+	default:
+		enumSlice := value.EnumSlice()
+		v := fmt.Sprintf("%v", target)
 		enums := []string{}
-		for enum := range enumMap {
+		for _, enum := range enumSlice {
+			if enum == v {
+				return nil
+			}
 			enums = append(enums, fmt.Sprintf("%q", enum))
 		}
-		sort.Strings(enums)
 		return fmt.Errorf("%s must be one of %s but got %q", value.ShortSummary(), strings.Join(enums, ","), target.Interface())
+	}
+}
+
+func checkPassthroughArg(target reflect.Value) bool {
+	typ := target.Type()
+	switch typ.Kind() {
+	case reflect.Slice:
+		return typ.Elem().Kind() == reflect.String
+	default:
+		return false
 	}
 }
 
@@ -841,13 +955,12 @@ func checkXorDuplicates(paths []*Path) error {
 			if !flag.Set {
 				continue
 			}
-			if flag.Xor == "" {
-				continue
+			for _, xor := range flag.Xor {
+				if seen[xor] != nil {
+					return fmt.Errorf("--%s and --%s can't be used together", seen[xor].Name, flag.Name)
+				}
+				seen[xor] = flag
 			}
-			if seen[flag.Xor] != nil {
-				return fmt.Errorf("--%s and --%s can't be used together", seen[flag.Xor].Name, flag.Name)
-			}
-			seen[flag.Xor] = flag
 		}
 	}
 	return nil
@@ -885,4 +998,13 @@ func isValidatable(v reflect.Value) validatable {
 		return isValidatable(v.Addr())
 	}
 	return nil
+}
+
+func atLeastOneEnvSet(envs []string) bool {
+	for _, env := range envs {
+		if _, ok := os.LookupEnv(env); ok {
+			return true
+		}
+	}
+	return false
 }
