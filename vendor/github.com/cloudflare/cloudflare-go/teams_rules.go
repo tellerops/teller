@@ -2,43 +2,143 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 type TeamsRuleSettings struct {
-	// Enable block page on rules with action block
-	BlockPageEnabled bool `json:"block_page_enabled"`
+	// list of ipv4 or ipv6 ips to override with, when action is set to dns override
+	OverrideIPs []string `json:"override_ips"`
 
 	// show this string at block page caused by this rule
 	BlockReason string `json:"block_reason"`
 
-	// list of ipv4 or ipv6 ips to override with, when action is set to dns override
-	OverrideIPs []string `json:"override_ips"`
-
 	// host name to override with when action is set to dns override. Can not be used with OverrideIPs
 	OverrideHost string `json:"override_host"`
+
+	// settings for browser isolation actions
+	BISOAdminControls *TeamsBISOAdminControlSettings `json:"biso_admin_controls"`
 
 	// settings for l4(network) level overrides
 	L4Override *TeamsL4OverrideSettings `json:"l4override"`
 
-	// settings for browser isolation actions
-	BISOAdminControls *TeamsBISOAdminControlSettings `json:"biso_admin_controls"`
+	// settings for adding headers to http requests
+	AddHeaders http.Header `json:"add_headers"`
+
+	// settings for session check in allow action
+	CheckSession *TeamsCheckSessionSettings `json:"check_session"`
+
+	// Enable block page on rules with action block
+	BlockPageEnabled bool `json:"block_page_enabled"`
+
+	// whether to disable dnssec validation for allow action
+	InsecureDisableDNSSECValidation bool `json:"insecure_disable_dnssec_validation"`
+
+	// settings for rules with egress action
+	EgressSettings *EgressSettings `json:"egress"`
+
+	// DLP payload logging configuration
+	PayloadLog *TeamsDlpPayloadLogSettings `json:"payload_log"`
+
+	//AuditSsh Settings
+	AuditSSH *AuditSSHRuleSettings `json:"audit_ssh"`
+
+	// Turns on ip category based filter on dns if the rule contains dns category checks
+	IPCategories bool `json:"ip_categories"`
+
+	// Allow parent MSP accounts to enable bypass their children's rules. Do not set them for non MSP accounts.
+	AllowChildBypass *bool `json:"allow_child_bypass,omitempty"`
+
+	// Allow child MSP accounts to bypass their parent's rules. Do not set them for non MSP accounts.
+	BypassParentRule *bool `json:"bypass_parent_rule,omitempty"`
+
+	// Action taken when an untrusted origin certificate error occurs in a http allow rule
+	UntrustedCertSettings *UntrustedCertSettings `json:"untrusted_cert"`
+
+	// Specifies that a resolver policy should use Cloudflare's DNS Resolver.
+	ResolveDnsThroughCloudflare *bool `json:"resolve_dns_through_cloudflare,omitempty"`
+
+	// Resolver policy settings.
+	DnsResolverSettings *TeamsDnsResolverSettings `json:"dns_resolvers,omitempty"`
+
+	NotificationSettings *TeamsNotificationSettings `json:"notification_settings"`
 }
 
-// TeamsL4OverrideSettings used in l4 filter type rule with action set to override
+type TeamsGatewayUntrustedCertAction string
+
+const (
+	UntrustedCertPassthrough TeamsGatewayUntrustedCertAction = "pass_through"
+	UntrustedCertBlock       TeamsGatewayUntrustedCertAction = "block"
+	UntrustedCertError       TeamsGatewayUntrustedCertAction = "error"
+)
+
+type UntrustedCertSettings struct {
+	Action TeamsGatewayUntrustedCertAction `json:"action"`
+}
+
+type TeamsNotificationSettings struct {
+	Enabled    *bool  `json:"enabled,omitempty"`
+	Message    string `json:"msg"`
+	SupportURL string `json:"support_url"`
+}
+
+type AuditSSHRuleSettings struct {
+	CommandLogging bool `json:"command_logging"`
+}
+
+type EgressSettings struct {
+	Ipv6Range    string `json:"ipv6"`
+	Ipv4         string `json:"ipv4"`
+	Ipv4Fallback string `json:"ipv4_fallback"`
+}
+
+// TeamsL4OverrideSettings used in l4 filter type rule with action set to override.
 type TeamsL4OverrideSettings struct {
 	IP   string `json:"ip,omitempty"`
 	Port int    `json:"port,omitempty"`
 }
 
 type TeamsBISOAdminControlSettings struct {
-	DisablePrinting  bool `json:"dp"`
-	DisableCopyPaste bool `json:"dcp"`
+	DisablePrinting             bool `json:"dp"`
+	DisableCopyPaste            bool `json:"dcp"`
+	DisableDownload             bool `json:"dd"`
+	DisableUpload               bool `json:"du"`
+	DisableKeyboard             bool `json:"dk"`
+	DisableClipboardRedirection bool `json:"dcr"`
+}
+
+type TeamsCheckSessionSettings struct {
+	Enforce  bool     `json:"enforce"`
+	Duration Duration `json:"duration"`
+}
+
+type (
+	TeamsDnsResolverSettings struct {
+		V4Resolvers []TeamsDnsResolverAddressV4 `json:"ipv4,omitempty"`
+		V6Resolvers []TeamsDnsResolverAddressV6 `json:"ipv6,omitempty"`
+	}
+
+	TeamsDnsResolverAddressV4 struct {
+		TeamsDnsResolverAddress
+	}
+
+	TeamsDnsResolverAddressV6 struct {
+		TeamsDnsResolverAddress
+	}
+
+	TeamsDnsResolverAddress struct {
+		IP                         string `json:"ip"`
+		Port                       *int   `json:"port,omitempty"`
+		VnetID                     string `json:"vnet_id,omitempty"`
+		RouteThroughPrivateNetwork *bool  `json:"route_through_private_network,omitempty"`
+	}
+)
+
+type TeamsDlpPayloadLogSettings struct {
+	Enabled bool `json:"enabled"`
 }
 
 type TeamsFilterType string
@@ -46,24 +146,27 @@ type TeamsFilterType string
 type TeamsGatewayAction string
 
 const (
-	HttpFilter TeamsFilterType = "http"
-	DnsFilter  TeamsFilterType = "dns"
-	L4Filter   TeamsFilterType = "l4"
+	HttpFilter   TeamsFilterType = "http"
+	DnsFilter    TeamsFilterType = "dns"
+	L4Filter     TeamsFilterType = "l4"
+	EgressFilter TeamsFilterType = "egress"
 )
 
 const (
-	Allow        TeamsGatewayAction = "allow"
-	Block        TeamsGatewayAction = "block"
-	SafeSearch   TeamsGatewayAction = "safesearch"
-	YTRestricted TeamsGatewayAction = "ytrestricted"
-	On           TeamsGatewayAction = "on"
-	Off          TeamsGatewayAction = "off"
-	Scan         TeamsGatewayAction = "scan"
-	NoScan       TeamsGatewayAction = "noscan"
-	Isolate      TeamsGatewayAction = "isolate"
-	NoIsolate    TeamsGatewayAction = "noisolate"
-	Override     TeamsGatewayAction = "override"
-	L4Override   TeamsGatewayAction = "l4_override"
+	Allow        TeamsGatewayAction = "allow"        // dns|http|l4
+	Block        TeamsGatewayAction = "block"        // dns|http|l4
+	SafeSearch   TeamsGatewayAction = "safesearch"   // dns
+	YTRestricted TeamsGatewayAction = "ytrestricted" // dns
+	On           TeamsGatewayAction = "on"           // http
+	Off          TeamsGatewayAction = "off"          // http
+	Scan         TeamsGatewayAction = "scan"         // http
+	NoScan       TeamsGatewayAction = "noscan"       // http
+	Isolate      TeamsGatewayAction = "isolate"      // http
+	NoIsolate    TeamsGatewayAction = "noisolate"    // http
+	Override     TeamsGatewayAction = "override"     // http
+	L4Override   TeamsGatewayAction = "l4_override"  // l4
+	Egress       TeamsGatewayAction = "egress"       // egress
+	AuditSSH     TeamsGatewayAction = "audit_ssh"    // l4
 )
 
 func TeamsRulesActionValues() []string {
@@ -80,25 +183,36 @@ func TeamsRulesActionValues() []string {
 		string(NoIsolate),
 		string(Override),
 		string(L4Override),
+		string(Egress),
+		string(AuditSSH),
+	}
+}
+
+func TeamsRulesUntrustedCertActionValues() []string {
+	return []string{
+		string(UntrustedCertPassthrough),
+		string(UntrustedCertBlock),
+		string(UntrustedCertError),
 	}
 }
 
 // TeamsRule represents an Teams wirefilter rule.
 type TeamsRule struct {
-	ID           string             `json:"id,omitempty"`
-	CreatedAt    *time.Time         `json:"created_at,omitempty"`
-	UpdatedAt    *time.Time         `json:"updated_at,omitempty"`
-	DeletedAt    *time.Time         `json:"deleted_at,omitempty"`
-	Name         string             `json:"name"`
-	Description  string             `json:"description"`
-	Precedence   uint64             `json:"precedence"`
-	Enabled      bool               `json:"enabled"`
-	Action       TeamsGatewayAction `json:"action"`
-	Filters      []TeamsFilterType  `json:"filters"`
-	Traffic      string             `json:"traffic"`
-	Identity     string             `json:"identity"`
-	Version      uint64             `json:"version"`
-	RuleSettings TeamsRuleSettings  `json:"rule_settings,omitempty"`
+	ID            string             `json:"id,omitempty"`
+	CreatedAt     *time.Time         `json:"created_at,omitempty"`
+	UpdatedAt     *time.Time         `json:"updated_at,omitempty"`
+	DeletedAt     *time.Time         `json:"deleted_at,omitempty"`
+	Name          string             `json:"name"`
+	Description   string             `json:"description"`
+	Precedence    uint64             `json:"precedence"`
+	Enabled       bool               `json:"enabled"`
+	Action        TeamsGatewayAction `json:"action"`
+	Filters       []TeamsFilterType  `json:"filters"`
+	Traffic       string             `json:"traffic"`
+	Identity      string             `json:"identity"`
+	DevicePosture string             `json:"device_posture"`
+	Version       uint64             `json:"version"`
+	RuleSettings  TeamsRuleSettings  `json:"rule_settings,omitempty"`
 }
 
 // TeamsRuleResponse is the API response, containing a single rule.
@@ -138,7 +252,7 @@ func (api *API) TeamsRules(ctx context.Context, accountID string) ([]TeamsRule, 
 	var teamsRulesResponse TeamsRulesResponse
 	err = json.Unmarshal(res, &teamsRulesResponse)
 	if err != nil {
-		return []TeamsRule{}, errors.Wrap(err, errUnmarshalError)
+		return []TeamsRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsRulesResponse.Result, nil
@@ -158,7 +272,7 @@ func (api *API) TeamsRule(ctx context.Context, accountID string, ruleId string) 
 	var teamsRuleResponse TeamsRuleResponse
 	err = json.Unmarshal(res, &teamsRuleResponse)
 	if err != nil {
-		return TeamsRule{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsRuleResponse.Result, nil
@@ -178,7 +292,7 @@ func (api *API) TeamsCreateRule(ctx context.Context, accountID string, rule Team
 	var teamsRuleResponse TeamsRuleResponse
 	err = json.Unmarshal(res, &teamsRuleResponse)
 	if err != nil {
-		return TeamsRule{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsRuleResponse.Result, nil
@@ -198,7 +312,7 @@ func (api *API) TeamsUpdateRule(ctx context.Context, accountID string, ruleId st
 	var teamsRuleResponse TeamsRuleResponse
 	err = json.Unmarshal(res, &teamsRuleResponse)
 	if err != nil {
-		return TeamsRule{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsRuleResponse.Result, nil
@@ -218,7 +332,7 @@ func (api *API) TeamsPatchRule(ctx context.Context, accountID string, ruleId str
 	var teamsRuleResponse TeamsRuleResponse
 	err = json.Unmarshal(res, &teamsRuleResponse)
 	if err != nil {
-		return TeamsRule{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsRuleResponse.Result, nil

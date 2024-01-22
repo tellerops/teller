@@ -2,16 +2,13 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
-// RateLimit is a policy than can be applied to limit traffic within a customer domain
+// RateLimit is a policy than can be applied to limit traffic within a customer domain.
 type RateLimit struct {
 	ID          string                  `json:"id,omitempty"`
 	Disabled    bool                    `json:"disabled,omitempty"`
@@ -24,20 +21,20 @@ type RateLimit struct {
 	Correlate   *RateLimitCorrelate     `json:"correlate,omitempty"`
 }
 
-// RateLimitTrafficMatcher contains the rules that will be used to apply a rate limit to traffic
+// RateLimitTrafficMatcher contains the rules that will be used to apply a rate limit to traffic.
 type RateLimitTrafficMatcher struct {
 	Request  RateLimitRequestMatcher  `json:"request"`
 	Response RateLimitResponseMatcher `json:"response"`
 }
 
-// RateLimitRequestMatcher contains the matching rules pertaining to requests
+// RateLimitRequestMatcher contains the matching rules pertaining to requests.
 type RateLimitRequestMatcher struct {
 	Methods    []string `json:"methods,omitempty"`
 	Schemes    []string `json:"schemes,omitempty"`
 	URLPattern string   `json:"url,omitempty"`
 }
 
-// RateLimitResponseMatcher contains the matching rules pertaining to responses
+// RateLimitResponseMatcher contains the matching rules pertaining to responses.
 type RateLimitResponseMatcher struct {
 	Statuses      []int                            `json:"status,omitempty"`
 	OriginTraffic *bool                            `json:"origin_traffic,omitempty"` // api defaults to true so we need an explicit empty value
@@ -52,26 +49,26 @@ type RateLimitResponseMatcherHeader struct {
 	Value string `json:"value"`
 }
 
-// RateLimitKeyValue is k-v formatted as expected in the rate limit description
+// RateLimitKeyValue is k-v formatted as expected in the rate limit description.
 type RateLimitKeyValue struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
-// RateLimitAction is the action that will be taken when the rate limit threshold is reached
+// RateLimitAction is the action that will be taken when the rate limit threshold is reached.
 type RateLimitAction struct {
 	Mode     string                   `json:"mode"`
 	Timeout  int                      `json:"timeout"`
 	Response *RateLimitActionResponse `json:"response"`
 }
 
-// RateLimitActionResponse is the response that will be returned when rate limit action is triggered
+// RateLimitActionResponse is the response that will be returned when rate limit action is triggered.
 type RateLimitActionResponse struct {
 	ContentType string `json:"content_type"`
 	Body        string `json:"body"`
 }
 
-// RateLimitCorrelate pertainings to NAT support
+// RateLimitCorrelate pertainings to NAT support.
 type RateLimitCorrelate struct {
 	By string `json:"by"`
 }
@@ -98,7 +95,7 @@ func (api *API) CreateRateLimit(ctx context.Context, zoneID string, limit RateLi
 	}
 	var r rateLimitResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return RateLimit{}, errors.Wrap(err, errUnmarshalError)
+		return RateLimit{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -107,18 +104,7 @@ func (api *API) CreateRateLimit(ctx context.Context, zoneID string, limit RateLi
 //
 // API reference: https://api.cloudflare.com/#rate-limits-for-a-zone-list-rate-limits
 func (api *API) ListRateLimits(ctx context.Context, zoneID string, pageOpts PaginationOptions) ([]RateLimit, ResultInfo, error) {
-	v := url.Values{}
-	if pageOpts.PerPage > 0 {
-		v.Set("per_page", strconv.Itoa(pageOpts.PerPage))
-	}
-	if pageOpts.Page > 0 {
-		v.Set("page", strconv.Itoa(pageOpts.Page))
-	}
-
-	uri := fmt.Sprintf("/zones/%s/rate_limits", zoneID)
-	if len(v) > 0 {
-		uri = fmt.Sprintf("%s?%s", uri, v.Encode())
-	}
+	uri := buildURI(fmt.Sprintf("/zones/%s/rate_limits", zoneID), pageOpts)
 
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
@@ -128,7 +114,7 @@ func (api *API) ListRateLimits(ctx context.Context, zoneID string, pageOpts Pagi
 	var r rateLimitListResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []RateLimit{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return []RateLimit{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, r.ResultInfo, nil
 }
@@ -174,7 +160,7 @@ func (api *API) RateLimit(ctx context.Context, zoneID, limitID string) (RateLimi
 	var r rateLimitResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return RateLimit{}, errors.Wrap(err, errUnmarshalError)
+		return RateLimit{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -190,7 +176,7 @@ func (api *API) UpdateRateLimit(ctx context.Context, zoneID, limitID string, lim
 	}
 	var r rateLimitResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return RateLimit{}, errors.Wrap(err, errUnmarshalError)
+		return RateLimit{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -207,7 +193,7 @@ func (api *API) DeleteRateLimit(ctx context.Context, zoneID, limitID string) err
 	var r rateLimitResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return nil
 }

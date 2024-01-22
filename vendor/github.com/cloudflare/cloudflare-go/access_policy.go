@@ -2,14 +2,16 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
+)
+
+var (
+	ErrMissingApplicationID = errors.New("missing required application ID")
 )
 
 type AccessApprovalGroup struct {
@@ -28,6 +30,8 @@ type AccessPolicy struct {
 	UpdatedAt  *time.Time `json:"updated_at"`
 	Name       string     `json:"name"`
 
+	IsolationRequired            *bool                 `json:"isolation_required,omitempty"`
+	SessionDuration              *string               `json:"session_duration,omitempty"`
 	PurposeJustificationRequired *bool                 `json:"purpose_justification_required,omitempty"`
 	PurposeJustificationPrompt   *string               `json:"purpose_justification_prompt,omitempty"`
 	ApprovalRequired             *bool                 `json:"approval_required,omitempty"`
@@ -38,11 +42,11 @@ type AccessPolicy struct {
 	Include []interface{} `json:"include"`
 
 	// The exclude policy works like a NOT logical operator. The user must
-	// not satisfy all of the rules in exclude.
+	// not satisfy all the rules in exclude.
 	Exclude []interface{} `json:"exclude"`
 
 	// The require policy works like a AND logical operator. The user must
-	// satisfy all of the rules in require.
+	// satisfy all the rules in require.
 	Require []interface{} `json:"require"`
 }
 
@@ -63,86 +67,150 @@ type AccessPolicyDetailResponse struct {
 	Result   AccessPolicy `json:"result"`
 }
 
-// AccessPolicies returns all access policies for an access application.
-//
-// API reference: https://api.cloudflare.com/#access-policy-list-access-policies
-func (api *API) AccessPolicies(ctx context.Context, accountID, applicationID string, pageOpts PaginationOptions) ([]AccessPolicy, ResultInfo, error) {
-	return api.accessPolicies(ctx, accountID, applicationID, pageOpts, AccountRouteRoot)
+type ListAccessPoliciesParams struct {
+	ApplicationID string `json:"-"`
+	ResultInfo
 }
 
-// ZoneLevelAccessPolicies returns all zone level access policies for an access application.
-//
-// API reference: https://api.cloudflare.com/#zone-level-access-policy-list-access-policies
-func (api *API) ZoneLevelAccessPolicies(ctx context.Context, zoneID, applicationID string, pageOpts PaginationOptions) ([]AccessPolicy, ResultInfo, error) {
-	return api.accessPolicies(ctx, zoneID, applicationID, pageOpts, ZoneRouteRoot)
+type GetAccessPolicyParams struct {
+	ApplicationID string `json:"-"`
+	PolicyID      string `json:"-"`
 }
 
-func (api *API) accessPolicies(ctx context.Context, id string, applicationID string, pageOpts PaginationOptions, routeRoot RouteRoot) ([]AccessPolicy, ResultInfo, error) {
-	v := url.Values{}
-	if pageOpts.PerPage > 0 {
-		v.Set("per_page", strconv.Itoa(pageOpts.PerPage))
-	}
-	if pageOpts.Page > 0 {
-		v.Set("page", strconv.Itoa(pageOpts.Page))
+type CreateAccessPolicyParams struct {
+	ApplicationID string `json:"-"`
+
+	Precedence int    `json:"precedence"`
+	Decision   string `json:"decision"`
+	Name       string `json:"name"`
+
+	IsolationRequired            *bool                 `json:"isolation_required,omitempty"`
+	SessionDuration              *string               `json:"session_duration,omitempty"`
+	PurposeJustificationRequired *bool                 `json:"purpose_justification_required,omitempty"`
+	PurposeJustificationPrompt   *string               `json:"purpose_justification_prompt,omitempty"`
+	ApprovalRequired             *bool                 `json:"approval_required,omitempty"`
+	ApprovalGroups               []AccessApprovalGroup `json:"approval_groups"`
+
+	// The include policy works like an OR logical operator. The user must
+	// satisfy one of the rules.
+	Include []interface{} `json:"include"`
+
+	// The exclude policy works like a NOT logical operator. The user must
+	// not satisfy all the rules in exclude.
+	Exclude []interface{} `json:"exclude"`
+
+	// The require policy works like a AND logical operator. The user must
+	// satisfy all the rules in require.
+	Require []interface{} `json:"require"`
+}
+
+type UpdateAccessPolicyParams struct {
+	ApplicationID string `json:"-"`
+	PolicyID      string `json:"-"`
+
+	Precedence int    `json:"precedence"`
+	Decision   string `json:"decision"`
+	Name       string `json:"name"`
+
+	IsolationRequired            *bool                 `json:"isolation_required,omitempty"`
+	SessionDuration              *string               `json:"session_duration,omitempty"`
+	PurposeJustificationRequired *bool                 `json:"purpose_justification_required,omitempty"`
+	PurposeJustificationPrompt   *string               `json:"purpose_justification_prompt,omitempty"`
+	ApprovalRequired             *bool                 `json:"approval_required,omitempty"`
+	ApprovalGroups               []AccessApprovalGroup `json:"approval_groups"`
+
+	// The include policy works like an OR logical operator. The user must
+	// satisfy one of the rules.
+	Include []interface{} `json:"include"`
+
+	// The exclude policy works like a NOT logical operator. The user must
+	// not satisfy all the rules in exclude.
+	Exclude []interface{} `json:"exclude"`
+
+	// The require policy works like a AND logical operator. The user must
+	// satisfy all the rules in require.
+	Require []interface{} `json:"require"`
+}
+
+type DeleteAccessPolicyParams struct {
+	ApplicationID string `json:"-"`
+	PolicyID      string `json:"-"`
+}
+
+// ListAccessPolicies returns all access policies for an access application.
+//
+// Account API reference: https://developers.cloudflare.com/api/operations/access-policies-list-access-policies
+// Zone API reference: https://developers.cloudflare.com/api/operations/zone-level-access-policies-list-access-policies
+func (api *API) ListAccessPolicies(ctx context.Context, rc *ResourceContainer, params ListAccessPoliciesParams) ([]AccessPolicy, *ResultInfo, error) {
+	if params.ApplicationID == "" {
+		return []AccessPolicy{}, &ResultInfo{}, ErrMissingApplicationID
 	}
 
-	uri := fmt.Sprintf(
+	baseURL := fmt.Sprintf(
 		"/%s/%s/access/apps/%s/policies",
-		routeRoot,
-		id,
-		applicationID,
+		rc.Level,
+		rc.Identifier,
+		params.ApplicationID,
 	)
 
-	if len(v) > 0 {
-		uri = fmt.Sprintf("%s?%s", uri, v.Encode())
+	autoPaginate := true
+	if params.PerPage >= 1 || params.Page >= 1 {
+		autoPaginate = false
 	}
 
-	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
-	if err != nil {
-		return []AccessPolicy{}, ResultInfo{}, err
+	if params.PerPage < 1 {
+		params.PerPage = 25
 	}
 
-	var accessPolicyListResponse AccessPolicyListResponse
-	err = json.Unmarshal(res, &accessPolicyListResponse)
-	if err != nil {
-		return []AccessPolicy{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+	if params.Page < 1 {
+		params.Page = 1
 	}
 
-	return accessPolicyListResponse.Result, accessPolicyListResponse.ResultInfo, nil
+	var accessPolicies []AccessPolicy
+	var r AccessPolicyListResponse
+	for {
+		uri := buildURI(baseURL, params)
+		res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+		if err != nil {
+			return []AccessPolicy{}, &ResultInfo{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
+		}
+
+		err = json.Unmarshal(res, &r)
+		if err != nil {
+			return []AccessPolicy{}, &ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+		}
+		accessPolicies = append(accessPolicies, r.Result...)
+		params.ResultInfo = r.ResultInfo.Next()
+		if params.ResultInfo.Done() || !autoPaginate {
+			break
+		}
+	}
+
+	return accessPolicies, &r.ResultInfo, nil
 }
 
-// AccessPolicy returns a single policy based on the policy ID.
+// GetAccessPolicy returns a single policy based on the policy ID.
 //
-// API reference: https://api.cloudflare.com/#access-policy-access-policy-details
-func (api *API) AccessPolicy(ctx context.Context, accountID, applicationID, policyID string) (AccessPolicy, error) {
-	return api.accessPolicy(ctx, accountID, applicationID, policyID, AccountRouteRoot)
-}
-
-// ZoneLevelAccessPolicy returns a single zone level policy based on the policy ID.
-//
-// API reference: https://api.cloudflare.com/#zone-level-access-policy-access-policy-details
-func (api *API) ZoneLevelAccessPolicy(ctx context.Context, zoneID, applicationID, policyID string) (AccessPolicy, error) {
-	return api.accessPolicy(ctx, zoneID, applicationID, policyID, ZoneRouteRoot)
-}
-
-func (api *API) accessPolicy(ctx context.Context, id string, applicationID string, policyID string, routeRoot RouteRoot) (AccessPolicy, error) {
+// Account API reference: https://developers.cloudflare.com/api/operations/access-policies-get-an-access-policy
+// Zone API reference: https://developers.cloudflare.com/api/operations/zone-level-access-policies-get-an-access-policy
+func (api *API) GetAccessPolicy(ctx context.Context, rc *ResourceContainer, params GetAccessPolicyParams) (AccessPolicy, error) {
 	uri := fmt.Sprintf(
 		"/%s/%s/access/apps/%s/policies/%s",
-		routeRoot,
-		id,
-		applicationID,
-		policyID,
+		rc.Level,
+		rc.Identifier,
+		params.ApplicationID,
+		params.PolicyID,
 	)
 
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return AccessPolicy{}, err
+		return AccessPolicy{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
 	}
 
 	var accessPolicyDetailResponse AccessPolicyDetailResponse
 	err = json.Unmarshal(res, &accessPolicyDetailResponse)
 	if err != nil {
-		return AccessPolicy{}, errors.Wrap(err, errUnmarshalError)
+		return AccessPolicy{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessPolicyDetailResponse.Result, nil
@@ -150,35 +218,25 @@ func (api *API) accessPolicy(ctx context.Context, id string, applicationID strin
 
 // CreateAccessPolicy creates a new access policy.
 //
-// API reference: https://api.cloudflare.com/#access-policy-create-access-policy
-func (api *API) CreateAccessPolicy(ctx context.Context, accountID, applicationID string, accessPolicy AccessPolicy) (AccessPolicy, error) {
-	return api.createAccessPolicy(ctx, accountID, applicationID, accessPolicy, AccountRouteRoot)
-}
-
-// CreateZoneLevelAccessPolicy creates a new zone level access policy.
-//
-// API reference: https://api.cloudflare.com/#zone-level-access-policy-create-access-policy
-func (api *API) CreateZoneLevelAccessPolicy(ctx context.Context, zoneID, applicationID string, accessPolicy AccessPolicy) (AccessPolicy, error) {
-	return api.createAccessPolicy(ctx, zoneID, applicationID, accessPolicy, ZoneRouteRoot)
-}
-
-func (api *API) createAccessPolicy(ctx context.Context, id, applicationID string, accessPolicy AccessPolicy, routeRoot RouteRoot) (AccessPolicy, error) {
+// Account API reference: https://developers.cloudflare.com/api/operations/access-policies-create-an-access-policy
+// Zone API reference: https://developers.cloudflare.com/api/operations/zone-level-access-policies-create-an-access-policy
+func (api *API) CreateAccessPolicy(ctx context.Context, rc *ResourceContainer, params CreateAccessPolicyParams) (AccessPolicy, error) {
 	uri := fmt.Sprintf(
 		"/%s/%s/access/apps/%s/policies",
-		routeRoot,
-		id,
-		applicationID,
+		rc.Level,
+		rc.Identifier,
+		params.ApplicationID,
 	)
 
-	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, accessPolicy)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, params)
 	if err != nil {
-		return AccessPolicy{}, err
+		return AccessPolicy{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
 	}
 
 	var accessPolicyDetailResponse AccessPolicyDetailResponse
 	err = json.Unmarshal(res, &accessPolicyDetailResponse)
 	if err != nil {
-		return AccessPolicy{}, errors.Wrap(err, errUnmarshalError)
+		return AccessPolicy{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessPolicyDetailResponse.Result, nil
@@ -186,39 +244,30 @@ func (api *API) createAccessPolicy(ctx context.Context, id, applicationID string
 
 // UpdateAccessPolicy updates an existing access policy.
 //
-// API reference: https://api.cloudflare.com/#access-policy-update-access-policy
-func (api *API) UpdateAccessPolicy(ctx context.Context, accountID, applicationID string, accessPolicy AccessPolicy) (AccessPolicy, error) {
-	return api.updateAccessPolicy(ctx, accountID, applicationID, accessPolicy, AccountRouteRoot)
-}
-
-// UpdateZoneLevelAccessPolicy updates an existing zone level access policy.
-//
-// API reference: https://api.cloudflare.com/#zone-level-access-policy-update-access-policy
-func (api *API) UpdateZoneLevelAccessPolicy(ctx context.Context, zoneID, applicationID string, accessPolicy AccessPolicy) (AccessPolicy, error) {
-	return api.updateAccessPolicy(ctx, zoneID, applicationID, accessPolicy, ZoneRouteRoot)
-}
-
-func (api *API) updateAccessPolicy(ctx context.Context, id, applicationID string, accessPolicy AccessPolicy, routeRoot RouteRoot) (AccessPolicy, error) {
-	if accessPolicy.ID == "" {
-		return AccessPolicy{}, errors.Errorf("access policy ID cannot be empty")
+// Account API reference: https://developers.cloudflare.com/api/operations/access-policies-update-an-access-policy
+// Zone API reference: https://developers.cloudflare.com/api/operations/zone-level-access-policies-update-an-access-policy
+func (api *API) UpdateAccessPolicy(ctx context.Context, rc *ResourceContainer, params UpdateAccessPolicyParams) (AccessPolicy, error) {
+	if params.PolicyID == "" {
+		return AccessPolicy{}, fmt.Errorf("access policy ID cannot be empty")
 	}
+
 	uri := fmt.Sprintf(
 		"/%s/%s/access/apps/%s/policies/%s",
-		routeRoot,
-		id,
-		applicationID,
-		accessPolicy.ID,
+		rc.Level,
+		rc.Identifier,
+		params.ApplicationID,
+		params.PolicyID,
 	)
 
-	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, accessPolicy)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, params)
 	if err != nil {
-		return AccessPolicy{}, err
+		return AccessPolicy{}, fmt.Errorf("%s: %w", errMakeRequestError, err)
 	}
 
 	var accessPolicyDetailResponse AccessPolicyDetailResponse
 	err = json.Unmarshal(res, &accessPolicyDetailResponse)
 	if err != nil {
-		return AccessPolicy{}, errors.Wrap(err, errUnmarshalError)
+		return AccessPolicy{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessPolicyDetailResponse.Result, nil
@@ -226,30 +275,20 @@ func (api *API) updateAccessPolicy(ctx context.Context, id, applicationID string
 
 // DeleteAccessPolicy deletes an access policy.
 //
-// API reference: https://api.cloudflare.com/#access-policy-update-access-policy
-func (api *API) DeleteAccessPolicy(ctx context.Context, accountID, applicationID, accessPolicyID string) error {
-	return api.deleteAccessPolicy(ctx, accountID, applicationID, accessPolicyID, AccountRouteRoot)
-}
-
-// DeleteZoneLevelAccessPolicy deletes a zone level access policy.
-//
-// API reference: https://api.cloudflare.com/#zone-level-access-policy-delete-access-policy
-func (api *API) DeleteZoneLevelAccessPolicy(ctx context.Context, zoneID, applicationID, accessPolicyID string) error {
-	return api.deleteAccessPolicy(ctx, zoneID, applicationID, accessPolicyID, ZoneRouteRoot)
-}
-
-func (api *API) deleteAccessPolicy(ctx context.Context, id, applicationID, accessPolicyID string, routeRoot RouteRoot) error {
+// Account API reference: https://developers.cloudflare.com/api/operations/access-policies-delete-an-access-policy
+// Zone API reference: https://developers.cloudflare.com/api/operations/zone-level-access-policies-delete-an-access-policy
+func (api *API) DeleteAccessPolicy(ctx context.Context, rc *ResourceContainer, params DeleteAccessPolicyParams) error {
 	uri := fmt.Sprintf(
 		"/%s/%s/access/apps/%s/policies/%s",
-		routeRoot,
-		id,
-		applicationID,
-		accessPolicyID,
+		rc.Level,
+		rc.Identifier,
+		params.ApplicationID,
+		params.PolicyID,
 	)
 
 	_, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %w", errMakeRequestError, err)
 	}
 
 	return nil

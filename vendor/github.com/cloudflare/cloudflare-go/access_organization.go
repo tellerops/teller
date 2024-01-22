@@ -2,28 +2,40 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // AccessOrganization represents an Access organization.
 type AccessOrganization struct {
-	CreatedAt   *time.Time                    `json:"created_at"`
-	UpdatedAt   *time.Time                    `json:"updated_at"`
-	Name        string                        `json:"name"`
-	AuthDomain  string                        `json:"auth_domain"`
-	LoginDesign AccessOrganizationLoginDesign `json:"login_design"`
+	CreatedAt                      *time.Time                    `json:"created_at"`
+	UpdatedAt                      *time.Time                    `json:"updated_at"`
+	Name                           string                        `json:"name"`
+	AuthDomain                     string                        `json:"auth_domain"`
+	LoginDesign                    AccessOrganizationLoginDesign `json:"login_design"`
+	IsUIReadOnly                   *bool                         `json:"is_ui_read_only,omitempty"`
+	UIReadOnlyToggleReason         string                        `json:"ui_read_only_toggle_reason,omitempty"`
+	UserSeatExpirationInactiveTime string                        `json:"user_seat_expiration_inactive_time,omitempty"`
+	AutoRedirectToIdentity         *bool                         `json:"auto_redirect_to_identity,omitempty"`
+	SessionDuration                *string                       `json:"session_duration,omitempty"`
+	CustomPages                    AccessOrganizationCustomPages `json:"custom_pages,omitempty"`
 }
 
 // AccessOrganizationLoginDesign represents the login design options.
 type AccessOrganizationLoginDesign struct {
 	BackgroundColor string `json:"background_color"`
-	TextColor       string `json:"text_color"`
 	LogoPath        string `json:"logo_path"`
+	TextColor       string `json:"text_color"`
+	HeaderText      string `json:"header_text"`
+	FooterText      string `json:"footer_text"`
+}
+
+type AccessOrganizationCustomPages struct {
+	Forbidden      AccessCustomPageType `json:"forbidden,omitempty"`
+	IdentityDenied AccessCustomPageType `json:"identity_denied,omitempty"`
 }
 
 // AccessOrganizationListResponse represents the response from the list
@@ -43,22 +55,34 @@ type AccessOrganizationDetailResponse struct {
 	Result   AccessOrganization `json:"result"`
 }
 
-// AccessOrganization returns the Access organisation details.
-//
-// API reference: https://api.cloudflare.com/#access-organizations-access-organization-details
-func (api *API) AccessOrganization(ctx context.Context, accountID string) (AccessOrganization, ResultInfo, error) {
-	return api.accessOrganization(ctx, accountID, AccountRouteRoot)
+type GetAccessOrganizationParams struct{}
+
+type CreateAccessOrganizationParams struct {
+	Name                           string                        `json:"name"`
+	AuthDomain                     string                        `json:"auth_domain"`
+	LoginDesign                    AccessOrganizationLoginDesign `json:"login_design"`
+	IsUIReadOnly                   *bool                         `json:"is_ui_read_only,omitempty"`
+	UIReadOnlyToggleReason         string                        `json:"ui_read_only_toggle_reason,omitempty"`
+	UserSeatExpirationInactiveTime string                        `json:"user_seat_expiration_inactive_time,omitempty"`
+	AutoRedirectToIdentity         *bool                         `json:"auto_redirect_to_identity,omitempty"`
+	SessionDuration                *string                       `json:"session_duration,omitempty"`
+	CustomPages                    AccessOrganizationCustomPages `json:"custom_pages,omitempty"`
 }
 
-// ZoneLevelAccessOrganization returns the zone level Access organisation details.
-//
-// API reference: https://api.cloudflare.com/#zone-level-access-organizations-access-organization-details
-func (api *API) ZoneLevelAccessOrganization(ctx context.Context, zoneID string) (AccessOrganization, ResultInfo, error) {
-	return api.accessOrganization(ctx, zoneID, ZoneRouteRoot)
+type UpdateAccessOrganizationParams struct {
+	Name                           string                        `json:"name"`
+	AuthDomain                     string                        `json:"auth_domain"`
+	LoginDesign                    AccessOrganizationLoginDesign `json:"login_design"`
+	IsUIReadOnly                   *bool                         `json:"is_ui_read_only,omitempty"`
+	UIReadOnlyToggleReason         string                        `json:"ui_read_only_toggle_reason,omitempty"`
+	UserSeatExpirationInactiveTime string                        `json:"user_seat_expiration_inactive_time,omitempty"`
+	AutoRedirectToIdentity         *bool                         `json:"auto_redirect_to_identity,omitempty"`
+	SessionDuration                *string                       `json:"session_duration,omitempty"`
+	CustomPages                    AccessOrganizationCustomPages `json:"custom_pages,omitempty"`
 }
 
-func (api *API) accessOrganization(ctx context.Context, id string, routeRoot RouteRoot) (AccessOrganization, ResultInfo, error) {
-	uri := fmt.Sprintf("/%s/%s/access/organizations", routeRoot, id)
+func (api *API) GetAccessOrganization(ctx context.Context, rc *ResourceContainer, params GetAccessOrganizationParams) (AccessOrganization, ResultInfo, error) {
+	uri := fmt.Sprintf("/%s/%s/access/organizations", rc.Level, rc.Identifier)
 
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
@@ -68,30 +92,16 @@ func (api *API) accessOrganization(ctx context.Context, id string, routeRoot Rou
 	var accessOrganizationListResponse AccessOrganizationListResponse
 	err = json.Unmarshal(res, &accessOrganizationListResponse)
 	if err != nil {
-		return AccessOrganization{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return AccessOrganization{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessOrganizationListResponse.Result, accessOrganizationListResponse.ResultInfo, nil
 }
 
-// CreateAccessOrganization creates the Access organisation details.
-//
-// API reference: https://api.cloudflare.com/#access-organizations-create-access-organization
-func (api *API) CreateAccessOrganization(ctx context.Context, accountID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
-	return api.createAccessOrganization(ctx, accountID, accessOrganization, AccountRouteRoot)
-}
+func (api *API) CreateAccessOrganization(ctx context.Context, rc *ResourceContainer, params CreateAccessOrganizationParams) (AccessOrganization, error) {
+	uri := fmt.Sprintf("/%s/%s/access/organizations", rc.Level, rc.Identifier)
 
-// CreateZoneLevelAccessOrganization creates the zone level Access organisation details.
-//
-// API reference: https://api.cloudflare.com/#zone-level-access-organizations-create-access-organization
-func (api *API) CreateZoneLevelAccessOrganization(ctx context.Context, zoneID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
-	return api.createAccessOrganization(ctx, zoneID, accessOrganization, ZoneRouteRoot)
-}
-
-func (api *API) createAccessOrganization(ctx context.Context, id string, accessOrganization AccessOrganization, routeRoot RouteRoot) (AccessOrganization, error) {
-	uri := fmt.Sprintf("/%s/%s/access/organizations", routeRoot, id)
-
-	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, accessOrganization)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, params)
 	if err != nil {
 		return AccessOrganization{}, err
 	}
@@ -99,7 +109,7 @@ func (api *API) createAccessOrganization(ctx context.Context, id string, accessO
 	var accessOrganizationDetailResponse AccessOrganizationDetailResponse
 	err = json.Unmarshal(res, &accessOrganizationDetailResponse)
 	if err != nil {
-		return AccessOrganization{}, errors.Wrap(err, errUnmarshalError)
+		return AccessOrganization{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessOrganizationDetailResponse.Result, nil
@@ -107,22 +117,12 @@ func (api *API) createAccessOrganization(ctx context.Context, id string, accessO
 
 // UpdateAccessOrganization updates the Access organisation details.
 //
-// API reference: https://api.cloudflare.com/#access-organizations-update-access-organization
-func (api *API) UpdateAccessOrganization(ctx context.Context, accountID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
-	return api.updateAccessOrganization(ctx, accountID, accessOrganization, AccountRouteRoot)
-}
+// Account API reference: https://api.cloudflare.com/#access-organizations-update-access-organization
+// Zone API reference: https://api.cloudflare.com/#zone-level-access-organizations-update-access-organization
+func (api *API) UpdateAccessOrganization(ctx context.Context, rc *ResourceContainer, params UpdateAccessOrganizationParams) (AccessOrganization, error) {
+	uri := fmt.Sprintf("/%s/%s/access/organizations", rc.Level, rc.Identifier)
 
-// UpdateZoneLevelAccessOrganization updates the zone level Access organisation details.
-//
-// API reference: https://api.cloudflare.com/#zone-level-access-organizations-update-access-organization
-func (api *API) UpdateZoneLevelAccessOrganization(ctx context.Context, zoneID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
-	return api.updateAccessOrganization(ctx, zoneID, accessOrganization, ZoneRouteRoot)
-}
-
-func (api *API) updateAccessOrganization(ctx context.Context, id string, accessOrganization AccessOrganization, routeRoot RouteRoot) (AccessOrganization, error) {
-	uri := fmt.Sprintf("/%s/%s/access/organizations", routeRoot, id)
-
-	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, accessOrganization)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, params)
 	if err != nil {
 		return AccessOrganization{}, err
 	}
@@ -130,7 +130,7 @@ func (api *API) updateAccessOrganization(ctx context.Context, id string, accessO
 	var accessOrganizationDetailResponse AccessOrganizationDetailResponse
 	err = json.Unmarshal(res, &accessOrganizationDetailResponse)
 	if err != nil {
-		return AccessOrganization{}, errors.Wrap(err, errUnmarshalError)
+		return AccessOrganization{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessOrganizationDetailResponse.Result, nil

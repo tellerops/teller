@@ -2,12 +2,11 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // RegistrarDomain is the structure of the API response for a new
@@ -93,7 +92,7 @@ func (api *API) RegistrarDomain(ctx context.Context, accountID, domainName strin
 	var r RegistrarDomainDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return RegistrarDomain{}, errors.Wrap(err, errUnmarshalError)
+		return RegistrarDomain{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -113,7 +112,7 @@ func (api *API) RegistrarDomains(ctx context.Context, accountID string) ([]Regis
 	var r RegistrarDomainsDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []RegistrarDomain{}, errors.Wrap(err, errUnmarshalError)
+		return []RegistrarDomain{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -133,7 +132,7 @@ func (api *API) TransferRegistrarDomain(ctx context.Context, accountID, domainNa
 	var r RegistrarDomainsDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []RegistrarDomain{}, errors.Wrap(err, errUnmarshalError)
+		return []RegistrarDomain{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -152,7 +151,7 @@ func (api *API) CancelRegistrarDomainTransfer(ctx context.Context, accountID, do
 	var r RegistrarDomainsDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []RegistrarDomain{}, errors.Wrap(err, errUnmarshalError)
+		return []RegistrarDomain{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -171,7 +170,7 @@ func (api *API) UpdateRegistrarDomain(ctx context.Context, accountID, domainName
 	var r RegistrarDomainDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return RegistrarDomain{}, errors.Wrap(err, errUnmarshalError)
+		return RegistrarDomain{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }

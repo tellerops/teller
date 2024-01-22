@@ -2,11 +2,11 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"net/http"
 	"time"
+
+	"github.com/goccy/go-json"
 )
 
 type AccessKeysConfig struct {
@@ -58,7 +58,7 @@ func (api *API) accessKeysRequest(ctx context.Context, method, uri string, param
 
 	var keysConfigResponse accessKeysConfigResponse
 	if err := json.Unmarshal(res, &keysConfigResponse); err != nil {
-		return AccessKeysConfig{}, errors.Wrap(err, errUnmarshalError)
+		return AccessKeysConfig{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return keysConfigResponse.Result, nil
 }

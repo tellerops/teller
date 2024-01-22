@@ -2,11 +2,11 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 const (
@@ -49,7 +49,7 @@ func (api *API) GetSecondaryDNSTSIG(ctx context.Context, accountID, tsigID strin
 	var r SecondaryDNSTSIGDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return SecondaryDNSTSIG{}, errors.Wrap(err, errUnmarshalError)
+		return SecondaryDNSTSIG{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -69,7 +69,7 @@ func (api *API) ListSecondaryDNSTSIGs(ctx context.Context, accountID string) ([]
 	var r SecondaryDNSTSIGListResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []SecondaryDNSTSIG{}, errors.Wrap(err, errUnmarshalError)
+		return []SecondaryDNSTSIG{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -87,7 +87,7 @@ func (api *API) CreateSecondaryDNSTSIG(ctx context.Context, accountID string, ts
 
 	result := SecondaryDNSTSIGDetailResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return SecondaryDNSTSIG{}, errors.Wrap(err, errUnmarshalError)
+		return SecondaryDNSTSIG{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result.Result, nil
@@ -111,7 +111,7 @@ func (api *API) UpdateSecondaryDNSTSIG(ctx context.Context, accountID string, ts
 
 	result := SecondaryDNSTSIGDetailResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return SecondaryDNSTSIG{}, errors.Wrap(err, errUnmarshalError)
+		return SecondaryDNSTSIG{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result.Result, nil

@@ -2,14 +2,13 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // AccessRule represents a firewall access rule.
@@ -211,7 +210,7 @@ func (api *API) listAccessRules(ctx context.Context, prefix string, accessRule A
 	response := &AccessRuleListResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return response, nil
 }
@@ -226,7 +225,7 @@ func (api *API) createAccessRule(ctx context.Context, prefix string, accessRule 
 	response := &AccessRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -244,7 +243,7 @@ func (api *API) retrieveAccessRule(ctx context.Context, prefix, accessRuleID str
 	response := &AccessRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -260,7 +259,7 @@ func (api *API) updateAccessRule(ctx context.Context, prefix, accessRuleID strin
 	response := &AccessRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return response, nil
 }
@@ -275,7 +274,7 @@ func (api *API) deleteAccessRule(ctx context.Context, prefix, accessRuleID strin
 	response := &AccessRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil

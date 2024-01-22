@@ -2,11 +2,10 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // DiagnosticsTracerouteConfiguration is the overarching structure of the
@@ -96,7 +95,7 @@ func (api *API) PerformTraceroute(ctx context.Context, accountID string, targets
 	var diagnosticsResponse DiagnosticsTracerouteResponse
 	err = json.Unmarshal(res, &diagnosticsResponse)
 	if err != nil {
-		return []DiagnosticsTracerouteResponseResult{}, errors.Wrap(err, errUnmarshalError)
+		return []DiagnosticsTracerouteResponseResult{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return diagnosticsResponse.Result, nil

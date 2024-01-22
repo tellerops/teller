@@ -2,13 +2,13 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // UserAgentRule represents a User-Agent Block. These rules can be used to
@@ -45,10 +45,10 @@ type UserAgentRuleListResponse struct {
 // API reference: https://api.cloudflare.com/#user-agent-blocking-rules-create-a-useragent-rule
 func (api *API) CreateUserAgentRule(ctx context.Context, zoneID string, ld UserAgentRule) (*UserAgentRuleResponse, error) {
 	switch ld.Mode {
-	case "block", "challenge", "js_challenge", "whitelist":
+	case "block", "challenge", "js_challenge", "managed_challenge":
 		break
 	default:
-		return nil, errors.New(`the User-Agent Block rule mode must be one of "block", "challenge", "js_challenge", "whitelist"`)
+		return nil, errors.New(`the User-Agent Block rule mode must be one of "block", "challenge", "js_challenge", "managed_challenge"`)
 	}
 
 	uri := fmt.Sprintf("/zones/%s/firewall/ua_rules", zoneID)
@@ -60,7 +60,7 @@ func (api *API) CreateUserAgentRule(ctx context.Context, zoneID string, ld UserA
 	response := &UserAgentRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -79,7 +79,7 @@ func (api *API) UpdateUserAgentRule(ctx context.Context, zoneID string, id strin
 	response := &UserAgentRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -98,7 +98,7 @@ func (api *API) DeleteUserAgentRule(ctx context.Context, zoneID string, id strin
 	response := &UserAgentRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -117,7 +117,7 @@ func (api *API) UserAgentRule(ctx context.Context, zoneID string, id string) (*U
 	response := &UserAgentRuleResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil
@@ -144,7 +144,7 @@ func (api *API) ListUserAgentRules(ctx context.Context, zoneID string, page int)
 	response := &UserAgentRuleListResponse{}
 	err = json.Unmarshal(res, &response)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return response, nil

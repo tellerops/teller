@@ -2,12 +2,11 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // PageRuleTarget is the target to evaluate on a request.
@@ -26,42 +25,43 @@ type PageRuleTarget struct {
 PageRuleAction is the action to take when the target is matched.
 
 Valid IDs are:
-  always_online
-  always_use_https
-  automatic_https_rewrites
-  browser_cache_ttl
-  browser_check
-  bypass_cache_on_cookie
-  cache_by_device_type
-  cache_deception_armor
-  cache_level
-  cache_key_fields
-  cache_on_cookie
-  disable_apps
-  disable_performance
-  disable_railgun
-  disable_security
-  edge_cache_ttl
-  email_obfuscation
-  explicit_cache_control
-  forwarding_url
-  host_header_override
-  ip_geolocation
-  minify
-  mirage
-  opportunistic_encryption
-  origin_error_page_pass_thru
-  polish
-  resolve_override
-  respect_strong_etag
-  response_buffering
-  rocket_loader
-  security_level
-  server_side_exclude
-  sort_query_string_for_cache
-  ssl
-  true_client_ip_header
-  waf
+
+	always_online
+	always_use_https
+	automatic_https_rewrites
+	browser_cache_ttl
+	browser_check
+	bypass_cache_on_cookie
+	cache_by_device_type
+	cache_deception_armor
+	cache_level
+	cache_key_fields
+	cache_on_cookie
+	disable_apps
+	disable_performance
+	disable_railgun
+	disable_security
+	edge_cache_ttl
+	email_obfuscation
+	explicit_cache_control
+	forwarding_url
+	host_header_override
+	ip_geolocation
+	minify
+	mirage
+	opportunistic_encryption
+	origin_error_page_pass_thru
+	polish
+	resolve_override
+	respect_strong_etag
+	response_buffering
+	rocket_loader
+	security_level
+	server_side_exclude
+	sort_query_string_for_cache
+	ssl
+	true_client_ip_header
+	waf
 */
 type PageRuleAction struct {
 	ID    string      `json:"id"`
@@ -147,7 +147,7 @@ func (api *API) CreatePageRule(ctx context.Context, zoneID string, rule PageRule
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return &r.Result, nil
 }
@@ -164,7 +164,7 @@ func (api *API) ListPageRules(ctx context.Context, zoneID string) ([]PageRule, e
 	var r PageRulesResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []PageRule{}, errors.Wrap(err, errUnmarshalError)
+		return []PageRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -181,7 +181,7 @@ func (api *API) PageRule(ctx context.Context, zoneID, ruleID string) (PageRule, 
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return PageRule{}, errors.Wrap(err, errUnmarshalError)
+		return PageRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -199,7 +199,7 @@ func (api *API) ChangePageRule(ctx context.Context, zoneID, ruleID string, rule 
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return nil
 }
@@ -217,7 +217,7 @@ func (api *API) UpdatePageRule(ctx context.Context, zoneID, ruleID string, rule 
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return nil
 }
@@ -234,7 +234,7 @@ func (api *API) DeletePageRule(ctx context.Context, zoneID, ruleID string) error
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return nil
 }

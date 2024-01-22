@@ -2,12 +2,11 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // PerZoneAuthenticatedOriginPullsSettings represents the settings for Per Zone AuthenticatedOriginPulls.
@@ -61,7 +60,7 @@ func (api *API) GetPerZoneAuthenticatedOriginPullsStatus(ctx context.Context, zo
 	}
 	var r PerZoneAuthenticatedOriginPullsSettingsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return PerZoneAuthenticatedOriginPullsSettings{}, errors.Wrap(err, errUnmarshalError)
+		return PerZoneAuthenticatedOriginPullsSettings{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -82,7 +81,7 @@ func (api *API) SetPerZoneAuthenticatedOriginPullsStatus(ctx context.Context, zo
 	}
 	var r PerZoneAuthenticatedOriginPullsSettingsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return PerZoneAuthenticatedOriginPullsSettings{}, errors.Wrap(err, errUnmarshalError)
+		return PerZoneAuthenticatedOriginPullsSettings{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -98,7 +97,7 @@ func (api *API) UploadPerZoneAuthenticatedOriginPullsCertificate(ctx context.Con
 	}
 	var r PerZoneAuthenticatedOriginPullsCertificateResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return PerZoneAuthenticatedOriginPullsCertificateDetails{}, errors.Wrap(err, errUnmarshalError)
+		return PerZoneAuthenticatedOriginPullsCertificateDetails{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -114,7 +113,7 @@ func (api *API) ListPerZoneAuthenticatedOriginPullsCertificates(ctx context.Cont
 	}
 	var r PerZoneAuthenticatedOriginPullsCertificatesResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return []PerZoneAuthenticatedOriginPullsCertificateDetails{}, errors.Wrap(err, errUnmarshalError)
+		return []PerZoneAuthenticatedOriginPullsCertificateDetails{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -130,7 +129,7 @@ func (api *API) GetPerZoneAuthenticatedOriginPullsCertificateDetails(ctx context
 	}
 	var r PerZoneAuthenticatedOriginPullsCertificateResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return PerZoneAuthenticatedOriginPullsCertificateDetails{}, errors.Wrap(err, errUnmarshalError)
+		return PerZoneAuthenticatedOriginPullsCertificateDetails{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -146,7 +145,7 @@ func (api *API) DeletePerZoneAuthenticatedOriginPullsCertificate(ctx context.Con
 	}
 	var r PerZoneAuthenticatedOriginPullsCertificateResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return PerZoneAuthenticatedOriginPullsCertificateDetails{}, errors.Wrap(err, errUnmarshalError)
+		return PerZoneAuthenticatedOriginPullsCertificateDetails{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }

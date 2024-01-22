@@ -2,11 +2,10 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // SplitTunnelResponse represents the response from the get split
@@ -38,7 +37,7 @@ func (api *API) ListSplitTunnels(ctx context.Context, accountID string, mode str
 	var splitTunnelResponse SplitTunnelResponse
 	err = json.Unmarshal(res, &splitTunnelResponse)
 	if err != nil {
-		return []SplitTunnel{}, errors.Wrap(err, errUnmarshalError)
+		return []SplitTunnel{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return splitTunnelResponse.Result, nil
@@ -59,7 +58,49 @@ func (api *API) UpdateSplitTunnel(ctx context.Context, accountID string, mode st
 	var splitTunnelResponse SplitTunnelResponse
 	err = json.Unmarshal(res, &splitTunnelResponse)
 	if err != nil {
-		return []SplitTunnel{}, errors.Wrap(err, errUnmarshalError)
+		return []SplitTunnel{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return splitTunnelResponse.Result, nil
+}
+
+// ListSplitTunnelDeviceSettingsPolicy returns all include or exclude split tunnel within a device settings policy
+//
+// API reference for include: https://api.cloudflare.com/#device-policy-get-split-tunnel-include-list
+// API reference for exclude: https://api.cloudflare.com/#device-policy-get-split-tunnel-exclude-list
+func (api *API) ListSplitTunnelsDeviceSettingsPolicy(ctx context.Context, accountID, policyID string, mode string) ([]SplitTunnel, error) {
+	uri := fmt.Sprintf("/%s/%s/devices/policy/%s/%s", AccountRouteRoot, accountID, policyID, mode)
+
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return []SplitTunnel{}, err
+	}
+
+	var splitTunnelResponse SplitTunnelResponse
+	err = json.Unmarshal(res, &splitTunnelResponse)
+	if err != nil {
+		return []SplitTunnel{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+	}
+
+	return splitTunnelResponse.Result, nil
+}
+
+// UpdateSplitTunnelDeviceSettingsPolicy updates the existing split tunnel policy within a device settings policy
+//
+// API reference for include: https://api.cloudflare.com/#device-policy-set-split-tunnel-include-list
+// API reference for exclude: https://api.cloudflare.com/#device-policy-set-split-tunnel-exclude-list
+func (api *API) UpdateSplitTunnelDeviceSettingsPolicy(ctx context.Context, accountID, policyID string, mode string, tunnels []SplitTunnel) ([]SplitTunnel, error) {
+	uri := fmt.Sprintf("/%s/%s/devices/policy/%s/%s", AccountRouteRoot, accountID, policyID, mode)
+
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, tunnels)
+	if err != nil {
+		return []SplitTunnel{}, err
+	}
+
+	var splitTunnelResponse SplitTunnelResponse
+	err = json.Unmarshal(res, &splitTunnelResponse)
+	if err != nil {
+		return []SplitTunnel{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return splitTunnelResponse.Result, nil

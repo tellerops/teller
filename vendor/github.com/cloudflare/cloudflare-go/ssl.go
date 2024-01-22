@@ -2,29 +2,28 @@ package cloudflare
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/goccy/go-json"
 )
 
 // ZoneCustomSSL represents custom SSL certificate metadata.
 type ZoneCustomSSL struct {
-	ID              string                       `json:"id"`
-	Hosts           []string                     `json:"hosts"`
-	Issuer          string                       `json:"issuer"`
-	Signature       string                       `json:"signature"`
-	Status          string                       `json:"status"`
-	BundleMethod    string                       `json:"bundle_method"`
-	GeoRestrictions ZoneCustomSSLGeoRestrictions `json:"geo_restrictions"`
-	ZoneID          string                       `json:"zone_id"`
-	UploadedOn      time.Time                    `json:"uploaded_on"`
-	ModifiedOn      time.Time                    `json:"modified_on"`
-	ExpiresOn       time.Time                    `json:"expires_on"`
-	Priority        int                          `json:"priority"`
-	KeylessServer   KeylessSSL                   `json:"keyless_server"`
+	ID              string                        `json:"id"`
+	Hosts           []string                      `json:"hosts"`
+	Issuer          string                        `json:"issuer"`
+	Signature       string                        `json:"signature"`
+	Status          string                        `json:"status"`
+	BundleMethod    string                        `json:"bundle_method"`
+	GeoRestrictions *ZoneCustomSSLGeoRestrictions `json:"geo_restrictions,omitempty"`
+	ZoneID          string                        `json:"zone_id"`
+	UploadedOn      time.Time                     `json:"uploaded_on"`
+	ModifiedOn      time.Time                     `json:"modified_on"`
+	ExpiresOn       time.Time                     `json:"expires_on"`
+	Priority        int                           `json:"priority"`
+	KeylessServer   KeylessSSL                    `json:"keyless_server"`
 }
 
 // ZoneCustomSSLGeoRestrictions represents the parameter to create or update
@@ -73,7 +72,7 @@ func (api *API) CreateSSL(ctx context.Context, zoneID string, options ZoneCustom
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -89,7 +88,7 @@ func (api *API) ListSSL(ctx context.Context, zoneID string) ([]ZoneCustomSSL, er
 	}
 	var r zoneCustomSSLsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -105,7 +104,7 @@ func (api *API) SSLDetails(ctx context.Context, zoneID, certificateID string) (Z
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -121,7 +120,7 @@ func (api *API) UpdateSSL(ctx context.Context, zoneID, certificateID string, opt
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -143,7 +142,7 @@ func (api *API) ReprioritizeSSL(ctx context.Context, zoneID string, p []ZoneCust
 	}
 	var r zoneCustomSSLsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -157,4 +156,18 @@ func (api *API) DeleteSSL(ctx context.Context, zoneID, certificateID string) err
 		return err
 	}
 	return nil
+}
+
+// SSLValidationRecord displays Domain Control Validation tokens.
+type SSLValidationRecord struct {
+	CnameTarget string `json:"cname_target,omitempty"`
+	CnameName   string `json:"cname,omitempty"`
+
+	TxtName  string `json:"txt_name,omitempty"`
+	TxtValue string `json:"txt_value,omitempty"`
+
+	HTTPUrl  string `json:"http_url,omitempty"`
+	HTTPBody string `json:"http_body,omitempty"`
+
+	Emails []string `json:"emails,omitempty"`
 }
