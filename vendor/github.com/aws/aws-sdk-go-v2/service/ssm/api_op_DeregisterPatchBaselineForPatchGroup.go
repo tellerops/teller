@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
@@ -16,7 +17,7 @@ func (c *Client) DeregisterPatchBaselineForPatchGroup(ctx context.Context, param
 		params = &DeregisterPatchBaselineForPatchGroupInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DeregisterPatchBaselineForPatchGroup", params, optFns, addOperationDeregisterPatchBaselineForPatchGroupMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DeregisterPatchBaselineForPatchGroup", params, optFns, c.addOperationDeregisterPatchBaselineForPatchGroupMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +38,8 @@ type DeregisterPatchBaselineForPatchGroupInput struct {
 	//
 	// This member is required.
 	PatchGroup *string
+
+	noSmithyDocumentSerde
 }
 
 type DeregisterPatchBaselineForPatchGroupOutput struct {
@@ -49,15 +52,27 @@ type DeregisterPatchBaselineForPatchGroupOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDeregisterPatchBaselineForPatchGroupMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDeregisterPatchBaselineForPatchGroupMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeregisterPatchBaselineForPatchGroup{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDeregisterPatchBaselineForPatchGroup{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DeregisterPatchBaselineForPatchGroup"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -78,16 +93,13 @@ func addOperationDeregisterPatchBaselineForPatchGroupMiddlewares(stack *middlewa
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -96,10 +108,16 @@ func addOperationDeregisterPatchBaselineForPatchGroupMiddlewares(stack *middlewa
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpDeregisterPatchBaselineForPatchGroupValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeregisterPatchBaselineForPatchGroup(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -111,6 +129,9 @@ func addOperationDeregisterPatchBaselineForPatchGroupMiddlewares(stack *middlewa
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -118,7 +139,6 @@ func newServiceMetadataMiddleware_opDeregisterPatchBaselineForPatchGroup(region 
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DeregisterPatchBaselineForPatchGroup",
 	}
 }

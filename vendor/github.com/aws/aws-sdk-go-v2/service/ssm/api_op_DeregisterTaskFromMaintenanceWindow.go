@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
@@ -16,7 +17,7 @@ func (c *Client) DeregisterTaskFromMaintenanceWindow(ctx context.Context, params
 		params = &DeregisterTaskFromMaintenanceWindowInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DeregisterTaskFromMaintenanceWindow", params, optFns, addOperationDeregisterTaskFromMaintenanceWindowMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DeregisterTaskFromMaintenanceWindow", params, optFns, c.addOperationDeregisterTaskFromMaintenanceWindowMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +38,8 @@ type DeregisterTaskFromMaintenanceWindowInput struct {
 	//
 	// This member is required.
 	WindowTaskId *string
+
+	noSmithyDocumentSerde
 }
 
 type DeregisterTaskFromMaintenanceWindowOutput struct {
@@ -49,15 +52,27 @@ type DeregisterTaskFromMaintenanceWindowOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDeregisterTaskFromMaintenanceWindowMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDeregisterTaskFromMaintenanceWindowMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeregisterTaskFromMaintenanceWindow{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDeregisterTaskFromMaintenanceWindow{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DeregisterTaskFromMaintenanceWindow"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -78,16 +93,13 @@ func addOperationDeregisterTaskFromMaintenanceWindowMiddlewares(stack *middlewar
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -96,10 +108,16 @@ func addOperationDeregisterTaskFromMaintenanceWindowMiddlewares(stack *middlewar
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpDeregisterTaskFromMaintenanceWindowValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeregisterTaskFromMaintenanceWindow(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -111,6 +129,9 @@ func addOperationDeregisterTaskFromMaintenanceWindowMiddlewares(stack *middlewar
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -118,7 +139,6 @@ func newServiceMetadataMiddleware_opDeregisterTaskFromMaintenanceWindow(region s
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DeregisterTaskFromMaintenanceWindow",
 	}
 }

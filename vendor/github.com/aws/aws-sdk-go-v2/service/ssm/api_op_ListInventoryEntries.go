@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -17,7 +18,7 @@ func (c *Client) ListInventoryEntries(ctx context.Context, params *ListInventory
 		params = &ListInventoryEntriesInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "ListInventoryEntries", params, optFns, addOperationListInventoryEntriesMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "ListInventoryEntries", params, optFns, c.addOperationListInventoryEntriesMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +30,7 @@ func (c *Client) ListInventoryEntries(ctx context.Context, params *ListInventory
 
 type ListInventoryEntriesInput struct {
 
-	// The instance ID for which you want inventory information.
+	// The managed node ID for which you want inventory information.
 	//
 	// This member is required.
 	InstanceId *string
@@ -44,29 +45,31 @@ type ListInventoryEntriesInput struct {
 
 	// The maximum number of items to return for this call. The call also returns a
 	// token that you can specify in a subsequent call to get the next set of results.
-	MaxResults int32
+	MaxResults *int32
 
 	// The token for the next set of items to return. (You received this token from a
 	// previous call.)
 	NextToken *string
+
+	noSmithyDocumentSerde
 }
 
 type ListInventoryEntriesOutput struct {
 
-	// The time that inventory information was collected for the instance(s).
+	// The time that inventory information was collected for the managed node(s).
 	CaptureTime *string
 
-	// A list of inventory items on the instance(s).
+	// A list of inventory items on the managed node(s).
 	Entries []map[string]string
 
-	// The instance ID targeted by the request to query inventory information.
+	// The managed node ID targeted by the request to query inventory information.
 	InstanceId *string
 
 	// The token to use when requesting the next set of items. If there are no
 	// additional items to return, the string is empty.
 	NextToken *string
 
-	// The inventory schema version used by the instance(s).
+	// The inventory schema version used by the managed node(s).
 	SchemaVersion *string
 
 	// The type of inventory item returned by the request.
@@ -74,15 +77,27 @@ type ListInventoryEntriesOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationListInventoryEntriesMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationListInventoryEntriesMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListInventoryEntries{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpListInventoryEntries{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "ListInventoryEntries"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -103,16 +118,13 @@ func addOperationListInventoryEntriesMiddlewares(stack *middleware.Stack, option
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -121,10 +133,16 @@ func addOperationListInventoryEntriesMiddlewares(stack *middleware.Stack, option
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpListInventoryEntriesValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListInventoryEntries(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -136,6 +154,9 @@ func addOperationListInventoryEntriesMiddlewares(stack *middleware.Stack, option
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -143,7 +164,6 @@ func newServiceMetadataMiddleware_opListInventoryEntries(region string) *awsmidd
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "ListInventoryEntries",
 	}
 }

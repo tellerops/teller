@@ -19,7 +19,7 @@ func (c *Client) DescribeAutomationStepExecutions(ctx context.Context, params *D
 		params = &DescribeAutomationStepExecutionsInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DescribeAutomationStepExecutions", params, optFns, addOperationDescribeAutomationStepExecutionsMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DescribeAutomationStepExecutions", params, optFns, c.addOperationDescribeAutomationStepExecutionsMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -42,15 +42,17 @@ type DescribeAutomationStepExecutionsInput struct {
 
 	// The maximum number of items to return for this call. The call also returns a
 	// token that you can specify in a subsequent call to get the next set of results.
-	MaxResults int32
+	MaxResults *int32
 
 	// The token for the next set of items to return. (You received this token from a
 	// previous call.)
 	NextToken *string
 
-	// A boolean that indicates whether to list step executions in reverse order by
-	// start time. The default value is false.
-	ReverseOrder bool
+	// Indicates whether to list step executions in reverse order by start time. The
+	// default value is 'false'.
+	ReverseOrder *bool
+
+	noSmithyDocumentSerde
 }
 
 type DescribeAutomationStepExecutionsOutput struct {
@@ -65,15 +67,27 @@ type DescribeAutomationStepExecutionsOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDescribeAutomationStepExecutionsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDescribeAutomationStepExecutionsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeAutomationStepExecutions{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDescribeAutomationStepExecutions{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeAutomationStepExecutions"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -94,16 +108,13 @@ func addOperationDescribeAutomationStepExecutionsMiddlewares(stack *middleware.S
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -112,10 +123,16 @@ func addOperationDescribeAutomationStepExecutionsMiddlewares(stack *middleware.S
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpDescribeAutomationStepExecutionsValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeAutomationStepExecutions(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -125,6 +142,9 @@ func addOperationDescribeAutomationStepExecutionsMiddlewares(stack *middleware.S
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -163,17 +183,17 @@ type DescribeAutomationStepExecutionsPaginator struct {
 // NewDescribeAutomationStepExecutionsPaginator returns a new
 // DescribeAutomationStepExecutionsPaginator
 func NewDescribeAutomationStepExecutionsPaginator(client DescribeAutomationStepExecutionsAPIClient, params *DescribeAutomationStepExecutionsInput, optFns ...func(*DescribeAutomationStepExecutionsPaginatorOptions)) *DescribeAutomationStepExecutionsPaginator {
+	if params == nil {
+		params = &DescribeAutomationStepExecutionsInput{}
+	}
+
 	options := DescribeAutomationStepExecutionsPaginatorOptions{}
-	if params.MaxResults != 0 {
-		options.Limit = params.MaxResults
+	if params.MaxResults != nil {
+		options.Limit = *params.MaxResults
 	}
 
 	for _, fn := range optFns {
 		fn(&options)
-	}
-
-	if params == nil {
-		params = &DescribeAutomationStepExecutionsInput{}
 	}
 
 	return &DescribeAutomationStepExecutionsPaginator{
@@ -181,12 +201,13 @@ func NewDescribeAutomationStepExecutionsPaginator(client DescribeAutomationStepE
 		client:    client,
 		params:    params,
 		firstPage: true,
+		nextToken: params.NextToken,
 	}
 }
 
 // HasMorePages returns a boolean indicating whether more pages are available
 func (p *DescribeAutomationStepExecutionsPaginator) HasMorePages() bool {
-	return p.firstPage || p.nextToken != nil
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
 }
 
 // NextPage retrieves the next DescribeAutomationStepExecutions page.
@@ -198,7 +219,11 @@ func (p *DescribeAutomationStepExecutionsPaginator) NextPage(ctx context.Context
 	params := *p.params
 	params.NextToken = p.nextToken
 
-	params.MaxResults = p.options.Limit
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.MaxResults = limit
 
 	result, err := p.client.DescribeAutomationStepExecutions(ctx, &params, optFns...)
 	if err != nil {
@@ -209,7 +234,10 @@ func (p *DescribeAutomationStepExecutionsPaginator) NextPage(ctx context.Context
 	prevToken := p.nextToken
 	p.nextToken = result.NextToken
 
-	if p.options.StopOnDuplicateToken && prevToken != nil && p.nextToken != nil && *prevToken == *p.nextToken {
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
 		p.nextToken = nil
 	}
 
@@ -220,7 +248,6 @@ func newServiceMetadataMiddleware_opDescribeAutomationStepExecutions(region stri
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DescribeAutomationStepExecutions",
 	}
 }

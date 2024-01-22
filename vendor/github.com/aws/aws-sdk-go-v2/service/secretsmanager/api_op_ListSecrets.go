@@ -12,30 +12,27 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Lists all of the secrets that are stored by Secrets Manager in the AWS account.
-// To list the versions currently stored for a specific secret, use
-// ListSecretVersionIds. The encrypted fields SecretString and SecretBinary are not
-// included in the output. To get that information, call the GetSecretValue
-// operation. Always check the NextToken response parameter when calling any of the
-// List* operations. These operations can occasionally return an empty or shorter
-// than expected list of results even when there more results become available.
-// When this happens, the NextToken response parameter contains a value to pass to
-// the next call to the same API to request the next part of the list. Minimum
-// permissions To run this command, you must have the following permissions:
-//
-// *
-// secretsmanager:ListSecrets
-//
-// Related operations
-//
-// * To list the versions attached
-// to a secret, use ListSecretVersionIds.
+// Lists the secrets that are stored by Secrets Manager in the Amazon Web Services
+// account, not including secrets that are marked for deletion. To see secrets
+// marked for deletion, use the Secrets Manager console. ListSecrets is eventually
+// consistent, however it might not reflect changes from the last five minutes. To
+// get the latest information for a specific secret, use DescribeSecret . To list
+// the versions of a secret, use ListSecretVersionIds . To retrieve the values for
+// the secrets, call BatchGetSecretValue or GetSecretValue . For information about
+// finding secrets in the console, see Find secrets in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/manage_search-secret.html)
+// . Secrets Manager generates a CloudTrail log entry when you call this action. Do
+// not include sensitive information in request parameters because it might be
+// logged. For more information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
+// . Required permissions: secretsmanager:ListSecrets . For more information, see
+// IAM policy actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
+// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
+// .
 func (c *Client) ListSecrets(ctx context.Context, params *ListSecretsInput, optFns ...func(*Options)) (*ListSecretsOutput, error) {
 	if params == nil {
 		params = &ListSecretsInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "ListSecrets", params, optFns, addOperationListSecretsMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "ListSecrets", params, optFns, c.addOperationListSecretsMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -47,39 +44,35 @@ func (c *Client) ListSecrets(ctx context.Context, params *ListSecretsInput, optF
 
 type ListSecretsInput struct {
 
-	// Lists the secret request filters.
+	// The filters to apply to the list of secrets.
 	Filters []types.Filter
 
-	// (Optional) Limits the number of results you want to include in the response. If
-	// you don't include this parameter, it defaults to a value that's specific to the
-	// operation. If additional items exist beyond the maximum you specify, the
-	// NextToken response element is present and has a value (isn't null). Include that
-	// value as the NextToken request parameter in the next call to the operation to
-	// get the next part of the results. Note that Secrets Manager might return fewer
-	// results than the maximum even when there are more results available. You should
-	// check NextToken after every operation to ensure that you receive all of the
-	// results.
-	MaxResults int32
+	// Specifies whether to include secrets scheduled for deletion. By default,
+	// secrets scheduled for deletion aren't included.
+	IncludePlannedDeletion *bool
 
-	// (Optional) Use this parameter in a request if you receive a NextToken response
-	// in a previous request indicating there's more output available. In a subsequent
-	// call, set it to the value of the previous call NextToken response to indicate
-	// where the output should continue from.
+	// The number of results to include in the response. If there are more results
+	// available, in the response, Secrets Manager includes NextToken . To get the next
+	// results, call ListSecrets again with the value from NextToken .
+	MaxResults *int32
+
+	// A token that indicates where the output should continue from, if a previous
+	// call did not show all results. To get the next results, call ListSecrets again
+	// with this value.
 	NextToken *string
 
-	// Lists secrets in the requested order.
+	// Secrets are listed by CreatedDate .
 	SortOrder types.SortOrderType
+
+	noSmithyDocumentSerde
 }
 
 type ListSecretsOutput struct {
 
-	// If present in the response, this value indicates that there's more output
-	// available than included in the current response. This can occur even when the
-	// response includes no values at all, such as when you ask for a filtered view of
-	// a very long list. Use this value in the NextToken request parameter in a
-	// subsequent call to the operation to continue processing and get the next part of
-	// the output. You should repeat this until the NextToken response element comes
-	// back empty (as null).
+	// Secrets Manager includes this value if there's more output available than what
+	// is included in the current response. This can occur even when the response
+	// includes no values at all, such as when you ask for a filtered view of a long
+	// list. To get the next results, call ListSecrets again with this value.
 	NextToken *string
 
 	// A list of the secrets in the account.
@@ -87,15 +80,27 @@ type ListSecretsOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationListSecretsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationListSecretsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListSecrets{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpListSecrets{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "ListSecrets"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -116,16 +121,13 @@ func addOperationListSecretsMiddlewares(stack *middleware.Stack, options Options
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -134,7 +136,13 @@ func addOperationListSecretsMiddlewares(stack *middleware.Stack, options Options
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListSecrets(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -144,6 +152,9 @@ func addOperationListSecretsMiddlewares(stack *middleware.Stack, options Options
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -158,15 +169,9 @@ var _ ListSecretsAPIClient = (*Client)(nil)
 
 // ListSecretsPaginatorOptions is the paginator options for ListSecrets
 type ListSecretsPaginatorOptions struct {
-	// (Optional) Limits the number of results you want to include in the response. If
-	// you don't include this parameter, it defaults to a value that's specific to the
-	// operation. If additional items exist beyond the maximum you specify, the
-	// NextToken response element is present and has a value (isn't null). Include that
-	// value as the NextToken request parameter in the next call to the operation to
-	// get the next part of the results. Note that Secrets Manager might return fewer
-	// results than the maximum even when there are more results available. You should
-	// check NextToken after every operation to ensure that you receive all of the
-	// results.
+	// The number of results to include in the response. If there are more results
+	// available, in the response, Secrets Manager includes NextToken . To get the next
+	// results, call ListSecrets again with the value from NextToken .
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -185,17 +190,17 @@ type ListSecretsPaginator struct {
 
 // NewListSecretsPaginator returns a new ListSecretsPaginator
 func NewListSecretsPaginator(client ListSecretsAPIClient, params *ListSecretsInput, optFns ...func(*ListSecretsPaginatorOptions)) *ListSecretsPaginator {
+	if params == nil {
+		params = &ListSecretsInput{}
+	}
+
 	options := ListSecretsPaginatorOptions{}
-	if params.MaxResults != 0 {
-		options.Limit = params.MaxResults
+	if params.MaxResults != nil {
+		options.Limit = *params.MaxResults
 	}
 
 	for _, fn := range optFns {
 		fn(&options)
-	}
-
-	if params == nil {
-		params = &ListSecretsInput{}
 	}
 
 	return &ListSecretsPaginator{
@@ -203,12 +208,13 @@ func NewListSecretsPaginator(client ListSecretsAPIClient, params *ListSecretsInp
 		client:    client,
 		params:    params,
 		firstPage: true,
+		nextToken: params.NextToken,
 	}
 }
 
 // HasMorePages returns a boolean indicating whether more pages are available
 func (p *ListSecretsPaginator) HasMorePages() bool {
-	return p.firstPage || p.nextToken != nil
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
 }
 
 // NextPage retrieves the next ListSecrets page.
@@ -220,7 +226,11 @@ func (p *ListSecretsPaginator) NextPage(ctx context.Context, optFns ...func(*Opt
 	params := *p.params
 	params.NextToken = p.nextToken
 
-	params.MaxResults = p.options.Limit
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.MaxResults = limit
 
 	result, err := p.client.ListSecrets(ctx, &params, optFns...)
 	if err != nil {
@@ -231,7 +241,10 @@ func (p *ListSecretsPaginator) NextPage(ctx context.Context, optFns ...func(*Opt
 	prevToken := p.nextToken
 	p.nextToken = result.NextToken
 
-	if p.options.StopOnDuplicateToken && prevToken != nil && p.nextToken != nil && *prevToken == *p.nextToken {
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
 		p.nextToken = nil
 	}
 
@@ -242,7 +255,6 @@ func newServiceMetadataMiddleware_opListSecrets(region string) *awsmiddleware.Re
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "secretsmanager",
 		OperationName: "ListSecrets",
 	}
 }

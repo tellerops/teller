@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -11,14 +12,14 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Systems Manager calls this API action when you edit OpsMetadata in Application
-// Manager.
+// Amazon Web Services Systems Manager calls this API operation when you edit
+// OpsMetadata in Application Manager.
 func (c *Client) UpdateOpsMetadata(ctx context.Context, params *UpdateOpsMetadataInput, optFns ...func(*Options)) (*UpdateOpsMetadataOutput, error) {
 	if params == nil {
 		params = &UpdateOpsMetadataInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "UpdateOpsMetadata", params, optFns, addOperationUpdateOpsMetadataMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "UpdateOpsMetadata", params, optFns, c.addOperationUpdateOpsMetadataMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +31,7 @@ func (c *Client) UpdateOpsMetadata(ctx context.Context, params *UpdateOpsMetadat
 
 type UpdateOpsMetadataInput struct {
 
-	// The Amazon Resoure Name (ARN) of the OpsMetadata Object to update.
+	// The Amazon Resource Name (ARN) of the OpsMetadata Object to update.
 	//
 	// This member is required.
 	OpsMetadataArn *string
@@ -40,6 +41,8 @@ type UpdateOpsMetadataInput struct {
 
 	// Metadata to add to an OpsMetadata object.
 	MetadataToUpdate map[string]types.MetadataValue
+
+	noSmithyDocumentSerde
 }
 
 type UpdateOpsMetadataOutput struct {
@@ -49,15 +52,27 @@ type UpdateOpsMetadataOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationUpdateOpsMetadataMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationUpdateOpsMetadataMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdateOpsMetadata{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpUpdateOpsMetadata{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdateOpsMetadata"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -78,16 +93,13 @@ func addOperationUpdateOpsMetadataMiddlewares(stack *middleware.Stack, options O
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -96,10 +108,16 @@ func addOperationUpdateOpsMetadataMiddlewares(stack *middleware.Stack, options O
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpUpdateOpsMetadataValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdateOpsMetadata(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -111,6 +129,9 @@ func addOperationUpdateOpsMetadataMiddlewares(stack *middleware.Stack, options O
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -118,7 +139,6 @@ func newServiceMetadataMiddleware_opUpdateOpsMetadata(region string) *awsmiddlew
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "UpdateOpsMetadata",
 	}
 }

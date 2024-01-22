@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -11,13 +12,13 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Initiates execution of an Automation document.
+// Initiates execution of an Automation runbook.
 func (c *Client) StartAutomationExecution(ctx context.Context, params *StartAutomationExecutionInput, optFns ...func(*Options)) (*StartAutomationExecutionOutput, error) {
 	if params == nil {
 		params = &StartAutomationExecutionInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "StartAutomationExecution", params, optFns, addOperationStartAutomationExecutionMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "StartAutomationExecution", params, optFns, c.addOperationStartAutomationExecutionMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -29,21 +30,28 @@ func (c *Client) StartAutomationExecution(ctx context.Context, params *StartAuto
 
 type StartAutomationExecutionInput struct {
 
-	// The name of the Automation document to use for this execution.
+	// The name of the SSM document to run. This can be a public document or a custom
+	// document. To run a shared document belonging to another account, specify the
+	// document ARN. For more information about how to use shared documents, see Using
+	// shared SSM documents (https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-using-shared.html)
+	// in the Amazon Web Services Systems Manager User Guide.
 	//
 	// This member is required.
 	DocumentName *string
+
+	// The CloudWatch alarm you want to apply to your automation.
+	AlarmConfiguration *types.AlarmConfiguration
 
 	// User-provided idempotency token. The token must be unique, is case insensitive,
 	// enforces the UUID format, and can't be reused.
 	ClientToken *string
 
-	// The version of the Automation document to use for this execution.
+	// The version of the Automation runbook to use for this execution.
 	DocumentVersion *string
 
 	// The maximum number of targets allowed to run this task in parallel. You can
 	// specify a number, such as 10, or a percentage, such as 10%. The default value is
-	// 10.
+	// 10 .
 	MaxConcurrency *string
 
 	// The number of errors that are allowed before the system stops running the
@@ -65,34 +73,29 @@ type StartAutomationExecutionInput struct {
 	Mode types.ExecutionMode
 
 	// A key-value map of execution parameters, which match the declared parameters in
-	// the Automation document.
+	// the Automation runbook.
 	Parameters map[string][]string
 
 	// Optional metadata that you assign to a resource. You can specify a maximum of
 	// five tags for an automation. Tags enable you to categorize a resource in
 	// different ways, such as by purpose, owner, or environment. For example, you
 	// might want to tag an automation to identify an environment or operating system.
-	// In this case, you could specify the following key name/value pairs:
-	//
-	// *
-	// Key=environment,Value=test
-	//
-	// * Key=OS,Value=Windows
-	//
-	// To add tags to an existing
-	// patch baseline, use the AddTagsToResource action.
+	// In this case, you could specify the following key-value pairs:
+	//   - Key=environment,Value=test
+	//   - Key=OS,Value=Windows
+	// To add tags to an existing automation, use the AddTagsToResource operation.
 	Tags []types.Tag
 
-	// A location is a combination of AWS Regions and/or AWS accounts where you want to
-	// run the Automation. Use this action to start an Automation in multiple Regions
-	// and multiple accounts. For more information, see Running Automation workflows in
-	// multiple AWS Regions and accounts
-	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-automation-multiple-accounts-and-regions.html)
-	// in the AWS Systems Manager User Guide.
+	// A location is a combination of Amazon Web Services Regions and/or Amazon Web
+	// Services accounts where you want to run the automation. Use this operation to
+	// start an automation in multiple Amazon Web Services Regions and multiple Amazon
+	// Web Services accounts. For more information, see Running Automation workflows
+	// in multiple Amazon Web Services Regions and Amazon Web Services accounts (https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-automation-multiple-accounts-and-regions.html)
+	// in the Amazon Web Services Systems Manager User Guide.
 	TargetLocations []types.TargetLocation
 
-	// A key-value mapping of document parameters to target resources. Both Targets and
-	// TargetMaps cannot be specified together.
+	// A key-value mapping of document parameters to target resources. Both Targets
+	// and TargetMaps can't be specified together.
 	TargetMaps []map[string][]string
 
 	// The name of the parameter used as the target resource for the rate-controlled
@@ -102,6 +105,8 @@ type StartAutomationExecutionInput struct {
 	// A key-value mapping to target resources. Required if you specify
 	// TargetParameterName.
 	Targets []types.Target
+
+	noSmithyDocumentSerde
 }
 
 type StartAutomationExecutionOutput struct {
@@ -111,15 +116,27 @@ type StartAutomationExecutionOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpStartAutomationExecution{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpStartAutomationExecution{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "StartAutomationExecution"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -140,16 +157,13 @@ func addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, op
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -158,10 +172,16 @@ func addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, op
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpStartAutomationExecutionValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opStartAutomationExecution(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -173,6 +193,9 @@ func addOperationStartAutomationExecutionMiddlewares(stack *middleware.Stack, op
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -180,7 +203,6 @@ func newServiceMetadataMiddleware_opStartAutomationExecution(region string) *aws
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "StartAutomationExecution",
 	}
 }

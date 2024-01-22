@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
@@ -11,14 +12,14 @@ import (
 )
 
 // Permanently ends a session and closes the data connection between the Session
-// Manager client and SSM Agent on the instance. A terminated session cannot be
+// Manager client and SSM Agent on the managed node. A terminated session can't be
 // resumed.
 func (c *Client) TerminateSession(ctx context.Context, params *TerminateSessionInput, optFns ...func(*Options)) (*TerminateSessionOutput, error) {
 	if params == nil {
 		params = &TerminateSessionInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "TerminateSession", params, optFns, addOperationTerminateSessionMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "TerminateSession", params, optFns, c.addOperationTerminateSessionMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -34,6 +35,8 @@ type TerminateSessionInput struct {
 	//
 	// This member is required.
 	SessionId *string
+
+	noSmithyDocumentSerde
 }
 
 type TerminateSessionOutput struct {
@@ -43,15 +46,27 @@ type TerminateSessionOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationTerminateSessionMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationTerminateSessionMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpTerminateSession{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpTerminateSession{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "TerminateSession"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -72,16 +87,13 @@ func addOperationTerminateSessionMiddlewares(stack *middleware.Stack, options Op
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -90,10 +102,16 @@ func addOperationTerminateSessionMiddlewares(stack *middleware.Stack, options Op
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpTerminateSessionValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opTerminateSession(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -105,6 +123,9 @@ func addOperationTerminateSessionMiddlewares(stack *middleware.Stack, options Op
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -112,7 +133,6 @@ func newServiceMetadataMiddleware_opTerminateSession(region string) *awsmiddlewa
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "TerminateSession",
 	}
 }

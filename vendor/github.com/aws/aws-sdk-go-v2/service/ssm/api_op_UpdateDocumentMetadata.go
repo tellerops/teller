@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -12,13 +13,13 @@ import (
 )
 
 // Updates information related to approval reviews for a specific version of a
-// document.
+// change template in Change Manager.
 func (c *Client) UpdateDocumentMetadata(ctx context.Context, params *UpdateDocumentMetadataInput, optFns ...func(*Options)) (*UpdateDocumentMetadataOutput, error) {
 	if params == nil {
 		params = &UpdateDocumentMetadataInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "UpdateDocumentMetadata", params, optFns, addOperationUpdateDocumentMetadataMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "UpdateDocumentMetadata", params, optFns, c.addOperationUpdateDocumentMetadataMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -30,32 +31,46 @@ func (c *Client) UpdateDocumentMetadata(ctx context.Context, params *UpdateDocum
 
 type UpdateDocumentMetadataInput struct {
 
-	// The document review details to update.
+	// The change template review details to update.
 	//
 	// This member is required.
 	DocumentReviews *types.DocumentReviews
 
-	// The name of the document for which a version is to be updated.
+	// The name of the change template for which a version's metadata is to be updated.
 	//
 	// This member is required.
 	Name *string
 
-	// The version of a document to update.
+	// The version of a change template in which to update approval metadata.
 	DocumentVersion *string
+
+	noSmithyDocumentSerde
 }
 
 type UpdateDocumentMetadataOutput struct {
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationUpdateDocumentMetadataMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationUpdateDocumentMetadataMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdateDocumentMetadata{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpUpdateDocumentMetadata{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdateDocumentMetadata"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -76,16 +91,13 @@ func addOperationUpdateDocumentMetadataMiddlewares(stack *middleware.Stack, opti
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -94,10 +106,16 @@ func addOperationUpdateDocumentMetadataMiddlewares(stack *middleware.Stack, opti
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpUpdateDocumentMetadataValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdateDocumentMetadata(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -109,6 +127,9 @@ func addOperationUpdateDocumentMetadataMiddlewares(stack *middleware.Stack, opti
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -116,7 +137,6 @@ func newServiceMetadataMiddleware_opUpdateDocumentMetadata(region string) *awsmi
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "UpdateDocumentMetadata",
 	}
 }

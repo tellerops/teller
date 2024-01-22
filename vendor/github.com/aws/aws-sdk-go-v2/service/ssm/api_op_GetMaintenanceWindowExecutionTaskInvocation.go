@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -18,7 +19,7 @@ func (c *Client) GetMaintenanceWindowExecutionTaskInvocation(ctx context.Context
 		params = &GetMaintenanceWindowExecutionTaskInvocationInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "GetMaintenanceWindowExecutionTaskInvocation", params, optFns, addOperationGetMaintenanceWindowExecutionTaskInvocationMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "GetMaintenanceWindowExecutionTaskInvocation", params, optFns, c.addOperationGetMaintenanceWindowExecutionTaskInvocationMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +46,8 @@ type GetMaintenanceWindowExecutionTaskInvocationInput struct {
 	//
 	// This member is required.
 	WindowExecutionId *string
+
+	noSmithyDocumentSerde
 }
 
 type GetMaintenanceWindowExecutionTaskInvocationOutput struct {
@@ -58,8 +61,9 @@ type GetMaintenanceWindowExecutionTaskInvocationOutput struct {
 	// The invocation ID.
 	InvocationId *string
 
-	// User-provided value to be included in any CloudWatch events raised while running
-	// tasks for these targets in this maintenance window.
+	// User-provided value to be included in any Amazon CloudWatch Events or Amazon
+	// EventBridge events raised while running tasks for these targets in this
+	// maintenance window.
 	OwnerInformation *string
 
 	// The parameters used at the time that the task ran.
@@ -71,15 +75,14 @@ type GetMaintenanceWindowExecutionTaskInvocationOutput struct {
 	// The task status for an invocation.
 	Status types.MaintenanceWindowExecutionStatus
 
-	// The details explaining the status. Details are only available for certain status
-	// values.
+	// The details explaining the status. Details are only available for certain
+	// status values.
 	StatusDetails *string
 
 	// The task execution ID.
 	TaskExecutionId *string
 
-	// Retrieves the task type for a maintenance window. Task types include the
-	// following: LAMBDA, STEP_FUNCTIONS, AUTOMATION, RUN_COMMAND.
+	// Retrieves the task type for a maintenance window.
 	TaskType types.MaintenanceWindowTaskType
 
 	// The maintenance window execution ID.
@@ -90,15 +93,27 @@ type GetMaintenanceWindowExecutionTaskInvocationOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationGetMaintenanceWindowExecutionTaskInvocationMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationGetMaintenanceWindowExecutionTaskInvocationMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpGetMaintenanceWindowExecutionTaskInvocation{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpGetMaintenanceWindowExecutionTaskInvocation{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "GetMaintenanceWindowExecutionTaskInvocation"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -119,16 +134,13 @@ func addOperationGetMaintenanceWindowExecutionTaskInvocationMiddlewares(stack *m
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -137,10 +149,16 @@ func addOperationGetMaintenanceWindowExecutionTaskInvocationMiddlewares(stack *m
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpGetMaintenanceWindowExecutionTaskInvocationValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetMaintenanceWindowExecutionTaskInvocation(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -152,6 +170,9 @@ func addOperationGetMaintenanceWindowExecutionTaskInvocationMiddlewares(stack *m
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -159,7 +180,6 @@ func newServiceMetadataMiddleware_opGetMaintenanceWindowExecutionTaskInvocation(
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "GetMaintenanceWindowExecutionTaskInvocation",
 	}
 }

@@ -12,13 +12,13 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// The status of the associations for the instance(s).
+// The status of the associations for the managed node(s).
 func (c *Client) DescribeInstanceAssociationsStatus(ctx context.Context, params *DescribeInstanceAssociationsStatusInput, optFns ...func(*Options)) (*DescribeInstanceAssociationsStatusOutput, error) {
 	if params == nil {
 		params = &DescribeInstanceAssociationsStatusInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DescribeInstanceAssociationsStatus", params, optFns, addOperationDescribeInstanceAssociationsStatusMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DescribeInstanceAssociationsStatus", params, optFns, c.addOperationDescribeInstanceAssociationsStatusMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -30,18 +30,20 @@ func (c *Client) DescribeInstanceAssociationsStatus(ctx context.Context, params 
 
 type DescribeInstanceAssociationsStatusInput struct {
 
-	// The instance IDs for which you want association status information.
+	// The managed node IDs for which you want association status information.
 	//
 	// This member is required.
 	InstanceId *string
 
 	// The maximum number of items to return for this call. The call also returns a
 	// token that you can specify in a subsequent call to get the next set of results.
-	MaxResults int32
+	MaxResults *int32
 
 	// The token for the next set of items to return. (You received this token from a
 	// previous call.)
 	NextToken *string
+
+	noSmithyDocumentSerde
 }
 
 type DescribeInstanceAssociationsStatusOutput struct {
@@ -55,15 +57,27 @@ type DescribeInstanceAssociationsStatusOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDescribeInstanceAssociationsStatusMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDescribeInstanceAssociationsStatusMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeInstanceAssociationsStatus{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDescribeInstanceAssociationsStatus{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeInstanceAssociationsStatus"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -84,16 +98,13 @@ func addOperationDescribeInstanceAssociationsStatusMiddlewares(stack *middleware
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -102,10 +113,16 @@ func addOperationDescribeInstanceAssociationsStatusMiddlewares(stack *middleware
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpDescribeInstanceAssociationsStatusValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeInstanceAssociationsStatus(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -115,6 +132,9 @@ func addOperationDescribeInstanceAssociationsStatusMiddlewares(stack *middleware
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -153,17 +173,17 @@ type DescribeInstanceAssociationsStatusPaginator struct {
 // NewDescribeInstanceAssociationsStatusPaginator returns a new
 // DescribeInstanceAssociationsStatusPaginator
 func NewDescribeInstanceAssociationsStatusPaginator(client DescribeInstanceAssociationsStatusAPIClient, params *DescribeInstanceAssociationsStatusInput, optFns ...func(*DescribeInstanceAssociationsStatusPaginatorOptions)) *DescribeInstanceAssociationsStatusPaginator {
+	if params == nil {
+		params = &DescribeInstanceAssociationsStatusInput{}
+	}
+
 	options := DescribeInstanceAssociationsStatusPaginatorOptions{}
-	if params.MaxResults != 0 {
-		options.Limit = params.MaxResults
+	if params.MaxResults != nil {
+		options.Limit = *params.MaxResults
 	}
 
 	for _, fn := range optFns {
 		fn(&options)
-	}
-
-	if params == nil {
-		params = &DescribeInstanceAssociationsStatusInput{}
 	}
 
 	return &DescribeInstanceAssociationsStatusPaginator{
@@ -171,12 +191,13 @@ func NewDescribeInstanceAssociationsStatusPaginator(client DescribeInstanceAssoc
 		client:    client,
 		params:    params,
 		firstPage: true,
+		nextToken: params.NextToken,
 	}
 }
 
 // HasMorePages returns a boolean indicating whether more pages are available
 func (p *DescribeInstanceAssociationsStatusPaginator) HasMorePages() bool {
-	return p.firstPage || p.nextToken != nil
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
 }
 
 // NextPage retrieves the next DescribeInstanceAssociationsStatus page.
@@ -188,7 +209,11 @@ func (p *DescribeInstanceAssociationsStatusPaginator) NextPage(ctx context.Conte
 	params := *p.params
 	params.NextToken = p.nextToken
 
-	params.MaxResults = p.options.Limit
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.MaxResults = limit
 
 	result, err := p.client.DescribeInstanceAssociationsStatus(ctx, &params, optFns...)
 	if err != nil {
@@ -199,7 +224,10 @@ func (p *DescribeInstanceAssociationsStatusPaginator) NextPage(ctx context.Conte
 	prevToken := p.nextToken
 	p.nextToken = result.NextToken
 
-	if p.options.StopOnDuplicateToken && prevToken != nil && p.nextToken != nil && *prevToken == *p.nextToken {
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
 		p.nextToken = nil
 	}
 
@@ -210,7 +238,6 @@ func newServiceMetadataMiddleware_opDescribeInstanceAssociationsStatus(region st
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DescribeInstanceAssociationsStatus",
 	}
 }

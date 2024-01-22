@@ -4,22 +4,23 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Deletes the Systems Manager document and all instance associations to the
-// document. Before you delete the document, we recommend that you use
-// DeleteAssociation to disassociate all instances that are associated with the
-// document.
+// Deletes the Amazon Web Services Systems Manager document (SSM document) and all
+// managed node associations to the document. Before you delete the document, we
+// recommend that you use DeleteAssociation to disassociate all managed nodes that
+// are associated with the document.
 func (c *Client) DeleteDocument(ctx context.Context, params *DeleteDocumentInput, optFns ...func(*Options)) (*DeleteDocumentOutput, error) {
 	if params == nil {
 		params = &DeleteDocumentInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DeleteDocument", params, optFns, addOperationDeleteDocumentMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DeleteDocument", params, optFns, c.addOperationDeleteDocumentMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -42,27 +43,41 @@ type DeleteDocumentInput struct {
 
 	// Some SSM document types require that you specify a Force flag before you can
 	// delete the document. For example, you must specify a Force flag to delete a
-	// document of type ApplicationConfigurationSchema. You can restrict access to the
-	// Force flag in an AWS Identity and Access Management (IAM) policy.
+	// document of type ApplicationConfigurationSchema . You can restrict access to the
+	// Force flag in an Identity and Access Management (IAM) policy.
 	Force bool
 
 	// The version name of the document that you want to delete. If not provided, all
 	// versions of the document are deleted.
 	VersionName *string
+
+	noSmithyDocumentSerde
 }
 
 type DeleteDocumentOutput struct {
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDeleteDocumentMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDeleteDocumentMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeleteDocument{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDeleteDocument{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteDocument"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -83,16 +98,13 @@ func addOperationDeleteDocumentMiddlewares(stack *middleware.Stack, options Opti
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -101,10 +113,16 @@ func addOperationDeleteDocumentMiddlewares(stack *middleware.Stack, options Opti
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpDeleteDocumentValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteDocument(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -116,6 +134,9 @@ func addOperationDeleteDocumentMiddlewares(stack *middleware.Stack, options Opti
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -123,7 +144,6 @@ func newServiceMetadataMiddleware_opDeleteDocument(region string) *awsmiddleware
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DeleteDocument",
 	}
 }

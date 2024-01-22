@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -11,15 +12,15 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// If you create a new application in Application Manager, Systems Manager calls
-// this API action to specify information about the new application, including the
-// application type.
+// If you create a new application in Application Manager, Amazon Web Services
+// Systems Manager calls this API operation to specify information about the new
+// application, including the application type.
 func (c *Client) CreateOpsMetadata(ctx context.Context, params *CreateOpsMetadataInput, optFns ...func(*Options)) (*CreateOpsMetadataOutput, error) {
 	if params == nil {
 		params = &CreateOpsMetadataInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "CreateOpsMetadata", params, optFns, addOperationCreateOpsMetadataMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "CreateOpsMetadata", params, optFns, c.addOperationCreateOpsMetadataMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +39,18 @@ type CreateOpsMetadataInput struct {
 
 	// Metadata for a new Application Manager application.
 	Metadata map[string]types.MetadataValue
+
+	// Optional metadata that you assign to a resource. You can specify a maximum of
+	// five tags for an OpsMetadata object. Tags enable you to categorize a resource in
+	// different ways, such as by purpose, owner, or environment. For example, you
+	// might want to tag an OpsMetadata object to identify an environment or target
+	// Amazon Web Services Region. In this case, you could specify the following
+	// key-value pairs:
+	//   - Key=Environment,Value=Production
+	//   - Key=Region,Value=us-east-2
+	Tags []types.Tag
+
+	noSmithyDocumentSerde
 }
 
 type CreateOpsMetadataOutput struct {
@@ -48,15 +61,27 @@ type CreateOpsMetadataOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationCreateOpsMetadataMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationCreateOpsMetadataMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpCreateOpsMetadata{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpCreateOpsMetadata{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "CreateOpsMetadata"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -77,16 +102,13 @@ func addOperationCreateOpsMetadataMiddlewares(stack *middleware.Stack, options O
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -95,10 +117,16 @@ func addOperationCreateOpsMetadataMiddlewares(stack *middleware.Stack, options O
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpCreateOpsMetadataValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCreateOpsMetadata(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -110,6 +138,9 @@ func addOperationCreateOpsMetadataMiddlewares(stack *middleware.Stack, options O
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -117,7 +148,6 @@ func newServiceMetadataMiddleware_opCreateOpsMetadata(region string) *awsmiddlew
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "CreateOpsMetadata",
 	}
 }

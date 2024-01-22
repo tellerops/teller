@@ -4,45 +4,31 @@ package secretsmanager
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Attaches the contents of the specified resource-based permission policy to a
-// secret. A resource-based policy is optional. Alternatively, you can use IAM
-// identity-based policies that specify the secret's Amazon Resource Name (ARN) in
-// the policy statement's Resources element. You can also use a combination of both
-// identity-based and resource-based policies. The affected users and roles receive
-// the permissions that are permitted by all of the relevant policies. For more
-// information, see Using Resource-Based Policies for AWS Secrets Manager
-// (http://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access_resource-based-policies.html).
-// For the complete description of the AWS policy syntax and grammar, see IAM JSON
-// Policy Reference
-// (https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies.html) in
-// the IAM User Guide. Minimum permissions To run this command, you must have the
-// following permissions:
-//
-// * secretsmanager:PutResourcePolicy
-//
-// Related
-// operations
-//
-// * To retrieve the resource policy attached to a secret, use
-// GetResourcePolicy.
-//
-// * To delete the resource-based policy that's attached to a
-// secret, use DeleteResourcePolicy.
-//
-// * To list all of the currently available
-// secrets, use ListSecrets.
+// Attaches a resource-based permission policy to a secret. A resource-based
+// policy is optional. For more information, see Authentication and access control
+// for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
+// For information about attaching a policy in the console, see Attach a
+// permissions policy to a secret (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access_resource-based-policies.html)
+// . Secrets Manager generates a CloudTrail log entry when you call this action. Do
+// not include sensitive information in request parameters because it might be
+// logged. For more information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
+// . Required permissions: secretsmanager:PutResourcePolicy . For more information,
+// see IAM policy actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
+// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
+// .
 func (c *Client) PutResourcePolicy(ctx context.Context, params *PutResourcePolicyInput, optFns ...func(*Options)) (*PutResourcePolicyOutput, error) {
 	if params == nil {
 		params = &PutResourcePolicyInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "PutResourcePolicy", params, optFns, addOperationPutResourcePolicyMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "PutResourcePolicy", params, optFns, c.addOperationPutResourcePolicyMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -54,62 +40,60 @@ func (c *Client) PutResourcePolicy(ctx context.Context, params *PutResourcePolic
 
 type PutResourcePolicyInput struct {
 
-	// A JSON-formatted string that's constructed according to the grammar and syntax
-	// for an AWS resource-based policy. The policy in the string identifies who can
-	// access or manage this secret and its versions. For information on how to format
-	// a JSON parameter for the various command line tool environments, see Using JSON
-	// for Parameters
-	// (http://docs.aws.amazon.com/cli/latest/userguide/cli-using-param.html#cli-using-param-json)
-	// in the AWS CLI User Guide.
+	// A JSON-formatted string for an Amazon Web Services resource-based policy. For
+	// example policies, see Permissions policy examples (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access_examples.html)
+	// .
 	//
 	// This member is required.
 	ResourcePolicy *string
 
-	// Specifies the secret that you want to attach the resource-based policy to. You
-	// can specify either the ARN or the friendly name of the secret. If you specify an
-	// ARN, we generally recommend that you specify a complete ARN. You can specify a
-	// partial ARN too—for example, if you don’t include the final hyphen and six
-	// random characters that Secrets Manager adds at the end of the ARN when you
-	// created the secret. A partial ARN match can work as long as it uniquely matches
-	// only one secret. However, if your secret has a name that ends in a hyphen
-	// followed by six characters (before Secrets Manager adds the hyphen and six
-	// characters to the ARN) and you try to use that as a partial ARN, then those
-	// characters cause Secrets Manager to assume that you’re specifying a complete
-	// ARN. This confusion can cause unexpected results. To avoid this situation, we
-	// recommend that you don’t create secret names ending with a hyphen followed by
-	// six characters. If you specify an incomplete ARN without the random suffix, and
-	// instead provide the 'friendly name', you must not include the random suffix. If
-	// you do include the random suffix added by Secrets Manager, you receive either a
-	// ResourceNotFoundException or an AccessDeniedException error, depending on your
-	// permissions.
+	// The ARN or name of the secret to attach the resource-based policy. For an ARN,
+	// we recommend that you specify a complete ARN rather than a partial ARN. See
+	// Finding a secret from a partial ARN (https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html#ARN_secretnamehyphen)
+	// .
 	//
 	// This member is required.
 	SecretId *string
 
-	// Makes an optional API call to Zelkova to validate the Resource Policy to prevent
-	// broad access to your secret.
-	BlockPublicPolicy bool
+	// Specifies whether to block resource-based policies that allow broad access to
+	// the secret, for example those that use a wildcard for the principal. By default,
+	// public policies aren't blocked.
+	BlockPublicPolicy *bool
+
+	noSmithyDocumentSerde
 }
 
 type PutResourcePolicyOutput struct {
 
-	// The ARN of the secret retrieved by the resource-based policy.
+	// The ARN of the secret.
 	ARN *string
 
-	// The friendly name of the secret that the retrieved by the resource-based policy.
+	// The name of the secret.
 	Name *string
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationPutResourcePolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationPutResourcePolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpPutResourcePolicy{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpPutResourcePolicy{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "PutResourcePolicy"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -130,16 +114,13 @@ func addOperationPutResourcePolicyMiddlewares(stack *middleware.Stack, options O
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -148,10 +129,16 @@ func addOperationPutResourcePolicyMiddlewares(stack *middleware.Stack, options O
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpPutResourcePolicyValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opPutResourcePolicy(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -163,6 +150,9 @@ func addOperationPutResourcePolicyMiddlewares(stack *middleware.Stack, options O
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -170,7 +160,6 @@ func newServiceMetadataMiddleware_opPutResourcePolicy(region string) *awsmiddlew
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "secretsmanager",
 		OperationName: "PutResourcePolicy",
 	}
 }

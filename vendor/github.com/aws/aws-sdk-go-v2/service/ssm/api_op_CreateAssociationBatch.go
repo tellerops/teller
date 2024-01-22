@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -11,18 +12,19 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Associates the specified Systems Manager document with the specified instances
-// or targets. When you associate a document with one or more instances using
-// instance IDs or tags, SSM Agent running on the instance processes the document
-// and configures the instance as specified. If you associate a document with an
-// instance that already has an associated document, the system returns the
+// Associates the specified Amazon Web Services Systems Manager document (SSM
+// document) with the specified managed nodes or targets. When you associate a
+// document with one or more managed nodes using IDs or tags, Amazon Web Services
+// Systems Manager Agent (SSM Agent) running on the managed node processes the
+// document and configures the node as specified. If you associate a document with
+// a managed node that already has an associated document, the system returns the
 // AssociationAlreadyExists exception.
 func (c *Client) CreateAssociationBatch(ctx context.Context, params *CreateAssociationBatchInput, optFns ...func(*Options)) (*CreateAssociationBatchOutput, error) {
 	if params == nil {
 		params = &CreateAssociationBatchInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "CreateAssociationBatch", params, optFns, addOperationCreateAssociationBatchMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "CreateAssociationBatch", params, optFns, c.addOperationCreateAssociationBatchMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -38,6 +40,8 @@ type CreateAssociationBatchInput struct {
 	//
 	// This member is required.
 	Entries []types.CreateAssociationBatchRequestEntry
+
+	noSmithyDocumentSerde
 }
 
 type CreateAssociationBatchOutput struct {
@@ -50,15 +54,27 @@ type CreateAssociationBatchOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationCreateAssociationBatchMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationCreateAssociationBatchMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpCreateAssociationBatch{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpCreateAssociationBatch{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "CreateAssociationBatch"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -79,16 +95,13 @@ func addOperationCreateAssociationBatchMiddlewares(stack *middleware.Stack, opti
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -97,10 +110,16 @@ func addOperationCreateAssociationBatchMiddlewares(stack *middleware.Stack, opti
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpCreateAssociationBatchValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCreateAssociationBatch(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -112,6 +131,9 @@ func addOperationCreateAssociationBatchMiddlewares(stack *middleware.Stack, opti
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -119,7 +141,6 @@ func newServiceMetadataMiddleware_opCreateAssociationBatch(region string) *awsmi
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "CreateAssociationBatch",
 	}
 }

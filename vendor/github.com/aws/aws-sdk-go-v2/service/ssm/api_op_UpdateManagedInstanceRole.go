@@ -4,22 +4,23 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Changes the Amazon Identity and Access Management (IAM) role that is assigned to
-// the on-premises instance or virtual machines (VM). IAM roles are first assigned
-// to these hybrid instances during the activation process. For more information,
-// see CreateActivation.
+// Changes the Identity and Access Management (IAM) role that is assigned to the
+// on-premises server, edge device, or virtual machines (VM). IAM roles are first
+// assigned to these hybrid nodes during the activation process. For more
+// information, see CreateActivation .
 func (c *Client) UpdateManagedInstanceRole(ctx context.Context, params *UpdateManagedInstanceRoleInput, optFns ...func(*Options)) (*UpdateManagedInstanceRoleOutput, error) {
 	if params == nil {
 		params = &UpdateManagedInstanceRoleInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "UpdateManagedInstanceRole", params, optFns, addOperationUpdateManagedInstanceRoleMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "UpdateManagedInstanceRole", params, optFns, c.addOperationUpdateManagedInstanceRoleMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -31,29 +32,48 @@ func (c *Client) UpdateManagedInstanceRole(ctx context.Context, params *UpdateMa
 
 type UpdateManagedInstanceRoleInput struct {
 
-	// The IAM role you want to assign or change.
+	// The name of the Identity and Access Management (IAM) role that you want to
+	// assign to the managed node. This IAM role must provide AssumeRole permissions
+	// for the Amazon Web Services Systems Manager service principal ssm.amazonaws.com
+	// . For more information, see Create an IAM service role for a hybrid environment (https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-service-role.html)
+	// in the Amazon Web Services Systems Manager User Guide. You can't specify an IAM
+	// service-linked role for this parameter. You must create a unique role.
 	//
 	// This member is required.
 	IamRole *string
 
-	// The ID of the managed instance where you want to update the role.
+	// The ID of the managed node where you want to update the role.
 	//
 	// This member is required.
 	InstanceId *string
+
+	noSmithyDocumentSerde
 }
 
 type UpdateManagedInstanceRoleOutput struct {
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationUpdateManagedInstanceRoleMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationUpdateManagedInstanceRoleMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdateManagedInstanceRole{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpUpdateManagedInstanceRole{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdateManagedInstanceRole"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -74,16 +94,13 @@ func addOperationUpdateManagedInstanceRoleMiddlewares(stack *middleware.Stack, o
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -92,10 +109,16 @@ func addOperationUpdateManagedInstanceRoleMiddlewares(stack *middleware.Stack, o
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpUpdateManagedInstanceRoleValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdateManagedInstanceRole(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -107,6 +130,9 @@ func addOperationUpdateManagedInstanceRoleMiddlewares(stack *middleware.Stack, o
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -114,7 +140,6 @@ func newServiceMetadataMiddleware_opUpdateManagedInstanceRole(region string) *aw
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "UpdateManagedInstanceRole",
 	}
 }

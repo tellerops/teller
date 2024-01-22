@@ -4,21 +4,22 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Deletes a Resource Data Sync configuration. After the configuration is deleted,
-// changes to data on managed instances are no longer synced to or from the target.
-// Deleting a sync configuration does not delete data.
+// Deletes a resource data sync configuration. After the configuration is deleted,
+// changes to data on managed nodes are no longer synced to or from the target.
+// Deleting a sync configuration doesn't delete data.
 func (c *Client) DeleteResourceDataSync(ctx context.Context, params *DeleteResourceDataSyncInput, optFns ...func(*Options)) (*DeleteResourceDataSyncOutput, error) {
 	if params == nil {
 		params = &DeleteResourceDataSyncInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DeleteResourceDataSync", params, optFns, addOperationDeleteResourceDataSyncMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DeleteResourceDataSync", params, optFns, c.addOperationDeleteResourceDataSyncMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -37,20 +38,34 @@ type DeleteResourceDataSyncInput struct {
 
 	// Specify the type of resource data sync to delete.
 	SyncType *string
+
+	noSmithyDocumentSerde
 }
 
 type DeleteResourceDataSyncOutput struct {
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDeleteResourceDataSyncMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDeleteResourceDataSyncMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeleteResourceDataSync{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDeleteResourceDataSync{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteResourceDataSync"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -71,16 +86,13 @@ func addOperationDeleteResourceDataSyncMiddlewares(stack *middleware.Stack, opti
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -89,10 +101,16 @@ func addOperationDeleteResourceDataSyncMiddlewares(stack *middleware.Stack, opti
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpDeleteResourceDataSyncValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteResourceDataSync(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -104,6 +122,9 @@ func addOperationDeleteResourceDataSyncMiddlewares(stack *middleware.Stack, opti
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -111,7 +132,6 @@ func newServiceMetadataMiddleware_opDeleteResourceDataSync(region string) *awsmi
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DeleteResourceDataSync",
 	}
 }

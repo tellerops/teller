@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -18,7 +19,7 @@ func (c *Client) SendAutomationSignal(ctx context.Context, params *SendAutomatio
 		params = &SendAutomationSignalInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "SendAutomationSignal", params, optFns, addOperationSendAutomationSignalMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "SendAutomationSignal", params, optFns, c.addOperationSendAutomationSignalMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +31,8 @@ func (c *Client) SendAutomationSignal(ctx context.Context, params *SendAutomatio
 
 type SendAutomationSignalInput struct {
 
-	// The unique identifier for an existing Automation execution that you want to send
-	// the signal to.
+	// The unique identifier for an existing Automation execution that you want to
+	// send the signal to.
 	//
 	// This member is required.
 	AutomationExecutionId *string
@@ -50,20 +51,34 @@ type SendAutomationSignalInput struct {
 	// ID as the payload. For example:
 	// StepExecutionId="97fff367-fc5a-4299-aed8-0123456789ab"
 	Payload map[string][]string
+
+	noSmithyDocumentSerde
 }
 
 type SendAutomationSignalOutput struct {
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationSendAutomationSignalMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationSendAutomationSignalMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpSendAutomationSignal{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpSendAutomationSignal{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "SendAutomationSignal"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -84,16 +99,13 @@ func addOperationSendAutomationSignalMiddlewares(stack *middleware.Stack, option
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -102,10 +114,16 @@ func addOperationSendAutomationSignalMiddlewares(stack *middleware.Stack, option
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpSendAutomationSignalValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opSendAutomationSignal(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -117,6 +135,9 @@ func addOperationSendAutomationSignalMiddlewares(stack *middleware.Stack, option
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -124,7 +145,6 @@ func newServiceMetadataMiddleware_opSendAutomationSignal(region string) *awsmidd
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "SendAutomationSignal",
 	}
 }

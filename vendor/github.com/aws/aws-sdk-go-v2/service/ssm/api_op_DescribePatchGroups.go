@@ -18,7 +18,7 @@ func (c *Client) DescribePatchGroups(ctx context.Context, params *DescribePatchG
 		params = &DescribePatchGroupsInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DescribePatchGroups", params, optFns, addOperationDescribePatchGroupsMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DescribePatchGroups", params, optFns, c.addOperationDescribePatchGroupsMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -30,37 +30,28 @@ func (c *Client) DescribePatchGroups(ctx context.Context, params *DescribePatchG
 
 type DescribePatchGroupsInput struct {
 
-	// One or more filters. Use a filter to return a more specific list of results. For
-	// DescribePatchGroups,valid filter keys include the following:
-	//
-	// * NAME_PREFIX: The
-	// name of the patch group. Wildcards (*) are accepted.
-	//
-	// * OPERATING_SYSTEM: The
-	// supported operating system type to return results for. For valid operating
-	// system values, see GetDefaultPatchBaselineRequest$OperatingSystem in
-	// CreatePatchBaseline. Examples:
-	//
-	// * --filters
-	// Key=NAME_PREFIX,Values=MyPatchGroup*
-	//
-	// * --filters
-	// Key=OPERATING_SYSTEM,Values=AMAZON_LINUX_2
+	// Each element in the array is a structure containing a key-value pair. Supported
+	// keys for DescribePatchGroups include the following:
+	//   - NAME_PREFIX Sample values: AWS- | My- .
+	//   - OPERATING_SYSTEM Sample values: AMAZON_LINUX | SUSE | WINDOWS
 	Filters []types.PatchOrchestratorFilter
 
 	// The maximum number of patch groups to return (per page).
-	MaxResults int32
+	MaxResults *int32
 
 	// The token for the next set of items to return. (You received this token from a
 	// previous call.)
 	NextToken *string
+
+	noSmithyDocumentSerde
 }
 
 type DescribePatchGroupsOutput struct {
 
-	// Each entry in the array contains: PatchGroup: string (between 1 and 256
-	// characters, Regex: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$) PatchBaselineIdentity: A
-	// PatchBaselineIdentity element.
+	// Each entry in the array contains:
+	//   - PatchGroup : string (between 1 and 256 characters. Regex:
+	//   ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$)
+	//   - PatchBaselineIdentity : A PatchBaselineIdentity element.
 	Mappings []types.PatchGroupPatchBaselineMapping
 
 	// The token to use when requesting the next set of items. If there are no
@@ -69,15 +60,27 @@ type DescribePatchGroupsOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDescribePatchGroupsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDescribePatchGroupsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribePatchGroups{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDescribePatchGroups{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribePatchGroups"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -98,16 +101,13 @@ func addOperationDescribePatchGroupsMiddlewares(stack *middleware.Stack, options
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -116,7 +116,13 @@ func addOperationDescribePatchGroupsMiddlewares(stack *middleware.Stack, options
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribePatchGroups(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -128,11 +134,14 @@ func addOperationDescribePatchGroupsMiddlewares(stack *middleware.Stack, options
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
-// DescribePatchGroupsAPIClient is a client that implements the DescribePatchGroups
-// operation.
+// DescribePatchGroupsAPIClient is a client that implements the
+// DescribePatchGroups operation.
 type DescribePatchGroupsAPIClient interface {
 	DescribePatchGroups(context.Context, *DescribePatchGroupsInput, ...func(*Options)) (*DescribePatchGroupsOutput, error)
 }
@@ -161,17 +170,17 @@ type DescribePatchGroupsPaginator struct {
 
 // NewDescribePatchGroupsPaginator returns a new DescribePatchGroupsPaginator
 func NewDescribePatchGroupsPaginator(client DescribePatchGroupsAPIClient, params *DescribePatchGroupsInput, optFns ...func(*DescribePatchGroupsPaginatorOptions)) *DescribePatchGroupsPaginator {
+	if params == nil {
+		params = &DescribePatchGroupsInput{}
+	}
+
 	options := DescribePatchGroupsPaginatorOptions{}
-	if params.MaxResults != 0 {
-		options.Limit = params.MaxResults
+	if params.MaxResults != nil {
+		options.Limit = *params.MaxResults
 	}
 
 	for _, fn := range optFns {
 		fn(&options)
-	}
-
-	if params == nil {
-		params = &DescribePatchGroupsInput{}
 	}
 
 	return &DescribePatchGroupsPaginator{
@@ -179,12 +188,13 @@ func NewDescribePatchGroupsPaginator(client DescribePatchGroupsAPIClient, params
 		client:    client,
 		params:    params,
 		firstPage: true,
+		nextToken: params.NextToken,
 	}
 }
 
 // HasMorePages returns a boolean indicating whether more pages are available
 func (p *DescribePatchGroupsPaginator) HasMorePages() bool {
-	return p.firstPage || p.nextToken != nil
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
 }
 
 // NextPage retrieves the next DescribePatchGroups page.
@@ -196,7 +206,11 @@ func (p *DescribePatchGroupsPaginator) NextPage(ctx context.Context, optFns ...f
 	params := *p.params
 	params.NextToken = p.nextToken
 
-	params.MaxResults = p.options.Limit
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.MaxResults = limit
 
 	result, err := p.client.DescribePatchGroups(ctx, &params, optFns...)
 	if err != nil {
@@ -207,7 +221,10 @@ func (p *DescribePatchGroupsPaginator) NextPage(ctx context.Context, optFns ...f
 	prevToken := p.nextToken
 	p.nextToken = result.NextToken
 
-	if p.options.StopOnDuplicateToken && prevToken != nil && p.nextToken != nil && *prevToken == *p.nextToken {
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
 		p.nextToken = nil
 	}
 
@@ -218,7 +235,6 @@ func newServiceMetadataMiddleware_opDescribePatchGroups(region string) *awsmiddl
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DescribePatchGroups",
 	}
 }

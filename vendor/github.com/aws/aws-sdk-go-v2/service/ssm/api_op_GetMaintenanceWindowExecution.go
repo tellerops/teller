@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -18,7 +19,7 @@ func (c *Client) GetMaintenanceWindowExecution(ctx context.Context, params *GetM
 		params = &GetMaintenanceWindowExecutionInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "GetMaintenanceWindowExecution", params, optFns, addOperationGetMaintenanceWindowExecutionMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "GetMaintenanceWindowExecution", params, optFns, c.addOperationGetMaintenanceWindowExecutionMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -34,6 +35,8 @@ type GetMaintenanceWindowExecutionInput struct {
 	//
 	// This member is required.
 	WindowExecutionId *string
+
+	noSmithyDocumentSerde
 }
 
 type GetMaintenanceWindowExecutionOutput struct {
@@ -47,7 +50,7 @@ type GetMaintenanceWindowExecutionOutput struct {
 	// The status of the maintenance window execution.
 	Status types.MaintenanceWindowExecutionStatus
 
-	// The details explaining the Status. Only available for certain status values.
+	// The details explaining the status. Not available for all status values.
 	StatusDetails *string
 
 	// The ID of the task executions from the maintenance window execution.
@@ -58,15 +61,27 @@ type GetMaintenanceWindowExecutionOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationGetMaintenanceWindowExecutionMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationGetMaintenanceWindowExecutionMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpGetMaintenanceWindowExecution{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpGetMaintenanceWindowExecution{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "GetMaintenanceWindowExecution"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -87,16 +102,13 @@ func addOperationGetMaintenanceWindowExecutionMiddlewares(stack *middleware.Stac
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -105,10 +117,16 @@ func addOperationGetMaintenanceWindowExecutionMiddlewares(stack *middleware.Stac
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpGetMaintenanceWindowExecutionValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetMaintenanceWindowExecution(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -120,6 +138,9 @@ func addOperationGetMaintenanceWindowExecutionMiddlewares(stack *middleware.Stac
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -127,7 +148,6 @@ func newServiceMetadataMiddleware_opGetMaintenanceWindowExecution(region string)
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "GetMaintenanceWindowExecution",
 	}
 }
