@@ -11,7 +11,7 @@ require (
 	github.com/DopplerHQ/cli v0.0.0-20210309042056-414bede8a50e
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/kong v0.2.15
-	github.com/aws/aws-sdk-go-v2 v1.2.0
+	github.com/aws/aws-sdk-go-v2 v1.24.1
 	github.com/aws/aws-sdk-go-v2/config v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.1.1
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.1.1
@@ -47,6 +47,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require github.com/aws/aws-sdk-go-v2/internal/ini v1.7.3 // indirect
+
 require (
 	filippo.io/age v1.1.1 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
@@ -74,7 +76,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.0.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.1.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.1.1 // indirect
-	github.com/aws/smithy-go v1.1.0 // indirect
+	github.com/aws/smithy-go v1.19.0 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/caspr-io/yamlpath v0.0.0-20200722075116-502e8d113a9b // indirect

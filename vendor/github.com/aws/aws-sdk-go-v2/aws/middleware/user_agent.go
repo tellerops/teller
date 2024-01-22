@@ -59,6 +59,11 @@ func (k SDKAgentKeyType) string() string {
 
 const execEnvVar = `AWS_EXECUTION_ENV`
 
+var validChars = map[rune]bool{
+	'!': true, '#': true, '$': true, '%': true, '&': true, '\'': true, '*': true, '+': true,
+	'-': true, '.': true, '^': true, '_': true, '`': true, '|': true, '~': true,
+}
+
 // requestUserAgent is a build middleware that set the User-Agent for the request.
 type requestUserAgent struct {
 	sdkAgent, userAgent *smithyhttp.UserAgentBuilder
@@ -68,10 +73,12 @@ type requestUserAgent struct {
 // request.
 //
 // User-Agent example:
-//   aws-sdk-go-v2/1.2.3
+//
+//	aws-sdk-go-v2/1.2.3
 //
 // X-Amz-User-Agent example:
-//   aws-sdk-go-v2/1.2.3 md/GOOS/linux md/GOARCH/amd64 lang/go/1.15
+//
+//	aws-sdk-go-v2/1.2.3 md/GOOS/linux md/GOARCH/amd64 lang/go/1.15
 func newRequestUserAgent() *requestUserAgent {
 	userAgent, sdkAgent := smithyhttp.NewUserAgentBuilder(), smithyhttp.NewUserAgentBuilder()
 	addProductName(userAgent)
@@ -85,24 +92,6 @@ func newRequestUserAgent() *requestUserAgent {
 	addSDKMetadata(r)
 
 	return r
-}
-
-func getNormalizedOSName() (os string) {
-	switch runtime.GOOS {
-	case "android":
-		os = "android"
-	case "linux":
-		os = "linux"
-	case "windows":
-		os = "windows"
-	case "darwin":
-		// Due to Apple M1 we can't distinguish between macOS and iOS when GOOS/GOARCH is darwin/amd64
-		// For now declare this as "other" until we have a better detection mechanism.
-		fallthrough
-	default:
-		os = "other"
-	}
-	return os
 }
 
 func addSDKMetadata(r *requestUserAgent) {
@@ -194,22 +183,24 @@ func getOrAddRequestUserAgent(stack *middleware.Stack) (*requestUserAgent, error
 
 // AddUserAgentKey adds the component identified by name to the User-Agent string.
 func (u *requestUserAgent) AddUserAgentKey(key string) {
-	u.userAgent.AddKey(key)
+	u.userAgent.AddKey(strings.Map(rules, key))
 }
 
 // AddUserAgentKeyValue adds the key identified by the given name and value to the User-Agent string.
 func (u *requestUserAgent) AddUserAgentKeyValue(key, value string) {
-	u.userAgent.AddKeyValue(key, value)
+	u.userAgent.AddKeyValue(strings.Map(rules, key), strings.Map(rules, value))
 }
 
 // AddUserAgentKey adds the component identified by name to the User-Agent string.
 func (u *requestUserAgent) AddSDKAgentKey(keyType SDKAgentKeyType, key string) {
-	u.sdkAgent.AddKey(keyType.string() + "/" + key)
+	// TODO: should target sdkAgent
+	u.userAgent.AddKey(keyType.string() + "/" + strings.Map(rules, key))
 }
 
 // AddUserAgentKeyValue adds the key identified by the given name and value to the User-Agent string.
 func (u *requestUserAgent) AddSDKAgentKeyValue(keyType SDKAgentKeyType, key, value string) {
-	u.sdkAgent.AddKeyValue(keyType.string()+"/"+key, value)
+	// TODO: should target sdkAgent
+	u.userAgent.AddKeyValue(keyType.string(), strings.Map(rules, key)+"#"+strings.Map(rules, value))
 }
 
 // ID the name of the middleware.
@@ -224,7 +215,8 @@ func (u *requestUserAgent) HandleBuild(ctx context.Context, in middleware.BuildI
 	switch req := in.Request.(type) {
 	case *smithyhttp.Request:
 		u.addHTTPUserAgent(req)
-		u.addHTTPSDKAgent(req)
+		// TODO: To be re-enabled
+		// u.addHTTPSDKAgent(req)
 	default:
 		return out, metadata, fmt.Errorf("unknown transport type %T", in)
 	}
@@ -253,4 +245,17 @@ func updateHTTPHeader(request *smithyhttp.Request, header string, value string) 
 		current = value
 	}
 	request.Header[header] = append(request.Header[header][:0], current)
+}
+
+func rules(r rune) rune {
+	switch {
+	case r >= '0' && r <= '9':
+		return r
+	case r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z':
+		return r
+	case validChars[r]:
+		return r
+	default:
+		return '-'
+	}
 }

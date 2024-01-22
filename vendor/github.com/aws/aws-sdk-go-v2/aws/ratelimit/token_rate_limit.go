@@ -30,10 +30,6 @@ func NewTokenRateLimit(tokens uint) *TokenRateLimit {
 	}
 }
 
-func isTimeoutError(error) bool {
-	return false
-}
-
 type canceledError struct {
 	Err error
 }
@@ -67,6 +63,11 @@ func (l *TokenRateLimit) GetToken(ctx context.Context, cost uint) (func() error,
 func (l *TokenRateLimit) AddTokens(v uint) error {
 	l.bucket.Refund(v)
 	return nil
+}
+
+// Remaining returns the number of remaining tokens in the bucket.
+func (l *TokenRateLimit) Remaining() uint {
+	return l.bucket.Remaining()
 }
 
 // QuotaExceededError provides the SDK error when the retries for a given
