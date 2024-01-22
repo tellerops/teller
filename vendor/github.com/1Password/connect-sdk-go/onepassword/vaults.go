@@ -12,7 +12,7 @@ type Vault struct {
 	Description string `json:"description,omitempty"`
 
 	AttrVersion    int       `json:"attributeVersion,omitempty"`
-	ContentVersoin int       `json:"contentVersion,omitempty"`
+	ContentVersion int       `json:"contentVersion,omitempty"`
 	Items          int       `json:"items,omitempty"`
 	Type           VaultType `json:"type,omitempty"`
 

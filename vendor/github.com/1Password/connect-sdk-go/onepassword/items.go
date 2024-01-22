@@ -9,9 +9,14 @@ import (
 // ItemCategory Represents the template of the Item
 type ItemCategory string
 
+type ItemFieldPurpose string
+
+type ItemFieldType string
+
 const (
 	Login                ItemCategory = "LOGIN"
 	Password             ItemCategory = "PASSWORD"
+	ApiCredential        ItemCategory = "API_CREDENTIAL"
 	Server               ItemCategory = "SERVER"
 	Database             ItemCategory = "DATABASE"
 	CreditCard           ItemCategory = "CREDIT_CARD"
@@ -28,8 +33,31 @@ const (
 	Document             ItemCategory = "DOCUMENT"
 	EmailAccount         ItemCategory = "EMAIL_ACCOUNT"
 	SocialSecurityNumber ItemCategory = "SOCIAL_SECURITY_NUMBER"
-	ApiCredential        ItemCategory = "API_CREDENTIAL"
+	MedicalRecord        ItemCategory = "MEDICAL_RECORD"
+	SSHKey               ItemCategory = "SSH_KEY"
 	Custom               ItemCategory = "CUSTOM"
+
+	FieldPurposeUsername ItemFieldPurpose = "USERNAME"
+	FieldPurposePassword ItemFieldPurpose = "PASSWORD"
+	FieldPurposeNotes    ItemFieldPurpose = "NOTES"
+
+	FieldTypeAddress          ItemFieldType = "ADDRESS"
+	FieldTypeConcealed        ItemFieldType = "CONCEALED"
+	FieldTypeCreditCardNumber ItemFieldType = "CREDIT_CARD_NUMBER"
+	FieldTypeCreditCardType   ItemFieldType = "CREDIT_CARD_TYPE"
+	FieldTypeDate             ItemFieldType = "DATE"
+	FieldTypeEmail            ItemFieldType = "EMAIL"
+	FieldTypeGender           ItemFieldType = "GENDER"
+	FieldTypeMenu             ItemFieldType = "MENU"
+	FieldTypeMonthYear        ItemFieldType = "MONTH_YEAR"
+	FieldTypeOTP              ItemFieldType = "OTP"
+	FieldTypePhone            ItemFieldType = "PHONE"
+	FieldTypeReference        ItemFieldType = "REFERENCE"
+	FieldTypeString           ItemFieldType = "STRING"
+	FieldTypeURL              ItemFieldType = "URL"
+	FieldTypeFile             ItemFieldType = "FILE"
+	FieldTypeSSHKey           ItemFieldType = "SSH_KEY"
+	FieldTypeUnknown          ItemFieldType = "UNKNOWN"
 )
 
 // UnmarshalJSON Unmarshall Item Category enum strings to Go string enums
@@ -40,7 +68,7 @@ func (ic *ItemCategory) UnmarshalJSON(b []byte) error {
 	switch category {
 	case Login, Password, Server, Database, CreditCard, Membership, Passport, SoftwareLicense,
 		OutdoorLicense, SecureNote, WirelessRouter, BankAccount, DriverLicense, Identity, RewardProgram,
-		Document, EmailAccount, SocialSecurityNumber, ApiCredential:
+		Document, EmailAccount, SocialSecurityNumber, ApiCredential, MedicalRecord, SSHKey:
 		*ic = category
 	default:
 		*ic = Custom
@@ -58,7 +86,6 @@ type Item struct {
 	Favorite bool      `json:"favorite,omitempty"`
 	Tags     []string  `json:"tags,omitempty"`
 	Version  int       `json:"version,omitempty"`
-	Trashed  bool      `json:"trashed,omitempty"`
 
 	Vault    ItemVault    `json:"vault"`
 	Category ItemCategory `json:"category,omitempty"` // TODO: switch this to `category`
@@ -70,6 +97,9 @@ type Item struct {
 	LastEditedBy string    `json:"lastEditedBy,omitempty"`
 	CreatedAt    time.Time `json:"createdAt,omitempty"`
 	UpdatedAt    time.Time `json:"updatedAt,omitempty"`
+
+	// Deprecated: Connect does not return trashed items.
+	Trashed bool `json:"trashed,omitempty"`
 }
 
 // ItemVault represents the Vault the Item is found in
@@ -80,6 +110,7 @@ type ItemVault struct {
 // ItemURL is a simplified item URL
 type ItemURL struct {
 	Primary bool   `json:"primary,omitempty"`
+	Label   string `json:"label,omitempty"`
 	URL     string `json:"href"`
 }
 
@@ -91,24 +122,26 @@ type ItemSection struct {
 
 // GeneratorRecipe Representation of a "recipe" used to generate a field
 type GeneratorRecipe struct {
-	Length        int      `json:"length,omitempty"`
-	CharacterSets []string `json:"characterSets,omitempty"`
+	Length            int      `json:"length,omitempty"`
+	CharacterSets     []string `json:"characterSets,omitempty"`
+	ExcludeCharacters string   `json:"excludeCharacters,omitempty"`
 }
 
 // ItemField Representation of a single field on an Item
 type ItemField struct {
 	ID       string           `json:"id"`
 	Section  *ItemSection     `json:"section,omitempty"`
-	Type     string           `json:"type"`
-	Purpose  string           `json:"purpose,omitempty"`
+	Type     ItemFieldType    `json:"type"`
+	Purpose  ItemFieldPurpose `json:"purpose,omitempty"`
 	Label    string           `json:"label,omitempty"`
 	Value    string           `json:"value,omitempty"`
 	Generate bool             `json:"generate,omitempty"`
 	Recipe   *GeneratorRecipe `json:"recipe,omitempty"`
 	Entropy  float64          `json:"entropy,omitempty"`
+	TOTP     string           `json:"totp,omitempty"`
 }
 
-// Get Retrieve the value of a field on the item by its label. To specify a
+// GetValue Retrieve the value of a field on the item by its label. To specify a
 // field from a specific section pass in <section label>.<field label>. If
 // no field matching the selector is found return "".
 func (i *Item) GetValue(field string) string {
