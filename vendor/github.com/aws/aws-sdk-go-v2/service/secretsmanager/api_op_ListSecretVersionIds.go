@@ -12,29 +12,23 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Lists all of the versions attached to the specified secret. The output does not
-// include the SecretString or SecretBinary fields. By default, the list includes
-// only versions that have at least one staging label in VersionStage attached.
-// Always check the NextToken response parameter when calling any of the List*
-// operations. These operations can occasionally return an empty or shorter than
-// expected list of results even when there more results become available. When
-// this happens, the NextToken response parameter contains a value to pass to the
-// next call to the same API to request the next part of the list. Minimum
-// permissions To run this command, you must have the following permissions:
-//
-// *
-// secretsmanager:ListSecretVersionIds
-//
-// Related operations
-//
-// * To list the secrets
-// in an account, use ListSecrets.
+// Lists the versions of a secret. Secrets Manager uses staging labels to indicate
+// the different versions of a secret. For more information, see Secrets Manager
+// concepts: Versions (https://docs.aws.amazon.com/secretsmanager/latest/userguide/getting-started.html#term_version)
+// . To list the secrets in the account, use ListSecrets . Secrets Manager
+// generates a CloudTrail log entry when you call this action. Do not include
+// sensitive information in request parameters because it might be logged. For more
+// information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
+// . Required permissions: secretsmanager:ListSecretVersionIds . For more
+// information, see IAM policy actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
+// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
+// .
 func (c *Client) ListSecretVersionIds(ctx context.Context, params *ListSecretVersionIdsInput, optFns ...func(*Options)) (*ListSecretVersionIdsOutput, error) {
 	if params == nil {
 		params = &ListSecretVersionIdsInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "ListSecretVersionIds", params, optFns, addOperationListSecretVersionIdsMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "ListSecretVersionIds", params, optFns, c.addOperationListSecretVersionIdsMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -46,86 +40,73 @@ func (c *Client) ListSecretVersionIds(ctx context.Context, params *ListSecretVer
 
 type ListSecretVersionIdsInput struct {
 
-	// The identifier for the secret containing the versions you want to list. You can
-	// specify either the Amazon Resource Name (ARN) or the friendly name of the
-	// secret. If you specify an ARN, we generally recommend that you specify a
-	// complete ARN. You can specify a partial ARN too—for example, if you don’t
-	// include the final hyphen and six random characters that Secrets Manager adds at
-	// the end of the ARN when you created the secret. A partial ARN match can work as
-	// long as it uniquely matches only one secret. However, if your secret has a name
-	// that ends in a hyphen followed by six characters (before Secrets Manager adds
-	// the hyphen and six characters to the ARN) and you try to use that as a partial
-	// ARN, then those characters cause Secrets Manager to assume that you’re
-	// specifying a complete ARN. This confusion can cause unexpected results. To avoid
-	// this situation, we recommend that you don’t create secret names ending with a
-	// hyphen followed by six characters. If you specify an incomplete ARN without the
-	// random suffix, and instead provide the 'friendly name', you must not include the
-	// random suffix. If you do include the random suffix added by Secrets Manager, you
-	// receive either a ResourceNotFoundException or an AccessDeniedException error,
-	// depending on your permissions.
+	// The ARN or name of the secret whose versions you want to list. For an ARN, we
+	// recommend that you specify a complete ARN rather than a partial ARN. See
+	// Finding a secret from a partial ARN (https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html#ARN_secretnamehyphen)
+	// .
 	//
 	// This member is required.
 	SecretId *string
 
-	// (Optional) Specifies that you want the results to include versions that do not
-	// have any staging labels attached to them. Such versions are considered
-	// deprecated and are subject to deletion by Secrets Manager as needed.
-	IncludeDeprecated bool
+	// Specifies whether to include versions of secrets that don't have any staging
+	// labels attached to them. Versions without staging labels are considered
+	// deprecated and are subject to deletion by Secrets Manager. By default, versions
+	// without staging labels aren't included.
+	IncludeDeprecated *bool
 
-	// (Optional) Limits the number of results you want to include in the response. If
-	// you don't include this parameter, it defaults to a value that's specific to the
-	// operation. If additional items exist beyond the maximum you specify, the
-	// NextToken response element is present and has a value (isn't null). Include that
-	// value as the NextToken request parameter in the next call to the operation to
-	// get the next part of the results. Note that Secrets Manager might return fewer
-	// results than the maximum even when there are more results available. You should
-	// check NextToken after every operation to ensure that you receive all of the
-	// results.
-	MaxResults int32
+	// The number of results to include in the response. If there are more results
+	// available, in the response, Secrets Manager includes NextToken . To get the next
+	// results, call ListSecretVersionIds again with the value from NextToken .
+	MaxResults *int32
 
-	// (Optional) Use this parameter in a request if you receive a NextToken response
-	// in a previous request indicating there's more output available. In a subsequent
-	// call, set it to the value of the previous call NextToken response to indicate
-	// where the output should continue from.
+	// A token that indicates where the output should continue from, if a previous
+	// call did not show all results. To get the next results, call
+	// ListSecretVersionIds again with this value.
 	NextToken *string
+
+	noSmithyDocumentSerde
 }
 
 type ListSecretVersionIdsOutput struct {
 
-	// The Amazon Resource Name (ARN) for the secret. Secrets Manager automatically
-	// adds several random characters to the name at the end of the ARN when you
-	// initially create a secret. This affects only the ARN and not the actual friendly
-	// name. This ensures that if you create a new secret with the same name as an old
-	// secret that you previously deleted, then users with access to the old secret
-	// don't automatically get access to the new secret because the ARNs are different.
+	// The ARN of the secret.
 	ARN *string
 
-	// The friendly name of the secret.
+	// The name of the secret.
 	Name *string
 
-	// If present in the response, this value indicates that there's more output
-	// available than included in the current response. This can occur even when the
-	// response includes no values at all, such as when you ask for a filtered view of
-	// a very long list. Use this value in the NextToken request parameter in a
-	// subsequent call to the operation to continue processing and get the next part of
-	// the output. You should repeat this until the NextToken response element comes
-	// back empty (as null).
+	// Secrets Manager includes this value if there's more output available than what
+	// is included in the current response. This can occur even when the response
+	// includes no values at all, such as when you ask for a filtered view of a long
+	// list. To get the next results, call ListSecretVersionIds again with this value.
 	NextToken *string
 
-	// The list of the currently available versions of the specified secret.
+	// A list of the versions of the secret.
 	Versions []types.SecretVersionsListEntry
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationListSecretVersionIdsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationListSecretVersionIdsMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListSecretVersionIds{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpListSecretVersionIds{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "ListSecretVersionIds"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -146,16 +127,13 @@ func addOperationListSecretVersionIdsMiddlewares(stack *middleware.Stack, option
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -164,10 +142,16 @@ func addOperationListSecretVersionIdsMiddlewares(stack *middleware.Stack, option
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpListSecretVersionIdsValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListSecretVersionIds(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -177,6 +161,9 @@ func addOperationListSecretVersionIdsMiddlewares(stack *middleware.Stack, option
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -193,15 +180,9 @@ var _ ListSecretVersionIdsAPIClient = (*Client)(nil)
 // ListSecretVersionIdsPaginatorOptions is the paginator options for
 // ListSecretVersionIds
 type ListSecretVersionIdsPaginatorOptions struct {
-	// (Optional) Limits the number of results you want to include in the response. If
-	// you don't include this parameter, it defaults to a value that's specific to the
-	// operation. If additional items exist beyond the maximum you specify, the
-	// NextToken response element is present and has a value (isn't null). Include that
-	// value as the NextToken request parameter in the next call to the operation to
-	// get the next part of the results. Note that Secrets Manager might return fewer
-	// results than the maximum even when there are more results available. You should
-	// check NextToken after every operation to ensure that you receive all of the
-	// results.
+	// The number of results to include in the response. If there are more results
+	// available, in the response, Secrets Manager includes NextToken . To get the next
+	// results, call ListSecretVersionIds again with the value from NextToken .
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -220,17 +201,17 @@ type ListSecretVersionIdsPaginator struct {
 
 // NewListSecretVersionIdsPaginator returns a new ListSecretVersionIdsPaginator
 func NewListSecretVersionIdsPaginator(client ListSecretVersionIdsAPIClient, params *ListSecretVersionIdsInput, optFns ...func(*ListSecretVersionIdsPaginatorOptions)) *ListSecretVersionIdsPaginator {
+	if params == nil {
+		params = &ListSecretVersionIdsInput{}
+	}
+
 	options := ListSecretVersionIdsPaginatorOptions{}
-	if params.MaxResults != 0 {
-		options.Limit = params.MaxResults
+	if params.MaxResults != nil {
+		options.Limit = *params.MaxResults
 	}
 
 	for _, fn := range optFns {
 		fn(&options)
-	}
-
-	if params == nil {
-		params = &ListSecretVersionIdsInput{}
 	}
 
 	return &ListSecretVersionIdsPaginator{
@@ -238,12 +219,13 @@ func NewListSecretVersionIdsPaginator(client ListSecretVersionIdsAPIClient, para
 		client:    client,
 		params:    params,
 		firstPage: true,
+		nextToken: params.NextToken,
 	}
 }
 
 // HasMorePages returns a boolean indicating whether more pages are available
 func (p *ListSecretVersionIdsPaginator) HasMorePages() bool {
-	return p.firstPage || p.nextToken != nil
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
 }
 
 // NextPage retrieves the next ListSecretVersionIds page.
@@ -255,7 +237,11 @@ func (p *ListSecretVersionIdsPaginator) NextPage(ctx context.Context, optFns ...
 	params := *p.params
 	params.NextToken = p.nextToken
 
-	params.MaxResults = p.options.Limit
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.MaxResults = limit
 
 	result, err := p.client.ListSecretVersionIds(ctx, &params, optFns...)
 	if err != nil {
@@ -266,7 +252,10 @@ func (p *ListSecretVersionIdsPaginator) NextPage(ctx context.Context, optFns ...
 	prevToken := p.nextToken
 	p.nextToken = result.NextToken
 
-	if p.options.StopOnDuplicateToken && prevToken != nil && p.nextToken != nil && *prevToken == *p.nextToken {
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
 		p.nextToken = nil
 	}
 
@@ -277,7 +266,6 @@ func newServiceMetadataMiddleware_opListSecretVersionIds(region string) *awsmidd
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "secretsmanager",
 		OperationName: "ListSecretVersionIds",
 	}
 }

@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -11,14 +12,15 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Get information about a parameter by using the parameter name. Don't confuse
-// this API action with the GetParameters API action.
+// Get information about a single parameter by specifying the parameter name. To
+// get information about more than one parameter at a time, use the GetParameters
+// operation.
 func (c *Client) GetParameter(ctx context.Context, params *GetParameterInput, optFns ...func(*Options)) (*GetParameterOutput, error) {
 	if params == nil {
 		params = &GetParameterInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "GetParameter", params, optFns, addOperationGetParameterMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "GetParameter", params, optFns, c.addOperationGetParameterMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -30,14 +32,18 @@ func (c *Client) GetParameter(ctx context.Context, params *GetParameterInput, op
 
 type GetParameterInput struct {
 
-	// The name of the parameter you want to query.
+	// The name of the parameter you want to query. To query by parameter label, use
+	// "Name": "name:label" . To query by parameter version, use "Name": "name:version"
+	// .
 	//
 	// This member is required.
 	Name *string
 
 	// Return decrypted values for secure string parameters. This flag is ignored for
 	// String and StringList parameter types.
-	WithDecryption bool
+	WithDecryption *bool
+
+	noSmithyDocumentSerde
 }
 
 type GetParameterOutput struct {
@@ -47,15 +53,27 @@ type GetParameterOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationGetParameterMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationGetParameterMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpGetParameter{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpGetParameter{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "GetParameter"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -76,16 +94,13 @@ func addOperationGetParameterMiddlewares(stack *middleware.Stack, options Option
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -94,10 +109,16 @@ func addOperationGetParameterMiddlewares(stack *middleware.Stack, options Option
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpGetParameterValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetParameter(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -109,6 +130,9 @@ func addOperationGetParameterMiddlewares(stack *middleware.Stack, options Option
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -116,7 +140,6 @@ func newServiceMetadataMiddleware_opGetParameter(region string) *awsmiddleware.R
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "GetParameter",
 	}
 }

@@ -13,16 +13,16 @@ import (
 )
 
 // Lists the tasks in a maintenance window. For maintenance window tasks without a
-// specified target, you cannot supply values for --max-errors and
-// --max-concurrency. Instead, the system inserts a placeholder value of 1, which
-// may be reported in the response to this command. These values do not affect the
-// running of your task and can be ignored.
+// specified target, you can't supply values for --max-errors and --max-concurrency
+// . Instead, the system inserts a placeholder value of 1 , which may be reported
+// in the response to this command. These values don't affect the running of your
+// task and can be ignored.
 func (c *Client) DescribeMaintenanceWindowTasks(ctx context.Context, params *DescribeMaintenanceWindowTasksInput, optFns ...func(*Options)) (*DescribeMaintenanceWindowTasksOutput, error) {
 	if params == nil {
 		params = &DescribeMaintenanceWindowTasksInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DescribeMaintenanceWindowTasks", params, optFns, addOperationDescribeMaintenanceWindowTasksMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DescribeMaintenanceWindowTasks", params, optFns, c.addOperationDescribeMaintenanceWindowTasksMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -40,16 +40,18 @@ type DescribeMaintenanceWindowTasksInput struct {
 	WindowId *string
 
 	// Optional filters used to narrow down the scope of the returned tasks. The
-	// supported filter keys are WindowTaskId, TaskArn, Priority, and TaskType.
+	// supported filter keys are WindowTaskId , TaskArn , Priority , and TaskType .
 	Filters []types.MaintenanceWindowFilter
 
 	// The maximum number of items to return for this call. The call also returns a
 	// token that you can specify in a subsequent call to get the next set of results.
-	MaxResults int32
+	MaxResults *int32
 
 	// The token for the next set of items to return. (You received this token from a
 	// previous call.)
 	NextToken *string
+
+	noSmithyDocumentSerde
 }
 
 type DescribeMaintenanceWindowTasksOutput struct {
@@ -63,15 +65,27 @@ type DescribeMaintenanceWindowTasksOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDescribeMaintenanceWindowTasksMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDescribeMaintenanceWindowTasksMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeMaintenanceWindowTasks{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDescribeMaintenanceWindowTasks{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeMaintenanceWindowTasks"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -92,16 +106,13 @@ func addOperationDescribeMaintenanceWindowTasksMiddlewares(stack *middleware.Sta
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -110,10 +121,16 @@ func addOperationDescribeMaintenanceWindowTasksMiddlewares(stack *middleware.Sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpDescribeMaintenanceWindowTasksValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeMaintenanceWindowTasks(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -123,6 +140,9 @@ func addOperationDescribeMaintenanceWindowTasksMiddlewares(stack *middleware.Sta
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -161,17 +181,17 @@ type DescribeMaintenanceWindowTasksPaginator struct {
 // NewDescribeMaintenanceWindowTasksPaginator returns a new
 // DescribeMaintenanceWindowTasksPaginator
 func NewDescribeMaintenanceWindowTasksPaginator(client DescribeMaintenanceWindowTasksAPIClient, params *DescribeMaintenanceWindowTasksInput, optFns ...func(*DescribeMaintenanceWindowTasksPaginatorOptions)) *DescribeMaintenanceWindowTasksPaginator {
+	if params == nil {
+		params = &DescribeMaintenanceWindowTasksInput{}
+	}
+
 	options := DescribeMaintenanceWindowTasksPaginatorOptions{}
-	if params.MaxResults != 0 {
-		options.Limit = params.MaxResults
+	if params.MaxResults != nil {
+		options.Limit = *params.MaxResults
 	}
 
 	for _, fn := range optFns {
 		fn(&options)
-	}
-
-	if params == nil {
-		params = &DescribeMaintenanceWindowTasksInput{}
 	}
 
 	return &DescribeMaintenanceWindowTasksPaginator{
@@ -179,12 +199,13 @@ func NewDescribeMaintenanceWindowTasksPaginator(client DescribeMaintenanceWindow
 		client:    client,
 		params:    params,
 		firstPage: true,
+		nextToken: params.NextToken,
 	}
 }
 
 // HasMorePages returns a boolean indicating whether more pages are available
 func (p *DescribeMaintenanceWindowTasksPaginator) HasMorePages() bool {
-	return p.firstPage || p.nextToken != nil
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
 }
 
 // NextPage retrieves the next DescribeMaintenanceWindowTasks page.
@@ -196,7 +217,11 @@ func (p *DescribeMaintenanceWindowTasksPaginator) NextPage(ctx context.Context, 
 	params := *p.params
 	params.NextToken = p.nextToken
 
-	params.MaxResults = p.options.Limit
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.MaxResults = limit
 
 	result, err := p.client.DescribeMaintenanceWindowTasks(ctx, &params, optFns...)
 	if err != nil {
@@ -207,7 +232,10 @@ func (p *DescribeMaintenanceWindowTasksPaginator) NextPage(ctx context.Context, 
 	prevToken := p.nextToken
 	p.nextToken = result.NextToken
 
-	if p.options.StopOnDuplicateToken && prevToken != nil && p.nextToken != nil && *prevToken == *p.nextToken {
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
 		p.nextToken = nil
 	}
 
@@ -218,7 +246,6 @@ func newServiceMetadataMiddleware_opDescribeMaintenanceWindowTasks(region string
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DescribeMaintenanceWindowTasks",
 	}
 }

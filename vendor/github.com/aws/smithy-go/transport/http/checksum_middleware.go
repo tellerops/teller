@@ -21,7 +21,7 @@ func AddContentChecksumMiddleware(stack *middleware.Stack) error {
 	return stack.Build.Add(&contentMD5Checksum{}, middleware.Before)
 }
 
-// ID the identifier for the checksum middleware
+// ID returns the identifier for the checksum middleware
 func (m *contentMD5Checksum) ID() string { return "ContentChecksum" }
 
 // HandleBuild adds behavior to compute md5 checksum and add content-md5 header
@@ -45,6 +45,11 @@ func (m *contentMD5Checksum) HandleBuild(
 	stream := req.GetStream()
 	// compute checksum if payload is explicit
 	if stream != nil {
+		if !req.IsStreamSeekable() {
+			return out, metadata, fmt.Errorf(
+				"unseekable stream is not supported for computing md5 checksum")
+		}
+
 		v, err := computeMD5Checksum(stream)
 		if err != nil {
 			return out, metadata, fmt.Errorf("error computing md5 checksum, %w", err)

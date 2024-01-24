@@ -16,16 +16,16 @@ import (
 // Request results are returned on a best-effort basis. If you specify MaxResults
 // in the request, the response includes information up to the limit specified. The
 // number of items returned, however, can be between zero and the value of
-// MaxResults. If the service reaches an internal limit while processing the
+// MaxResults . If the service reaches an internal limit while processing the
 // results, it stops the operation and returns the matching values up to that point
-// and a NextToken. You can specify the NextToken in a subsequent call to get the
+// and a NextToken . You can specify the NextToken in a subsequent call to get the
 // next set of results.
 func (c *Client) GetParametersByPath(ctx context.Context, params *GetParametersByPathInput, optFns ...func(*Options)) (*GetParametersByPathOutput, error) {
 	if params == nil {
 		params = &GetParametersByPathInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "GetParametersByPath", params, optFns, addOperationGetParametersByPathMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "GetParametersByPath", params, optFns, c.addOperationGetParametersByPathMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -37,35 +37,40 @@ func (c *Client) GetParametersByPath(ctx context.Context, params *GetParametersB
 
 type GetParametersByPathInput struct {
 
-	// The hierarchy for the parameter. Hierarchies start with a forward slash (/) and
-	// end with the parameter name. A parameter name hierarchy can have a maximum of 15
-	// levels. Here is an example of a hierarchy:
-	// /Finance/Prod/IAD/WinServ2016/license33
+	// The hierarchy for the parameter. Hierarchies start with a forward slash (/).
+	// The hierarchy is the parameter name except the last part of the parameter. For
+	// the API call to succeed, the last part of the parameter name can't be in the
+	// path. A parameter name hierarchy can have a maximum of 15 levels. Here is an
+	// example of a hierarchy: /Finance/Prod/IAD/WinServ2016/license33
 	//
 	// This member is required.
 	Path *string
 
 	// The maximum number of items to return for this call. The call also returns a
 	// token that you can specify in a subsequent call to get the next set of results.
-	MaxResults int32
+	MaxResults *int32
 
 	// A token to start the list. Use this token to get the next set of results.
 	NextToken *string
 
-	// Filters to limit the request results. For GetParametersByPath, the following
-	// filter Key names are supported: Type, KeyId, Label, and DataType. The following
-	// Key values are not supported for GetParametersByPath: tag, Name, Path, and Tier.
+	// Filters to limit the request results. The following Key values are supported
+	// for GetParametersByPath : Type , KeyId , and Label . The following Key values
+	// aren't supported for GetParametersByPath : tag , DataType , Name , Path , and
+	// Tier .
 	ParameterFilters []types.ParameterStringFilter
 
-	// Retrieve all parameters within a hierarchy. If a user has access to a path, then
-	// the user can access all levels of that path. For example, if a user has
-	// permission to access path /a, then the user can also access /a/b. Even if a user
-	// has explicitly been denied access in IAM for parameter /a/b, they can still call
-	// the GetParametersByPath API action recursively for /a and view /a/b.
-	Recursive bool
+	// Retrieve all parameters within a hierarchy. If a user has access to a path,
+	// then the user can access all levels of that path. For example, if a user has
+	// permission to access path /a , then the user can also access /a/b . Even if a
+	// user has explicitly been denied access in IAM for parameter /a/b , they can
+	// still call the GetParametersByPath API operation recursively for /a and view
+	// /a/b .
+	Recursive *bool
 
 	// Retrieve all parameters in a hierarchy with their value decrypted.
-	WithDecryption bool
+	WithDecryption *bool
+
+	noSmithyDocumentSerde
 }
 
 type GetParametersByPathOutput struct {
@@ -79,15 +84,27 @@ type GetParametersByPathOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationGetParametersByPathMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationGetParametersByPathMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpGetParametersByPath{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpGetParametersByPath{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "GetParametersByPath"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -108,16 +125,13 @@ func addOperationGetParametersByPathMiddlewares(stack *middleware.Stack, options
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -126,10 +140,16 @@ func addOperationGetParametersByPathMiddlewares(stack *middleware.Stack, options
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpGetParametersByPathValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetParametersByPath(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -141,11 +161,14 @@ func addOperationGetParametersByPathMiddlewares(stack *middleware.Stack, options
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
-// GetParametersByPathAPIClient is a client that implements the GetParametersByPath
-// operation.
+// GetParametersByPathAPIClient is a client that implements the
+// GetParametersByPath operation.
 type GetParametersByPathAPIClient interface {
 	GetParametersByPath(context.Context, *GetParametersByPathInput, ...func(*Options)) (*GetParametersByPathOutput, error)
 }
@@ -175,17 +198,17 @@ type GetParametersByPathPaginator struct {
 
 // NewGetParametersByPathPaginator returns a new GetParametersByPathPaginator
 func NewGetParametersByPathPaginator(client GetParametersByPathAPIClient, params *GetParametersByPathInput, optFns ...func(*GetParametersByPathPaginatorOptions)) *GetParametersByPathPaginator {
+	if params == nil {
+		params = &GetParametersByPathInput{}
+	}
+
 	options := GetParametersByPathPaginatorOptions{}
-	if params.MaxResults != 0 {
-		options.Limit = params.MaxResults
+	if params.MaxResults != nil {
+		options.Limit = *params.MaxResults
 	}
 
 	for _, fn := range optFns {
 		fn(&options)
-	}
-
-	if params == nil {
-		params = &GetParametersByPathInput{}
 	}
 
 	return &GetParametersByPathPaginator{
@@ -193,12 +216,13 @@ func NewGetParametersByPathPaginator(client GetParametersByPathAPIClient, params
 		client:    client,
 		params:    params,
 		firstPage: true,
+		nextToken: params.NextToken,
 	}
 }
 
 // HasMorePages returns a boolean indicating whether more pages are available
 func (p *GetParametersByPathPaginator) HasMorePages() bool {
-	return p.firstPage || p.nextToken != nil
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
 }
 
 // NextPage retrieves the next GetParametersByPath page.
@@ -210,7 +234,11 @@ func (p *GetParametersByPathPaginator) NextPage(ctx context.Context, optFns ...f
 	params := *p.params
 	params.NextToken = p.nextToken
 
-	params.MaxResults = p.options.Limit
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.MaxResults = limit
 
 	result, err := p.client.GetParametersByPath(ctx, &params, optFns...)
 	if err != nil {
@@ -221,7 +249,10 @@ func (p *GetParametersByPathPaginator) NextPage(ctx context.Context, optFns ...f
 	prevToken := p.nextToken
 	p.nextToken = result.NextToken
 
-	if p.options.StopOnDuplicateToken && prevToken != nil && p.nextToken != nil && *prevToken == *p.nextToken {
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
 		p.nextToken = nil
 	}
 
@@ -232,7 +263,6 @@ func newServiceMetadataMiddleware_opGetParametersByPath(region string) *awsmiddl
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "GetParametersByPath",
 	}
 }

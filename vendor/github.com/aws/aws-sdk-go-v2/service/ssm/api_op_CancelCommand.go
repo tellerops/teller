@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
@@ -18,7 +19,7 @@ func (c *Client) CancelCommand(ctx context.Context, params *CancelCommandInput, 
 		params = &CancelCommandInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "CancelCommand", params, optFns, addOperationCancelCommandMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "CancelCommand", params, optFns, c.addOperationCancelCommandMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +29,6 @@ func (c *Client) CancelCommand(ctx context.Context, params *CancelCommandInput, 
 	return out, nil
 }
 
-//
 type CancelCommandInput struct {
 
 	// The ID of the command you want to cancel.
@@ -36,26 +36,40 @@ type CancelCommandInput struct {
 	// This member is required.
 	CommandId *string
 
-	// (Optional) A list of instance IDs on which you want to cancel the command. If
-	// not provided, the command is canceled on every instance on which it was
+	// (Optional) A list of managed node IDs on which you want to cancel the command.
+	// If not provided, the command is canceled on every node on which it was
 	// requested.
 	InstanceIds []string
+
+	noSmithyDocumentSerde
 }
 
-// Whether or not the command was successfully canceled. There is no guarantee that
-// a request can be canceled.
+// Whether or not the command was successfully canceled. There is no guarantee
+// that a request can be canceled.
 type CancelCommandOutput struct {
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationCancelCommandMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationCancelCommandMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpCancelCommand{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpCancelCommand{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "CancelCommand"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -76,16 +90,13 @@ func addOperationCancelCommandMiddlewares(stack *middleware.Stack, options Optio
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -94,10 +105,16 @@ func addOperationCancelCommandMiddlewares(stack *middleware.Stack, options Optio
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpCancelCommandValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCancelCommand(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -109,6 +126,9 @@ func addOperationCancelCommandMiddlewares(stack *middleware.Stack, options Optio
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -116,7 +136,6 @@ func newServiceMetadataMiddleware_opCancelCommand(region string) *awsmiddleware.
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "CancelCommand",
 	}
 }

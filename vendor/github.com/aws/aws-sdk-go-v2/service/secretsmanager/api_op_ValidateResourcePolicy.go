@@ -4,6 +4,7 @@ package secretsmanager
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
@@ -11,16 +12,30 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Validates the JSON text of the resource-based policy document attached to the
-// specified secret. The JSON request string input and response output displays
-// formatted code with white space and line breaks for better readability. Submit
-// your input as a single line JSON string. A resource-based policy is optional.
+// Validates that a resource policy does not grant a wide range of principals
+// access to your secret. A resource-based policy is optional for secrets. The API
+// performs three checks when validating the policy:
+//   - Sends a call to Zelkova (https://aws.amazon.com/blogs/security/protect-sensitive-data-in-the-cloud-with-automated-reasoning-zelkova/)
+//     , an automated reasoning engine, to ensure your resource policy does not allow
+//     broad access to your secret, for example policies that use a wildcard for the
+//     principal.
+//   - Checks for correct syntax in a policy.
+//   - Verifies the policy does not lock out a caller.
+//
+// Secrets Manager generates a CloudTrail log entry when you call this action. Do
+// not include sensitive information in request parameters because it might be
+// logged. For more information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
+// . Required permissions: secretsmanager:ValidateResourcePolicy and
+// secretsmanager:PutResourcePolicy . For more information, see  IAM policy
+// actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
+// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
+// .
 func (c *Client) ValidateResourcePolicy(ctx context.Context, params *ValidateResourcePolicyInput, optFns ...func(*Options)) (*ValidateResourcePolicyOutput, error) {
 	if params == nil {
 		params = &ValidateResourcePolicyInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "ValidateResourcePolicy", params, optFns, addOperationValidateResourcePolicyMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "ValidateResourcePolicy", params, optFns, c.addOperationValidateResourcePolicyMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -32,50 +47,51 @@ func (c *Client) ValidateResourcePolicy(ctx context.Context, params *ValidateRes
 
 type ValidateResourcePolicyInput struct {
 
-	// Identifies the Resource Policy attached to the secret.
+	// A JSON-formatted string that contains an Amazon Web Services resource-based
+	// policy. The policy in the string identifies who can access or manage this secret
+	// and its versions. For example policies, see Permissions policy examples (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access_examples.html)
+	// .
 	//
 	// This member is required.
 	ResourcePolicy *string
 
-	// The identifier for the secret that you want to validate a resource policy. You
-	// can specify either the Amazon Resource Name (ARN) or the friendly name of the
-	// secret. If you specify an ARN, we generally recommend that you specify a
-	// complete ARN. You can specify a partial ARN too—for example, if you don’t
-	// include the final hyphen and six random characters that Secrets Manager adds at
-	// the end of the ARN when you created the secret. A partial ARN match can work as
-	// long as it uniquely matches only one secret. However, if your secret has a name
-	// that ends in a hyphen followed by six characters (before Secrets Manager adds
-	// the hyphen and six characters to the ARN) and you try to use that as a partial
-	// ARN, then those characters cause Secrets Manager to assume that you’re
-	// specifying a complete ARN. This confusion can cause unexpected results. To avoid
-	// this situation, we recommend that you don’t create secret names ending with a
-	// hyphen followed by six characters. If you specify an incomplete ARN without the
-	// random suffix, and instead provide the 'friendly name', you must not include the
-	// random suffix. If you do include the random suffix added by Secrets Manager, you
-	// receive either a ResourceNotFoundException or an AccessDeniedException error,
-	// depending on your permissions.
+	// This field is reserved for internal use.
 	SecretId *string
+
+	noSmithyDocumentSerde
 }
 
 type ValidateResourcePolicyOutput struct {
 
-	// Returns a message stating that your Reource Policy passed validation.
+	// True if your policy passes validation, otherwise false.
 	PolicyValidationPassed bool
 
-	// Returns an error message if your policy doesn't pass validatation.
+	// Validation errors if your policy didn't pass validation.
 	ValidationErrors []types.ValidationErrorsEntry
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationValidateResourcePolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationValidateResourcePolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpValidateResourcePolicy{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpValidateResourcePolicy{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "ValidateResourcePolicy"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -96,16 +112,13 @@ func addOperationValidateResourcePolicyMiddlewares(stack *middleware.Stack, opti
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -114,10 +127,16 @@ func addOperationValidateResourcePolicyMiddlewares(stack *middleware.Stack, opti
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpValidateResourcePolicyValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opValidateResourcePolicy(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -129,6 +148,9 @@ func addOperationValidateResourcePolicyMiddlewares(stack *middleware.Stack, opti
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -136,7 +158,6 @@ func newServiceMetadataMiddleware_opValidateResourcePolicy(region string) *awsmi
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "secretsmanager",
 		OperationName: "ValidateResourcePolicy",
 	}
 }

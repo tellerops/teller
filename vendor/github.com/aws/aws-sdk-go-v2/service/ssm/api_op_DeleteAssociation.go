@@ -4,23 +4,26 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Disassociates the specified Systems Manager document from the specified
-// instance. When you disassociate a document from an instance, it does not change
-// the configuration of the instance. To change the configuration state of an
-// instance after you disassociate a document, you must create a new document with
-// the desired configuration and associate it with the instance.
+// Disassociates the specified Amazon Web Services Systems Manager document (SSM
+// document) from the specified managed node. If you created the association by
+// using the Targets parameter, then you must delete the association by using the
+// association ID. When you disassociate a document from a managed node, it doesn't
+// change the configuration of the node. To change the configuration state of a
+// managed node after you disassociate a document, you must create a new document
+// with the desired configuration and associate it with the node.
 func (c *Client) DeleteAssociation(ctx context.Context, params *DeleteAssociationInput, optFns ...func(*Options)) (*DeleteAssociationOutput, error) {
 	if params == nil {
 		params = &DeleteAssociationInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DeleteAssociation", params, optFns, addOperationDeleteAssociationMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DeleteAssociation", params, optFns, c.addOperationDeleteAssociationMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -35,25 +38,45 @@ type DeleteAssociationInput struct {
 	// The association ID that you want to delete.
 	AssociationId *string
 
-	// The ID of the instance.
+	// The managed node ID. InstanceId has been deprecated. To specify a managed node
+	// ID for an association, use the Targets parameter. Requests that include the
+	// parameter InstanceID with Systems Manager documents (SSM documents) that use
+	// schema version 2.0 or later will fail. In addition, if you use the parameter
+	// InstanceId , you can't use the parameters AssociationName , DocumentVersion ,
+	// MaxErrors , MaxConcurrency , OutputLocation , or ScheduleExpression . To use
+	// these parameters, you must use the Targets parameter.
 	InstanceId *string
 
-	// The name of the Systems Manager document.
+	// The name of the SSM document.
 	Name *string
+
+	noSmithyDocumentSerde
 }
 
 type DeleteAssociationOutput struct {
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDeleteAssociationMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDeleteAssociationMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeleteAssociation{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDeleteAssociation{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteAssociation"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -74,16 +97,13 @@ func addOperationDeleteAssociationMiddlewares(stack *middleware.Stack, options O
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -92,7 +112,13 @@ func addOperationDeleteAssociationMiddlewares(stack *middleware.Stack, options O
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteAssociation(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -104,6 +130,9 @@ func addOperationDeleteAssociationMiddlewares(stack *middleware.Stack, options O
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -111,7 +140,6 @@ func newServiceMetadataMiddleware_opDeleteAssociation(region string) *awsmiddlew
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DeleteAssociation",
 	}
 }

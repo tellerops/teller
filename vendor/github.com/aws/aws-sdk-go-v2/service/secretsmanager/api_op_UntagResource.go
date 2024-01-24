@@ -4,36 +4,32 @@ package secretsmanager
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Removes one or more tags from the specified secret. This operation is
-// idempotent. If a requested tag is not attached to the secret, no error is
-// returned and the secret metadata is unchanged. If you use tags as part of your
-// security strategy, then removing a tag can change permissions. If successfully
-// completing this operation would result in you losing your permissions for this
-// secret, then the operation is blocked and returns an Access Denied error.
-// Minimum permissions To run this command, you must have the following
-// permissions:
-//
-// * secretsmanager:UntagResource
-//
-// Related operations
-//
-// * To add one
-// or more tags to the collection attached to a secret, use TagResource.
-//
-// * To view
-// the list of tags attached to a secret, use DescribeSecret.
+// Removes specific tags from a secret. This operation is idempotent. If a
+// requested tag is not attached to the secret, no error is returned and the secret
+// metadata is unchanged. If you use tags as part of your security strategy, then
+// removing a tag can change permissions. If successfully completing this operation
+// would result in you losing your permissions for this secret, then the operation
+// is blocked and returns an Access Denied error. Secrets Manager generates a
+// CloudTrail log entry when you call this action. Do not include sensitive
+// information in request parameters because it might be logged. For more
+// information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
+// . Required permissions: secretsmanager:UntagResource . For more information, see
+// IAM policy actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
+// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
+// .
 func (c *Client) UntagResource(ctx context.Context, params *UntagResourceInput, optFns ...func(*Options)) (*UntagResourceOutput, error) {
 	if params == nil {
 		params = &UntagResourceInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "UntagResource", params, optFns, addOperationUntagResourceMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "UntagResource", params, optFns, c.addOperationUntagResourceMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -45,51 +41,50 @@ func (c *Client) UntagResource(ctx context.Context, params *UntagResourceInput, 
 
 type UntagResourceInput struct {
 
-	// The identifier for the secret that you want to remove tags from. You can specify
-	// either the Amazon Resource Name (ARN) or the friendly name of the secret. If you
-	// specify an ARN, we generally recommend that you specify a complete ARN. You can
-	// specify a partial ARN too—for example, if you don’t include the final hyphen and
-	// six random characters that Secrets Manager adds at the end of the ARN when you
-	// created the secret. A partial ARN match can work as long as it uniquely matches
-	// only one secret. However, if your secret has a name that ends in a hyphen
-	// followed by six characters (before Secrets Manager adds the hyphen and six
-	// characters to the ARN) and you try to use that as a partial ARN, then those
-	// characters cause Secrets Manager to assume that you’re specifying a complete
-	// ARN. This confusion can cause unexpected results. To avoid this situation, we
-	// recommend that you don’t create secret names ending with a hyphen followed by
-	// six characters. If you specify an incomplete ARN without the random suffix, and
-	// instead provide the 'friendly name', you must not include the random suffix. If
-	// you do include the random suffix added by Secrets Manager, you receive either a
-	// ResourceNotFoundException or an AccessDeniedException error, depending on your
-	// permissions.
+	// The ARN or name of the secret. For an ARN, we recommend that you specify a
+	// complete ARN rather than a partial ARN. See Finding a secret from a partial ARN (https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html#ARN_secretnamehyphen)
+	// .
 	//
 	// This member is required.
 	SecretId *string
 
 	// A list of tag key names to remove from the secret. You don't specify the value.
-	// Both the key and its associated value are removed. This parameter to the API
-	// requires a JSON text string argument. For information on how to format a JSON
-	// parameter for the various command line tool environments, see Using JSON for
-	// Parameters
-	// (https://docs.aws.amazon.com/cli/latest/userguide/cli-using-param.html#cli-using-param-json)
-	// in the AWS CLI User Guide.
+	// Both the key and its associated value are removed. This parameter requires a
+	// JSON text string argument. For storing multiple values, we recommend that you
+	// use a JSON text string argument and specify key/value pairs. For more
+	// information, see Specifying parameter values for the Amazon Web Services CLI (https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-parameters.html)
+	// in the Amazon Web Services CLI User Guide.
 	//
 	// This member is required.
 	TagKeys []string
+
+	noSmithyDocumentSerde
 }
 
 type UntagResourceOutput struct {
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationUntagResourceMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationUntagResourceMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUntagResource{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpUntagResource{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "UntagResource"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -110,16 +105,13 @@ func addOperationUntagResourceMiddlewares(stack *middleware.Stack, options Optio
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -128,10 +120,16 @@ func addOperationUntagResourceMiddlewares(stack *middleware.Stack, options Optio
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpUntagResourceValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUntagResource(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -143,6 +141,9 @@ func addOperationUntagResourceMiddlewares(stack *middleware.Stack, options Optio
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -150,7 +151,6 @@ func newServiceMetadataMiddleware_opUntagResource(region string) *awsmiddleware.
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "secretsmanager",
 		OperationName: "UntagResource",
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+
 	"github.com/alecthomas/assert"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -20,7 +22,8 @@ func TestAWSSSM(t *testing.T) {
 	client := mock_providers.NewMockAWSSSMClient(ctrl)
 	path := "settings/prod/billing-svc"
 	val := "shazam"
-	in := ssm.GetParameterInput{Name: &path, WithDecryption: true}
+
+	in := ssm.GetParameterInput{Name: &path, WithDecryption: aws.Bool(true)}
 	out := ssm.GetParameterOutput{
 		Parameter: &types.Parameter{
 			Value: &val,

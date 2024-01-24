@@ -20,7 +20,7 @@ func (c *Client) DeleteInventory(ctx context.Context, params *DeleteInventoryInp
 		params = &DeleteInventoryInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "DeleteInventory", params, optFns, addOperationDeleteInventoryMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "DeleteInventory", params, optFns, c.addOperationDeleteInventoryMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -53,24 +53,25 @@ type DeleteInventoryInput struct {
 	// associated with the custom inventory type. Choose one of the following options:
 	// DisableSchema: If you choose this option, the system ignores all inventory data
 	// for the specified version, and any earlier versions. To enable this schema
-	// again, you must call the PutInventory action for a version greater than the
+	// again, you must call the PutInventory operation for a version greater than the
 	// disabled version. DeleteSchema: This option deletes the specified custom type
 	// from the Inventory service. You can recreate the schema later, if you want.
 	SchemaDeleteOption types.InventorySchemaDeleteOption
+
+	noSmithyDocumentSerde
 }
 
 type DeleteInventoryOutput struct {
 
-	// Every DeleteInventory action is assigned a unique ID. This option returns a
+	// Every DeleteInventory operation is assigned a unique ID. This option returns a
 	// unique ID. You can use this ID to query the status of a delete operation. This
 	// option is useful for ensuring that a delete operation has completed before you
-	// begin other actions.
+	// begin other operations.
 	DeletionId *string
 
 	// A summary of the delete operation. For more information about this summary, see
-	// Deleting custom inventory
-	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-inventory-custom.html#sysman-inventory-delete-summary)
-	// in the AWS Systems Manager User Guide.
+	// Deleting custom inventory (https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-inventory-custom.html#sysman-inventory-delete-summary)
+	// in the Amazon Web Services Systems Manager User Guide.
 	DeletionSummary *types.InventoryDeletionSummary
 
 	// The name of the inventory data type specified in the request.
@@ -78,15 +79,27 @@ type DeleteInventoryOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationDeleteInventoryMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationDeleteInventoryMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeleteInventory{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpDeleteInventory{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteInventory"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -107,22 +120,22 @@ func addOperationDeleteInventoryMiddlewares(stack *middleware.Stack, options Opt
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
+		return err
+	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
 		return err
 	}
 	if err = addIdempotencyToken_opDeleteInventoryMiddleware(stack, options); err != nil {
@@ -134,6 +147,9 @@ func addOperationDeleteInventoryMiddlewares(stack *middleware.Stack, options Opt
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteInventory(options.Region), middleware.Before); err != nil {
 		return err
 	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+		return err
+	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
 		return err
 	}
@@ -141,6 +157,9 @@ func addOperationDeleteInventoryMiddlewares(stack *middleware.Stack, options Opt
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -183,7 +202,6 @@ func newServiceMetadataMiddleware_opDeleteInventory(region string) *awsmiddlewar
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "DeleteInventory",
 	}
 }

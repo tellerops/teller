@@ -54,6 +54,7 @@ type GetInstanceIdentityDocumentOutput struct {
 func addGetInstanceIdentityDocumentMiddleware(stack *middleware.Stack, options Options) error {
 	return addAPIRequestMiddleware(stack,
 		options,
+		"GetInstanceIdentityDocument",
 		buildGetInstanceIdentityDocumentPath,
 		buildGetInstanceIdentityDocumentOutput,
 	)
@@ -63,15 +64,22 @@ func buildGetInstanceIdentityDocumentPath(params interface{}) (string, error) {
 	return getInstanceIdentityDocumentPath, nil
 }
 
-func buildGetInstanceIdentityDocumentOutput(resp *smithyhttp.Response) (interface{}, error) {
-	defer resp.Body.Close()
+func buildGetInstanceIdentityDocumentOutput(resp *smithyhttp.Response) (v interface{}, err error) {
+	defer func() {
+		closeErr := resp.Body.Close()
+		if err == nil {
+			err = closeErr
+		} else if closeErr != nil {
+			err = fmt.Errorf("response body close error: %v, original error: %w", closeErr, err)
+		}
+	}()
 
 	var buff [1024]byte
 	ringBuffer := smithyio.NewRingBuffer(buff[:])
 	body := io.TeeReader(resp.Body, ringBuffer)
 
 	output := &GetInstanceIdentityDocumentOutput{}
-	if err := json.NewDecoder(body).Decode(&output.InstanceIdentityDocument); err != nil {
+	if err = json.NewDecoder(body).Decode(&output.InstanceIdentityDocument); err != nil {
 		return nil, &smithy.DeserializationError{
 			Err:      fmt.Errorf("failed to decode instance identity document, %w", err),
 			Snapshot: ringBuffer.Bytes(),

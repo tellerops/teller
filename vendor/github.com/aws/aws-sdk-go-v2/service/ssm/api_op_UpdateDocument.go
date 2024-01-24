@@ -4,6 +4,7 @@ package ssm
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
@@ -17,7 +18,7 @@ func (c *Client) UpdateDocument(ctx context.Context, params *UpdateDocumentInput
 		params = &UpdateDocumentInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "UpdateDocument", params, optFns, addOperationUpdateDocumentMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "UpdateDocument", params, optFns, c.addOperationUpdateDocumentMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -34,22 +35,30 @@ type UpdateDocumentInput struct {
 	// This member is required.
 	Content *string
 
-	// The name of the document that you want to update.
+	// The name of the SSM document that you want to update.
 	//
 	// This member is required.
 	Name *string
 
-	// A list of key and value pairs that describe attachments to a version of a
-	// document.
+	// A list of key-value pairs that describe attachments to a version of a document.
 	Attachments []types.AttachmentsSource
+
+	// The friendly name of the SSM document that you want to update. This value can
+	// differ for each version of the document. If you don't specify a value for this
+	// parameter in your request, the existing value is applied to the new document
+	// version.
+	DisplayName *string
 
 	// Specify the document format for the new document version. Systems Manager
 	// supports JSON and YAML documents. JSON is the default format.
 	DocumentFormat types.DocumentFormat
 
-	// (Required) The latest version of the document that you want to update. The
-	// latest document version can be specified using the $LATEST variable or by the
-	// version number. Updating a previous version of a document is not supported.
+	// The version of the document that you want to update. Currently, Systems Manager
+	// supports updating only the latest version of the document. You can specify the
+	// version number of the latest version or use the $LATEST variable. If you change
+	// a document version for a State Manager association, Systems Manager immediately
+	// runs the association unless you previously specifed the
+	// apply-only-at-cron-interval parameter.
 	DocumentVersion *string
 
 	// Specify a new target type for the document.
@@ -57,8 +66,10 @@ type UpdateDocumentInput struct {
 
 	// An optional field specifying the version of the artifact you are updating with
 	// the document. For example, "Release 12, Update 6". This value is unique across
-	// all versions of a document, and cannot be changed.
+	// all versions of a document, and can't be changed.
 	VersionName *string
+
+	noSmithyDocumentSerde
 }
 
 type UpdateDocumentOutput struct {
@@ -68,15 +79,27 @@ type UpdateDocumentOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdateDocument{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpUpdateDocument{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdateDocument"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -97,16 +120,13 @@ func addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, options Opti
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -115,10 +135,16 @@ func addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, options Opti
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+		return err
+	}
 	if err = addOpUpdateDocumentValidationMiddleware(stack); err != nil {
 		return err
 	}
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdateDocument(options.Region), middleware.Before); err != nil {
+		return err
+	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -130,6 +156,9 @@ func addOperationUpdateDocumentMiddlewares(stack *middleware.Stack, options Opti
 	if err = addRequestResponseLogging(stack, options); err != nil {
 		return err
 	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -137,7 +166,6 @@ func newServiceMetadataMiddleware_opUpdateDocument(region string) *awsmiddleware
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "UpdateDocument",
 	}
 }

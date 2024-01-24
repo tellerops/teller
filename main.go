@@ -100,7 +100,7 @@ var (
 	defaultLogLevel = "error"
 )
 
-// nolint
+//nolint
 func main() {
 	ctx := kong.Parse(&CLI)
 

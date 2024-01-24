@@ -18,7 +18,7 @@ func (c *Client) RegisterTargetWithMaintenanceWindow(ctx context.Context, params
 		params = &RegisterTargetWithMaintenanceWindowInput{}
 	}
 
-	result, metadata, err := c.invokeOperation(ctx, "RegisterTargetWithMaintenanceWindow", params, optFns, addOperationRegisterTargetWithMaintenanceWindowMiddlewares)
+	result, metadata, err := c.invokeOperation(ctx, "RegisterTargetWithMaintenanceWindow", params, optFns, c.addOperationRegisterTargetWithMaintenanceWindowMiddlewares)
 	if err != nil {
 		return nil, err
 	}
@@ -36,23 +36,23 @@ type RegisterTargetWithMaintenanceWindowInput struct {
 	ResourceType types.MaintenanceWindowResourceType
 
 	// The targets to register with the maintenance window. In other words, the
-	// instances to run commands on when the maintenance window runs. You can specify
-	// targets using instance IDs, resource group names, or tags that have been applied
-	// to instances. Example 1: Specify instance IDs
-	// Key=InstanceIds,Values=instance-id-1,instance-id-2,instance-id-3  Example 2: Use
-	// tag key-pairs applied to instances
-	// Key=tag:my-tag-key,Values=my-tag-value-1,my-tag-value-2  Example 3: Use tag-keys
-	// applied to instances Key=tag-key,Values=my-tag-key-1,my-tag-key-2  Example 4:
-	// Use resource group names Key=resource-groups:Name,Values=resource-group-name
-	// Example 5: Use filters for resource group types
-	// Key=resource-groups:ResourceTypeFilters,Values=resource-type-1,resource-type-2
-	// For Key=resource-groups:ResourceTypeFilters, specify resource types in the
+	// managed nodes to run commands on when the maintenance window runs. If a single
+	// maintenance window task is registered with multiple targets, its task
+	// invocations occur sequentially and not in parallel. If your task must run on
+	// multiple targets at the same time, register a task for each target individually
+	// and assign each task the same priority level. You can specify targets using
+	// managed node IDs, resource group names, or tags that have been applied to
+	// managed nodes. Example 1: Specify managed node IDs Key=InstanceIds,Values=,,
+	// Example 2: Use tag key-pairs applied to managed nodes Key=tag:,Values=, Example
+	// 3: Use tag-keys applied to managed nodes Key=tag-key,Values=, Example 4: Use
+	// resource group names Key=resource-groups:Name,Values= Example 5: Use filters
+	// for resource group types Key=resource-groups:ResourceTypeFilters,Values=, For
+	// Key=resource-groups:ResourceTypeFilters , specify resource types in the
 	// following format
 	// Key=resource-groups:ResourceTypeFilters,Values=AWS::EC2::INSTANCE,AWS::EC2::VPC
 	// For more information about these examples formats, including the best use case
-	// for each one, see Examples: Register targets with a maintenance window
-	// (https://docs.aws.amazon.com/systems-manager/latest/userguide/mw-cli-tutorial-targets-examples.html)
-	// in the AWS Systems Manager User Guide.
+	// for each one, see Examples: Register targets with a maintenance window (https://docs.aws.amazon.com/systems-manager/latest/userguide/mw-cli-tutorial-targets-examples.html)
+	// in the Amazon Web Services Systems Manager User Guide.
 	//
 	// This member is required.
 	Targets []types.Target
@@ -71,9 +71,11 @@ type RegisterTargetWithMaintenanceWindowInput struct {
 	// An optional name for the target.
 	Name *string
 
-	// User-provided value that will be included in any CloudWatch events raised while
-	// running tasks for these targets in this maintenance window.
+	// User-provided value that will be included in any Amazon CloudWatch Events
+	// events raised while running tasks for these targets in this maintenance window.
 	OwnerInformation *string
+
+	noSmithyDocumentSerde
 }
 
 type RegisterTargetWithMaintenanceWindowOutput struct {
@@ -83,15 +85,27 @@ type RegisterTargetWithMaintenanceWindowOutput struct {
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
+
+	noSmithyDocumentSerde
 }
 
-func addOperationRegisterTargetWithMaintenanceWindowMiddlewares(stack *middleware.Stack, options Options) (err error) {
+func (c *Client) addOperationRegisterTargetWithMaintenanceWindowMiddlewares(stack *middleware.Stack, options Options) (err error) {
+	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
+		return err
+	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpRegisterTargetWithMaintenanceWindow{}, middleware.After)
 	if err != nil {
 		return err
 	}
 	err = stack.Deserialize.Add(&awsAwsjson11_deserializeOpRegisterTargetWithMaintenanceWindow{}, middleware.After)
 	if err != nil {
+		return err
+	}
+	if err := addProtocolFinalizerMiddlewares(stack, options, "RegisterTargetWithMaintenanceWindow"); err != nil {
+		return fmt.Errorf("add protocol finalizers: %v", err)
+	}
+
+	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
 		return err
 	}
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
@@ -112,22 +126,22 @@ func addOperationRegisterTargetWithMaintenanceWindowMiddlewares(stack *middlewar
 	if err = addRetryMiddlewares(stack, options); err != nil {
 		return err
 	}
-	if err = addHTTPSignerV4Middleware(stack, options); err != nil {
-		return err
-	}
 	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
 		return err
 	}
 	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
 		return err
 	}
-	if err = addClientUserAgent(stack); err != nil {
+	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
+		return err
+	}
+	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
 		return err
 	}
 	if err = addIdempotencyToken_opRegisterTargetWithMaintenanceWindowMiddleware(stack, options); err != nil {
@@ -139,6 +153,9 @@ func addOperationRegisterTargetWithMaintenanceWindowMiddlewares(stack *middlewar
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opRegisterTargetWithMaintenanceWindow(options.Region), middleware.Before); err != nil {
 		return err
 	}
+	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+		return err
+	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
 		return err
 	}
@@ -146,6 +163,9 @@ func addOperationRegisterTargetWithMaintenanceWindowMiddlewares(stack *middlewar
 		return err
 	}
 	if err = addRequestResponseLogging(stack, options); err != nil {
+		return err
+	}
+	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -188,7 +208,6 @@ func newServiceMetadataMiddleware_opRegisterTargetWithMaintenanceWindow(region s
 	return &awsmiddleware.RegisterServiceMetadata{
 		Region:        region,
 		ServiceID:     ServiceID,
-		SigningName:   "ssm",
 		OperationName: "RegisterTargetWithMaintenanceWindow",
 	}
 }

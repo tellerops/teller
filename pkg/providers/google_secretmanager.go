@@ -30,7 +30,7 @@ type GoogleSecretManager struct {
 
 const GoogleSecretManagerName = "google_secretmanager"
 
-// nolint
+//nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Description:    "Google Secret Manager",
