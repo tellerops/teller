@@ -5,7 +5,7 @@ Slings store HTTP Request properties to simplify sending requests and decoding
 responses. Check the examples to learn how to compose a Sling into your API
 client.
 
-Usage
+# Usage
 
 Use a Sling to set path, method, header, query, or body properties and create an
 http.Request.
@@ -18,7 +18,7 @@ http.Request.
 	req, err := sling.New().Get("https://example.com").QueryStruct(params).Request()
 	client.Do(req)
 
-Path
+# Path
 
 Use Path to set or extend the URL for created Requests. Extension means the
 path will be resolved relative to the existing URL.
@@ -31,14 +31,14 @@ except they set the HTTP method too.
 
 	req, err := sling.New().Post("http://upload.com/gophers")
 
-Headers
+# Headers
 
 Add or Set headers for requests created by a Sling.
 
 	s := sling.New().Base(baseUrl).Set("User-Agent", "Gophergram API Client")
 	req, err := s.New().Get("gophergram/list").Request()
 
-QueryStruct
+# QueryStruct
 
 Define url parameter structs (https://godoc.org/github.com/google/go-querystring/query).
 Use QueryStruct to encode a struct as query parameters on requests.
@@ -59,7 +59,7 @@ Use QueryStruct to encode a struct as query parameters on requests.
 	params := &IssueParams{Sort: "updated", State: "open"}
 	req, err := githubBase.New().Get(path).QueryStruct(params).Request()
 
-Json Body
+# Json Body
 
 Define JSON tagged structs (https://golang.org/pkg/encoding/json/).
 Use BodyJSON to JSON encode a struct as the Body on requests.
@@ -83,7 +83,7 @@ Use BodyJSON to JSON encode a struct as the Body on requests.
 
 Requests will include an "application/json" Content-Type header.
 
-Form Body
+# Form Body
 
 Define url tagged structs (https://godoc.org/github.com/google/go-querystring/query).
 Use BodyForm to form url encode a struct as the Body on requests.
@@ -100,7 +100,7 @@ Use BodyForm to form url encode a struct as the Body on requests.
 Requests will include an "application/x-www-form-urlencoded" Content-Type
 header.
 
-Plain Body
+# Plain Body
 
 Use Body to set a plain io.Reader on requests created by a Sling.
 
@@ -109,7 +109,7 @@ Use Body to set a plain io.Reader on requests created by a Sling.
 
 Set a content type header, if desired (e.g. Set("Content-Type", "text/plain")).
 
-Extend a Sling
+# Extend a Sling
 
 Each Sling generates an http.Request (say with some path and query params)
 each time Request() is called, based on its state. When creating
@@ -137,7 +137,7 @@ is undesired.
 
 Recap: If you wish to extend a Sling, create a new child copy with New().
 
-Receive
+# Receive
 
 Define a JSON struct to decode a type from 2XX success responses. Use
 ReceiveSuccess(successV interface{}) to send a new Request and decode the

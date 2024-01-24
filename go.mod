@@ -17,7 +17,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.44.7
 	github.com/cloudflare/cloudflare-go v0.25.0
 	github.com/cyberark/conjur-api-go v0.7.1
-	github.com/dghubble/sling v1.3.0
+	github.com/dghubble/sling v1.4.1
 	github.com/fatih/color v1.14.1
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v43 v43.0.0

@@ -3,6 +3,7 @@ package sling
 import (
 	"encoding/base64"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -54,9 +55,9 @@ func New() *Sling {
 // New returns a copy of a Sling for creating a new Sling with properties
 // from a parent Sling. For example,
 //
-// 	parentSling := sling.New().Client(client).Base("https://api.io/")
-// 	fooSling := parentSling.New().Get("foo/")
-// 	barSling := parentSling.New().Get("bar/")
+//	parentSling := sling.New().Client(client).Base("https://api.io/")
+//	fooSling := parentSling.New().Get("foo/")
+//	barSling := parentSling.New().Get("bar/")
 //
 // fooSling and barSling will both use the same client, but send requests to
 // https://api.io/foo/ and https://api.io/bar/ respectively.
@@ -359,8 +360,9 @@ func (s *Sling) ReceiveSuccess(successV interface{}) (*http.Response, error) {
 // Receive creates a new HTTP request and returns the response. Success
 // responses (2XX) are JSON decoded into the value pointed to by successV and
 // other responses are JSON decoded into the value pointed to by failureV.
-// Any error creating the request, sending it, or decoding the response is
-// returned.
+// If the status code of response is 204(no content) or the Content-Lenght is 0,
+// decoding is skipped. Any error creating the request, sending it, or decoding
+// the response is returned.
 // Receive is shorthand for calling Request and Do.
 func (s *Sling) Receive(successV, failureV interface{}) (*http.Response, error) {
 	req, err := s.Request()
@@ -373,7 +375,9 @@ func (s *Sling) Receive(successV, failureV interface{}) (*http.Response, error) 
 // Do sends an HTTP request and returns the response. Success responses (2XX)
 // are JSON decoded into the value pointed to by successV and other responses
 // are JSON decoded into the value pointed to by failureV.
-// Any error sending the request or decoding the response is returned.
+// If the status code of response is 204(no content) or the Content-Length is 0,
+// decoding is skipped. Any error sending the request or decoding the response
+// is returned.
 func (s *Sling) Do(req *http.Request, successV, failureV interface{}) (*http.Response, error) {
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
@@ -382,8 +386,14 @@ func (s *Sling) Do(req *http.Request, successV, failureV interface{}) (*http.Res
 	// when err is nil, resp contains a non-nil resp.Body which must be closed
 	defer resp.Body.Close()
 
-	// Don't try to decode on 204s
-	if resp.StatusCode == 204 {
+	// The default HTTP client's Transport may not
+	// reuse HTTP/1.x "keep-alive" TCP connections if the Body is
+	// not read to completion and closed.
+	// See: https://golang.org/pkg/net/http/#Response
+	defer io.Copy(ioutil.Discard, resp.Body)
+
+	// Don't try to decode on 204s or Content-Length is 0
+	if resp.StatusCode == http.StatusNoContent || resp.ContentLength == 0 {
 		return resp, nil
 	}
 
