@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package api
 
 import (
@@ -38,12 +41,14 @@ func (d *DiscoveryChain) Get(name string, opts *DiscoveryChainOptions, q *QueryO
 	if method == "POST" {
 		r.obj = opts
 	}
-
-	rtt, resp, err := requireOK(d.c.doRequest(r))
+	rtt, resp, err := d.c.doRequest(r)
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(resp)
+	if err := requireOK(resp); err != nil {
+		return nil, nil, err
+	}
 
 	qm := &QueryMeta{}
 	parseQueryMeta(resp, qm)
@@ -107,8 +112,16 @@ type CompiledDiscoveryChain struct {
 	// non-customized versions.
 	CustomizationHash string
 
+	// Default indicates if this discovery chain is based on no
+	// service-resolver, service-splitter, or service-router config entries.
+	Default bool
+
 	// Protocol is the overall protocol shared by everything in the chain.
 	Protocol string
+
+	// ServiceMeta is the metadata from the underlying service-defaults config
+	// entry for the service named ServiceName.
+	ServiceMeta map[string]string
 
 	// StartNode is the first key into the Nodes map that should be followed
 	// when walking the discovery chain.
@@ -211,6 +224,7 @@ func (r *DiscoveryResolver) UnmarshalJSON(data []byte) error {
 // compiled form of ServiceResolverFailover
 type DiscoveryFailover struct {
 	Targets []string
+	Policy  ServiceResolverFailoverPolicy `json:",omitempty"`
 }
 
 // DiscoveryTarget represents all of the inputs necessary to use a resolver
@@ -224,9 +238,46 @@ type DiscoveryTarget struct {
 	Namespace     string
 	Datacenter    string
 
-	MeshGateway MeshGatewayConfig
-	Subset      ServiceResolverSubset
-	External    bool
-	SNI         string
-	Name        string
+	MeshGateway    MeshGatewayConfig
+	Subset         ServiceResolverSubset
+	ConnectTimeout time.Duration
+	External       bool
+	SNI            string
+	Name           string
+}
+
+func (t *DiscoveryTarget) MarshalJSON() ([]byte, error) {
+	type Alias DiscoveryTarget
+	exported := &struct {
+		ConnectTimeout string `json:",omitempty"`
+		*Alias
+	}{
+		ConnectTimeout: t.ConnectTimeout.String(),
+		Alias:          (*Alias)(t),
+	}
+	if t.ConnectTimeout == 0 {
+		exported.ConnectTimeout = ""
+	}
+
+	return json.Marshal(exported)
+}
+
+func (t *DiscoveryTarget) UnmarshalJSON(data []byte) error {
+	type Alias DiscoveryTarget
+	aux := &struct {
+		ConnectTimeout string
+		*Alias
+	}{
+		Alias: (*Alias)(t),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	var err error
+	if aux.ConnectTimeout != "" {
+		if t.ConnectTimeout, err = time.ParseDuration(aux.ConnectTimeout); err != nil {
+			return err
+		}
+	}
+	return nil
 }
