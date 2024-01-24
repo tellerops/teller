@@ -28,7 +28,7 @@ require (
 	github.com/heroku/heroku-go/v5 v5.2.1
 	github.com/jftuga/ellipsis v1.0.0
 	github.com/joho/godotenv v1.3.0
-	github.com/karrick/godirwalk v1.16.1
+	github.com/karrick/godirwalk v1.17.0
 	github.com/mattn/lastpass-go v0.0.0-20160926001517-82bef8502f75
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/samber/lo v1.11.0
