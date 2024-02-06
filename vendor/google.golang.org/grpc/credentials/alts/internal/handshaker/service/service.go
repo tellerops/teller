@@ -24,6 +24,7 @@ import (
 	"sync"
 
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -49,11 +50,29 @@ func Dial(hsAddress string) (*grpc.ClientConn, error) {
 		// Create a new connection to the handshaker service. Note that
 		// this connection stays open until the application is closed.
 		var err error
-		hsConn, err = hsDialer(hsAddress, grpc.WithInsecure())
+		hsConn, err = hsDialer(hsAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return nil, err
 		}
 		hsConnMap[hsAddress] = hsConn
 	}
 	return hsConn, nil
+}
+
+// CloseForTesting closes all open connections to the handshaker service.
+//
+// For testing purposes only.
+func CloseForTesting() error {
+	for _, hsConn := range hsConnMap {
+		if hsConn == nil {
+			continue
+		}
+		if err := hsConn.Close(); err != nil {
+			return err
+		}
+	}
+
+	// Reset the connection map.
+	hsConnMap = make(map[string]*grpc.ClientConn)
+	return nil
 }
