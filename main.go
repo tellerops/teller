@@ -111,7 +111,6 @@ func main() {
 	logger.SetLevel(defaultLogLevel)
 
 	// below commands don't require a tellerfile
-	//nolint
 	switch ctx.Command() {
 	case "version":
 		fmt.Printf("Teller %v\n", version)
@@ -231,9 +230,7 @@ func main() {
 		}
 		teller.Exec()
 
-	case "graph-drift <providers>":
-		fallthrough
-	case "graph-drift":
+	case "graph-drift <providers>", "graph-drift":
 		drifts := teller.Drift(CLI.GraphDrift.Providers)
 		if len(drifts) > 0 {
 			teller.Porcelain.PrintDrift(drifts)

@@ -65,8 +65,7 @@ const ProjectEndPoint = "/projects"
 
 const VercelName = "vercel"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Name:           "vercel",
 		Description:    "Vercel",

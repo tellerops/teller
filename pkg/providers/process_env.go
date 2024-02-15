@@ -15,8 +15,7 @@ type ProcessEnv struct {
 	logger logging.Logger
 }
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInto := core.MetaInfo{
 		Description:    "ProcessEnv",
 		Name:           "process_env",

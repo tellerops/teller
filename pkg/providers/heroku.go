@@ -22,8 +22,7 @@ type Heroku struct {
 
 const HerokuName = "heroku"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "Heroku",
 		Name:           HerokuName,

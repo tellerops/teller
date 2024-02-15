@@ -24,8 +24,7 @@ type KeyPass struct {
 
 const KeyPassName = "KeyPass"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "Keypass",
 		Name:           KeyPassName,

@@ -22,7 +22,7 @@ type ResolverFunc func(context *Context, parent *Path, flag *Flag) (interface{},
 
 var _ Resolver = ResolverFunc(nil)
 
-func (r ResolverFunc) Resolve(context *Context, parent *Path, flag *Flag) (interface{}, error) { // nolint: golint
+func (r ResolverFunc) Resolve(context *Context, parent *Path, flag *Flag) (interface{}, error) { //nolint: golint
 	return r(context, parent, flag)
 }
 func (r ResolverFunc) Validate(app *Application) error { return nil } //  nolint: golint

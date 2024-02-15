@@ -21,8 +21,7 @@ type OnePassword struct {
 
 const OnePasswordName = "1password"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description: "1Password",
 		Name:        OnePasswordName,

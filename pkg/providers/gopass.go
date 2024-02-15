@@ -26,8 +26,7 @@ type Gopass struct {
 
 const GoPassName = "gopass"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "Gopass",
 		Name:           GoPassName,

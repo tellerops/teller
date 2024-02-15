@@ -24,8 +24,7 @@ type Consul struct {
 
 const consulName = "consul"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInto := core.MetaInfo{
 		Description:    "Consul",
 		Name:           consulName,

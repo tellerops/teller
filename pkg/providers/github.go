@@ -36,8 +36,7 @@ type GitHub struct {
 // NewGitHub create new GitHub provider
 const GithubName = "GitHub"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "Github",
 		Authentication: "Requires `GITHUB_AUTH_TOKEN`",

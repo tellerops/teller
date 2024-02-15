@@ -38,8 +38,7 @@ var defaultDeletionRecoveryWindowInDays int64 = 7
 
 const versionSplit = ","
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Name:           "aws_secretsmanager",
 		Description:    "AWS Secrets Manager",

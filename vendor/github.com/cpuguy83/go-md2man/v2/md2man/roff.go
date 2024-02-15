@@ -52,7 +52,7 @@ const (
 
 // NewRoffRenderer creates a new blackfriday Renderer for generating roff documents
 // from markdown
-func NewRoffRenderer() *roffRenderer { // nolint: golint
+func NewRoffRenderer() *roffRenderer { //nolint: golint
 	var extensions blackfriday.Extensions
 
 	extensions |= blackfriday.NoIntraEmphasis
@@ -306,7 +306,7 @@ func countColumns(node *blackfriday.Node) int {
 }
 
 func out(w io.Writer, output string) {
-	io.WriteString(w, output) // nolint: errcheck
+	io.WriteString(w, output) //nolint: errcheck
 }
 
 func escapeSpecialChars(w io.Writer, text []byte) {
@@ -323,7 +323,7 @@ func escapeSpecialChars(w io.Writer, text []byte) {
 			i++
 		}
 		if i > org {
-			w.Write(text[org:i]) // nolint: errcheck
+			w.Write(text[org:i]) //nolint: errcheck
 		}
 
 		// escape a character
@@ -331,6 +331,6 @@ func escapeSpecialChars(w io.Writer, text []byte) {
 			break
 		}
 
-		w.Write([]byte{'\\', text[i]}) // nolint: errcheck
+		w.Write([]byte{'\\', text[i]}) //nolint: errcheck
 	}
 }

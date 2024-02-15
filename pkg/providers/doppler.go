@@ -32,8 +32,7 @@ type Doppler struct {
 
 const DopplerName = "doppler"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description: "Doppler",
 		Name:        DopplerName,

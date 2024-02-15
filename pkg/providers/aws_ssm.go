@@ -25,8 +25,7 @@ type AWSSSM struct {
 
 const awsssmName = "aws_ssm"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "AWS SSM (aka paramstore)",
 		Name:           awsssmName,

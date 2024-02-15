@@ -142,7 +142,7 @@ func (p *Printer) Println(vs ...interface{}) {
 	fmt.Fprintln(p.w)
 }
 
-func (p *Printer) reprValue(seen map[reflect.Value]bool, v reflect.Value, indent string, showType bool) { // nolint: gocyclo
+func (p *Printer) reprValue(seen map[reflect.Value]bool, v reflect.Value, indent string, showType bool) { //nolint: gocyclo
 	if seen[v] {
 		fmt.Fprint(p.w, "...")
 		return

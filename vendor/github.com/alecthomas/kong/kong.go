@@ -349,7 +349,7 @@ func (k *Kong) LoadConfig(path string) (Resolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := os.Open(path) // nolint: gas
+	r, err := os.Open(path) //nolint: gas
 	if err != nil {
 		return nil, err
 	}

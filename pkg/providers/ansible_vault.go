@@ -32,8 +32,7 @@ type AnsibleVault struct {
 	client AnsibleVaultClient
 }
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInto := core.MetaInfo{
 		Description:    "Ansible Vault",
 		Name:           "ansible_vault",

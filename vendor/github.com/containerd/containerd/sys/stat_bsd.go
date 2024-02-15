@@ -1,3 +1,4 @@
+//go:build darwin || freebsd || netbsd
 // +build darwin freebsd netbsd
 
 /*
@@ -40,5 +41,5 @@ func StatMtime(st *syscall.Stat_t) syscall.Timespec {
 
 // StatATimeAsTime returns the access time as a time.Time
 func StatATimeAsTime(st *syscall.Stat_t) time.Time {
-	return time.Unix(int64(st.Atimespec.Sec), int64(st.Atimespec.Nsec)) // nolint: unconvert
+	return time.Unix(int64(st.Atimespec.Sec), int64(st.Atimespec.Nsec)) //nolint: unconvert
 }

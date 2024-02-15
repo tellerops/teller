@@ -96,8 +96,7 @@ type Dotenv struct {
 	logger logging.Logger
 }
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    ".env",
 		Authentication: "",

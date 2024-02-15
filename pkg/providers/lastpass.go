@@ -24,8 +24,7 @@ type LastPass struct {
 
 const LastPassName = "lastpass"
 
-// nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "Lastpass",
 		Authentication: "TODO(XXX)",
