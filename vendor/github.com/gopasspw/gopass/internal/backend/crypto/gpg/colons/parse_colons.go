@@ -10,13 +10,13 @@ import (
 )
 
 var (
-	// nolint:godot
+	//nolint:godot
 	// John Doe (user) <john.doe@example.com>
 	reUIDComment = regexp.MustCompile(`([^(<]+)\s+(\([^)]+\))\s+<([^>]+)>`)
-	// nolint:godot
+	//nolint:godot
 	// John Doe <john.doe@example.com>
 	reUID = regexp.MustCompile(`([^(<]+)\s+<([^>]+)>`)
-	// nolint:godot
+	//nolint:godot
 	// John Doe (user)
 	reUIDNoEmailComment = regexp.MustCompile(`([^(<]+)\s+(\([^)]+\))`)
 )

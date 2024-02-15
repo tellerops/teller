@@ -8,8 +8,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-github/v43/github"
 
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/providers/mock_providers"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/providers/mock_providers"
 )
 
 func TestGitHubPut(t *testing.T) {

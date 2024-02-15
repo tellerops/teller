@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	heroku "github.com/heroku/heroku-go/v5"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
-	"github.com/spectralops/teller/pkg/providers"
 	"github.com/stretchr/testify/assert"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/providers"
 )
 
 func TestGetHeroku(t *testing.T) {

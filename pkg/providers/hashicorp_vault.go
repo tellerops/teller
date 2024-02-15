@@ -5,8 +5,8 @@ import (
 	"sort"
 
 	"github.com/hashicorp/vault/api"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 type HashicorpClient interface {
@@ -20,8 +20,7 @@ type HashicorpVault struct {
 
 const HashicorpVaultName = "hashicorp_vault"
 
-//nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "Hashicorp Vault",
 		Name:           HashicorpVaultName,

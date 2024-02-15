@@ -7,8 +7,8 @@ import (
 	"sort"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/logging"
 )
 
 type CloudflareClient interface {
@@ -25,8 +25,7 @@ type Cloudflare struct {
 
 const cloudFlareWorkersKVName = "cloudflare_workers_kv"
 
-//nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "Cloudflare Workers K/V",
 		Name:           cloudFlareWorkersKVName,

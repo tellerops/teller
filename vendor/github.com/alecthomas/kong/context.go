@@ -111,7 +111,7 @@ func (c *Context) Bind(args ...interface{}) {
 //
 // This will typically have to be called like so:
 //
-//    BindTo(impl, (*MyInterface)(nil))
+//	BindTo(impl, (*MyInterface)(nil))
 func (c *Context) BindTo(impl, iface interface{}) {
 	valueOf := reflect.ValueOf(impl)
 	c.bindings[reflect.TypeOf(iface).Elem()] = func() (reflect.Value, error) { return valueOf, nil }
@@ -155,7 +155,7 @@ func (c *Context) Empty() bool {
 }
 
 // Validate the current context.
-func (c *Context) Validate() error { // nolint: gocyclo
+func (c *Context) Validate() error { //nolint: gocyclo
 	err := Visit(c.Model, func(node Visitable, next Next) error {
 		switch node := node.(type) {
 		case *Value:
@@ -324,7 +324,7 @@ func (c *Context) Reset() error {
 	})
 }
 
-func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
+func (c *Context) trace(node *Node) (err error) { //nolint: gocyclo
 	positional := 0
 
 	flags := []*Flag{}
@@ -342,7 +342,7 @@ func (c *Context) trace(node *Node) (err error) { // nolint: gocyclo
 				switch {
 				case v == "-":
 					fallthrough
-				default: // nolint
+				default: //nolint
 					c.scan.Pop()
 					c.scan.PushTyped(token.Value, PositionalArgumentToken)
 

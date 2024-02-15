@@ -19,7 +19,7 @@ type Option interface {
 // OptionFunc is function that adheres to the Option interface.
 type OptionFunc func(k *Kong) error
 
-func (o OptionFunc) Apply(k *Kong) error { return o(k) } // nolint: golint
+func (o OptionFunc) Apply(k *Kong) error { return o(k) } //nolint: golint
 
 // Vars sets the variables to use for interpolation into help strings and default values.
 //
@@ -137,8 +137,8 @@ func Writers(stdout, stderr io.Writer) Option {
 //
 // There are two hook points:
 //
-// 		BeforeApply(...) error
-//   	AfterApply(...) error
+//			BeforeApply(...) error
+//	  	AfterApply(...) error
 //
 // Called before validation/assignment, and immediately after validation/assignment, respectively.
 func Bind(args ...interface{}) Option {
@@ -150,7 +150,7 @@ func Bind(args ...interface{}) Option {
 
 // BindTo allows binding of implementations to interfaces.
 //
-// 		BindTo(impl, (*iface)(nil))
+//	BindTo(impl, (*iface)(nil))
 func BindTo(impl, iface interface{}) Option {
 	return OptionFunc(func(k *Kong) error {
 		valueOf := reflect.ValueOf(impl)
@@ -221,7 +221,7 @@ func ConfigureHelp(options HelpOptions) Option {
 // See also ExplicitGroups for a more structured alternative.
 type Groups map[string]string
 
-func (g Groups) Apply(k *Kong) error { // nolint: golint
+func (g Groups) Apply(k *Kong) error { //nolint: golint
 	for key, info := range g {
 		lines := strings.Split(info, "\n")
 		title := strings.TrimSpace(lines[0])

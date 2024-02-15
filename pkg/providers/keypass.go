@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spectralops/teller/pkg/core"
+	"github.com/tellerops/teller/pkg/core"
 
-	"github.com/spectralops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/logging"
 	"github.com/tobischo/gokeepasslib/v3"
 )
 
@@ -24,8 +24,7 @@ type KeyPass struct {
 
 const KeyPassName = "KeyPass"
 
-//nolint
-func init() {
+func init() { //nolint
 	metaInfo := core.MetaInfo{
 		Description:    "Keypass",
 		Name:           KeyPassName,

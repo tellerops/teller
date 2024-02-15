@@ -8,10 +8,10 @@ import (
 	"os"
 
 	"github.com/alecthomas/kong"
-	"github.com/spectralops/teller/pkg"
-	"github.com/spectralops/teller/pkg/logging"
-	"github.com/spectralops/teller/pkg/providers"
-	"github.com/spectralops/teller/pkg/utils"
+	"github.com/tellerops/teller/pkg"
+	"github.com/tellerops/teller/pkg/logging"
+	"github.com/tellerops/teller/pkg/providers"
+	"github.com/tellerops/teller/pkg/utils"
 )
 
 var CLI struct {
@@ -111,7 +111,6 @@ func main() {
 	logger.SetLevel(defaultLogLevel)
 
 	// below commands don't require a tellerfile
-	//nolint
 	switch ctx.Command() {
 	case "version":
 		fmt.Printf("Teller %v\n", version)
@@ -231,9 +230,7 @@ func main() {
 		}
 		teller.Exec()
 
-	case "graph-drift <providers>":
-		fallthrough
-	case "graph-drift":
+	case "graph-drift <providers>", "graph-drift":
 		drifts := teller.Drift(CLI.GraphDrift.Providers)
 		if len(drifts) > 0 {
 			teller.Porcelain.PrintDrift(drifts)

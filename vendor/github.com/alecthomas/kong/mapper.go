@@ -124,7 +124,7 @@ type BoolMapper interface {
 // A MapperFunc is a single function that complies with the Mapper interface.
 type MapperFunc func(ctx *DecodeContext, target reflect.Value) error
 
-func (m MapperFunc) Decode(ctx *DecodeContext, target reflect.Value) error { // nolint: golint
+func (m MapperFunc) Decode(ctx *DecodeContext, target reflect.Value) error { //nolint: golint
 	return m(ctx, target)
 }
 
@@ -218,8 +218,8 @@ func (r *Registry) RegisterKind(kind reflect.Kind, mapper Mapper) *Registry {
 //
 // eg.
 //
-// 		Mapper string `kong:"type='colour'`
-//   	registry.RegisterName("colour", ...)
+//			Mapper string `kong:"type='colour'`
+//	  	registry.RegisterName("colour", ...)
 func (r *Registry) RegisterName(name string, mapper Mapper) *Registry {
 	r.names[name] = mapper
 	return r
@@ -339,7 +339,7 @@ func timeDecoder() MapperFunc {
 	}
 }
 
-func intDecoder(bits int) MapperFunc { // nolint: dupl
+func intDecoder(bits int) MapperFunc { //nolint: dupl
 	return func(ctx *DecodeContext, target reflect.Value) error {
 		t, err := ctx.Scan.PopValue("int")
 		if err != nil {
@@ -365,7 +365,7 @@ func intDecoder(bits int) MapperFunc { // nolint: dupl
 	}
 }
 
-func uintDecoder(bits int) MapperFunc { // nolint: dupl
+func uintDecoder(bits int) MapperFunc { //nolint: dupl
 	return func(ctx *DecodeContext, target reflect.Value) error {
 		t, err := ctx.Scan.PopValue("uint")
 		if err != nil {
@@ -575,7 +575,7 @@ func fileMapper(r *Registry) MapperFunc {
 			file = os.Stdin
 		} else {
 			path = ExpandPath(path)
-			file, err = os.Open(path) // nolint: gosec
+			file, err = os.Open(path) //nolint: gosec
 			if err != nil {
 				return err
 			}
@@ -700,7 +700,7 @@ func urlMapper() MapperFunc {
 //
 // It differs from strings.Split() in that the separator can exist in a field by escaping it with a \. eg.
 //
-//     SplitEscaped(`hello\,there,bob`, ',') == []string{"hello,there", "bob"}
+//	SplitEscaped(`hello\,there,bob`, ',') == []string{"hello,there", "bob"}
 func SplitEscaped(s string, sep rune) (out []string) {
 	if sep == -1 {
 		return []string{s}
@@ -730,7 +730,7 @@ func SplitEscaped(s string, sep rune) (out []string) {
 
 // JoinEscaped joins a slice of strings on sep, but also escapes any instances of sep in the fields with \. eg.
 //
-//     JoinEscaped([]string{"hello,there", "bob"}, ',') == `hello\,there,bob`
+//	JoinEscaped([]string{"hello,there", "bob"}, ',') == `hello\,there,bob`
 func JoinEscaped(s []string, sep rune) string {
 	escaped := []string{}
 	for _, e := range s {
@@ -745,7 +745,7 @@ type NamedFileContentFlag struct {
 	Contents []byte
 }
 
-func (f *NamedFileContentFlag) Decode(ctx *DecodeContext) error { // nolint: golint
+func (f *NamedFileContentFlag) Decode(ctx *DecodeContext) error { //nolint: golint
 	var filename string
 	err := ctx.Scan.PopValueInto("filename", &filename)
 	if err != nil {
@@ -757,7 +757,7 @@ func (f *NamedFileContentFlag) Decode(ctx *DecodeContext) error { // nolint: gol
 		return nil
 	}
 	filename = ExpandPath(filename)
-	data, err := ioutil.ReadFile(filename) // nolint: gosec
+	data, err := ioutil.ReadFile(filename) //nolint: gosec
 	if err != nil {
 		return errors.Errorf("failed to open %q: %s", filename, err)
 	}
@@ -769,7 +769,7 @@ func (f *NamedFileContentFlag) Decode(ctx *DecodeContext) error { // nolint: gol
 // FileContentFlag is a flag value that loads a file's contents into its value.
 type FileContentFlag []byte
 
-func (f *FileContentFlag) Decode(ctx *DecodeContext) error { // nolint: golint
+func (f *FileContentFlag) Decode(ctx *DecodeContext) error { //nolint: golint
 	var filename string
 	err := ctx.Scan.PopValueInto("filename", &filename)
 	if err != nil {
@@ -781,7 +781,7 @@ func (f *FileContentFlag) Decode(ctx *DecodeContext) error { // nolint: golint
 		return nil
 	}
 	filename = ExpandPath(filename)
-	data, err := ioutil.ReadFile(filename) // nolint: gosec
+	data, err := ioutil.ReadFile(filename) //nolint: gosec
 	if err != nil {
 		return errors.Errorf("failed to open %q: %s", filename, err)
 	}

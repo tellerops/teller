@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-<img src="https://github.com/spectralops/teller/actions/workflows/ci.yml/badge.svg"/>
+<img src="https://github.com/tellerops/teller/actions/workflows/ci.yml/badge.svg"/>
 
 </p>
 
@@ -39,7 +39,7 @@ You can use Teller to tidy your own environment or for your team as a process an
 You can install `teller` with homebrew:
 
 ```
-$ brew tap spectralops/tap && brew install teller
+$ brew tap tellerops/tap && brew install teller
 ```
 
 You can now use `teller` or `tlr` (if you like shortcuts!) in your terminal.
@@ -780,7 +780,7 @@ Requires an API key populated in your environment in: `VERCEL_TOKEN`.
 
 - Sync - `yes`
 - Mapping - `yes`
-- Modes - `read`, [write: accepting PR](https://github.com/spectralops/teller)
+- Modes - `read`, [write: accepting PR](https://github.com/tellerops/teller)
 - Key format
   - `env_sync` - name of your Vercel app
   - `env` - the actual env variable name in your Vercel settings
@@ -822,7 +822,7 @@ cert_file: ""
 
 ### Features
 
-- Sync - `no` [sync: accepting PR](https://github.com/spectralops/teller)
+- Sync - `no` [sync: accepting PR](https://github.com/tellerops/teller)
 - Mapping - `yes`
 - Modes - `read+write`
 - Key format
@@ -1296,7 +1296,7 @@ $ make lint
 
 ### Thanks:
 
-To all [Contributors](https://github.com/spectralops/teller/graphs/contributors) - you make this happen, thanks!
+To all [Contributors](https://github.com/tellerops/teller/graphs/contributors) - you make this happen, thanks!
 
 ### Code of conduct
 
