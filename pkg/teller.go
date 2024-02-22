@@ -11,9 +11,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
+	"unicode"
 
 	"github.com/karrick/godirwalk"
 	"github.com/samber/lo"
@@ -118,9 +120,17 @@ func (tl *Teller) ExportDotenv() string {
 
 	for i := range tl.Entries {
 		v := tl.Entries[i]
-		fmt.Fprintf(&b, "%s=%s\n", v.Key, v.Value)
+		fmt.Fprintf(&b, "%s=%s\n", v.Key, maybeQuote(v.Value))
 	}
 	return b.String()
+}
+
+// maybeQuote quotes the incoming value if there is a whitespace character in it
+func maybeQuote(in string) string {
+	if whitespaceRuneIdx := strings.IndexFunc(in, unicode.IsSpace); whitespaceRuneIdx == -1 {
+		return in
+	}
+	return strconv.Quote(in)
 }
 
 func (tl *Teller) ExportYAML() (out string, err error) {

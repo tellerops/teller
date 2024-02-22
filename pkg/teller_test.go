@@ -188,18 +188,37 @@ func TestTellerExports(t *testing.T) {
 		Logger: getLogger(),
 		Entries: []core.EnvEntry{
 			{Key: "k", Value: "v", ProviderName: "test-provider", ResolvedPath: "path/kv"},
+			{Key: "multiword", Value: "two words", ProviderName: "test-provider", ResolvedPath: "path/multiword"},
 		},
 	}
 
 	b = tl.ExportEnv()
-	assert.Equal(t, b, "#!/bin/sh\nexport k='v'\n")
+	assert.Equal(t, b,
+		`#!/bin/sh
+export k='v'
+export multiword='two words'
+`)
 
 	b, err := tl.ExportYAML()
 	assert.NoError(t, err)
-	assert.Equal(t, b, "k: v\n")
+	assert.Equal(t, b,
+		`k: v
+multiword: two words
+`)
 	b, err = tl.ExportJSON()
 	assert.NoError(t, err)
-	assert.Equal(t, b, "{\n  \"k\": \"v\"\n}")
+	assert.Equal(t, b,
+		`{
+  "k": "v",
+  "multiword": "two words"
+}`)
+
+	b = tl.ExportDotenv()
+	assert.NoError(t, err)
+	assert.Equal(t, b,
+		`k=v
+multiword="two words"
+`)
 }
 
 func TestTellerShExportEscaped(t *testing.T) {
