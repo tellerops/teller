@@ -6,21 +6,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"sort"
-	"strings"
-	"text/template"
-	"time"
-
 	"github.com/karrick/godirwalk"
 	"github.com/samber/lo"
 	"github.com/spectralops/teller/pkg/core"
 	"github.com/spectralops/teller/pkg/logging"
 	"github.com/spectralops/teller/pkg/providers"
 	"gopkg.in/yaml.v3"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+	"text/template"
+	"time"
+	"unicode"
 )
 
 // Teller
@@ -118,9 +119,17 @@ func (tl *Teller) ExportDotenv() string {
 
 	for i := range tl.Entries {
 		v := tl.Entries[i]
-		fmt.Fprintf(&b, "%s=%s\n", v.Key, v.Value)
+		fmt.Fprintf(&b, "%s=%s\n", v.Key, maybeQuote(v.Value))
 	}
 	return b.String()
+}
+
+// maybeQuote quotes the incoming value if there is a whitespace character in it
+func maybeQuote(in string) string {
+	if whitespaceRuneIdx := strings.IndexFunc(in, unicode.IsSpace); whitespaceRuneIdx == -1 {
+		return in
+	}
+	return strconv.Quote(in)
 }
 
 func (tl *Teller) ExportYAML() (out string, err error) {
