@@ -6,12 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/karrick/godirwalk"
-	"github.com/samber/lo"
-	"github.com/spectralops/teller/pkg/core"
-	"github.com/spectralops/teller/pkg/logging"
-	"github.com/spectralops/teller/pkg/providers"
-	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"os/exec"
@@ -22,6 +16,13 @@ import (
 	"text/template"
 	"time"
 	"unicode"
+
+	"github.com/karrick/godirwalk"
+	"github.com/samber/lo"
+	"github.com/spectralops/teller/pkg/core"
+	"github.com/spectralops/teller/pkg/logging"
+	"github.com/spectralops/teller/pkg/providers"
+	"gopkg.in/yaml.v3"
 )
 
 // Teller
