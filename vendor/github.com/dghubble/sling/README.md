@@ -1,4 +1,9 @@
-# Sling [![Build Status](https://travis-ci.org/dghubble/sling.svg?branch=master)](https://travis-ci.org/dghubble/sling) [![GoDoc](https://godoc.org/github.com/dghubble/sling?status.svg)](https://godoc.org/github.com/dghubble/sling)
+# Sling
+[![GoDoc](https://pkg.go.dev/badge/github.com/dghubble/sling.svg)](https://pkg.go.dev/github.com/dghubble/sling)
+[![Workflow](https://github.com/dghubble/sling/actions/workflows/test.yaml/badge.svg)](https://github.com/dghubble/sling/actions/workflows/test.yaml?query=branch%3Amain)
+[![Sponsors](https://img.shields.io/github/sponsors/dghubble?logo=github)](https://github.com/sponsors/dghubble)
+[![Mastodon](https://img.shields.io/badge/follow-news-6364ff?logo=mastodon)](https://fosstodon.org/@typhoon)
+
 <img align="right" src="https://storage.googleapis.com/dghubble/small-gopher-with-sling.png">
 
 Sling is a Go HTTP client library for creating and sending API requests.
@@ -272,11 +277,10 @@ func (s *IssueService) ListByRepo(owner, repo string, params *IssueListParams) (
 * GoSquared [drinkin/go-gosquared](https://github.com/drinkin/go-gosquared)
 * Kala [ajvb/kala](https://github.com/ajvb/kala)
 * Parse [fergstar/go-parse](https://github.com/fergstar/go-parse)
-* Rdio [apriendeau/shares](https://github.com/apriendeau/shares)
 * Swagger Generator [swagger-api/swagger-codegen](https://github.com/swagger-api/swagger-codegen)
 * Twitter [dghubble/go-twitter](https://github.com/dghubble/go-twitter)
-* Hacker News [mirceamironenco/go-hackernews](https://github.com/mirceamironenco/go-hackernews)
 * Stacksmith [jesustinoco/go-smith](https://github.com/jesustinoco/go-smith)
+* Spotify [omegastreamtv/Spotify](https://github.com/omegastreamtv/Spotify)
 
 Create a Pull Request to add a link to your own API.
 
