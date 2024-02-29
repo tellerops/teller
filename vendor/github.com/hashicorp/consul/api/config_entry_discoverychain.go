@@ -1,13 +1,19 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package api
 
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 type ServiceRouterConfigEntry struct {
 	Kind      string
 	Name      string
+	Partition string `json:",omitempty"`
 	Namespace string `json:",omitempty"`
 
 	Routes []ServiceRoute `json:",omitempty"`
@@ -19,6 +25,7 @@ type ServiceRouterConfigEntry struct {
 
 func (e *ServiceRouterConfigEntry) GetKind() string            { return e.Kind }
 func (e *ServiceRouterConfigEntry) GetName() string            { return e.Name }
+func (e *ServiceRouterConfigEntry) GetPartition() string       { return e.Partition }
 func (e *ServiceRouterConfigEntry) GetNamespace() string       { return e.Namespace }
 func (e *ServiceRouterConfigEntry) GetMeta() map[string]string { return e.Meta }
 func (e *ServiceRouterConfigEntry) GetCreateIndex() uint64     { return e.CreateIndex }
@@ -34,9 +41,10 @@ type ServiceRouteMatch struct {
 }
 
 type ServiceRouteHTTPMatch struct {
-	PathExact  string `json:",omitempty" alias:"path_exact"`
-	PathPrefix string `json:",omitempty" alias:"path_prefix"`
-	PathRegex  string `json:",omitempty" alias:"path_regex"`
+	PathExact       string `json:",omitempty" alias:"path_exact"`
+	PathPrefix      string `json:",omitempty" alias:"path_prefix"`
+	PathRegex       string `json:",omitempty" alias:"path_regex"`
+	CaseInsensitive bool   `json:",omitempty" alias:"case_insensitive"`
 
 	Header     []ServiceRouteHTTPMatchHeader     `json:",omitempty"`
 	QueryParam []ServiceRouteHTTPMatchQueryParam `json:",omitempty" alias:"query_param"`
@@ -61,27 +69,37 @@ type ServiceRouteHTTPMatchQueryParam struct {
 }
 
 type ServiceRouteDestination struct {
-	Service               string        `json:",omitempty"`
-	ServiceSubset         string        `json:",omitempty" alias:"service_subset"`
-	Namespace             string        `json:",omitempty"`
-	PrefixRewrite         string        `json:",omitempty" alias:"prefix_rewrite"`
-	RequestTimeout        time.Duration `json:",omitempty" alias:"request_timeout"`
-	NumRetries            uint32        `json:",omitempty" alias:"num_retries"`
-	RetryOnConnectFailure bool          `json:",omitempty" alias:"retry_on_connect_failure"`
-	RetryOnStatusCodes    []uint32      `json:",omitempty" alias:"retry_on_status_codes"`
+	Service               string               `json:",omitempty"`
+	ServiceSubset         string               `json:",omitempty" alias:"service_subset"`
+	Namespace             string               `json:",omitempty"`
+	Partition             string               `json:",omitempty"`
+	PrefixRewrite         string               `json:",omitempty" alias:"prefix_rewrite"`
+	RequestTimeout        time.Duration        `json:",omitempty" alias:"request_timeout"`
+	IdleTimeout           time.Duration        `json:",omitempty" alias:"idle_timeout"`
+	NumRetries            uint32               `json:",omitempty" alias:"num_retries"`
+	RetryOnConnectFailure bool                 `json:",omitempty" alias:"retry_on_connect_failure"`
+	RetryOnStatusCodes    []uint32             `json:",omitempty" alias:"retry_on_status_codes"`
+	RetryOn               []string             `json:",omitempty" alias:"retry_on"`
+	RequestHeaders        *HTTPHeaderModifiers `json:",omitempty" alias:"request_headers"`
+	ResponseHeaders       *HTTPHeaderModifiers `json:",omitempty" alias:"response_headers"`
 }
 
 func (e *ServiceRouteDestination) MarshalJSON() ([]byte, error) {
 	type Alias ServiceRouteDestination
 	exported := &struct {
 		RequestTimeout string `json:",omitempty"`
+		IdleTimeout    string `json:",omitempty"`
 		*Alias
 	}{
 		RequestTimeout: e.RequestTimeout.String(),
+		IdleTimeout:    e.IdleTimeout.String(),
 		Alias:          (*Alias)(e),
 	}
 	if e.RequestTimeout == 0 {
 		exported.RequestTimeout = ""
+	}
+	if e.IdleTimeout == 0 {
+		exported.IdleTimeout = ""
 	}
 
 	return json.Marshal(exported)
@@ -91,6 +109,7 @@ func (e *ServiceRouteDestination) UnmarshalJSON(data []byte) error {
 	type Alias ServiceRouteDestination
 	aux := &struct {
 		RequestTimeout string
+		IdleTimeout    string
 		*Alias
 	}{
 		Alias: (*Alias)(e),
@@ -104,12 +123,18 @@ func (e *ServiceRouteDestination) UnmarshalJSON(data []byte) error {
 			return err
 		}
 	}
+	if aux.IdleTimeout != "" {
+		if e.IdleTimeout, err = time.ParseDuration(aux.IdleTimeout); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 type ServiceSplitterConfigEntry struct {
 	Kind      string
 	Name      string
+	Partition string `json:",omitempty"`
 	Namespace string `json:",omitempty"`
 
 	Splits []ServiceSplit `json:",omitempty"`
@@ -121,21 +146,26 @@ type ServiceSplitterConfigEntry struct {
 
 func (e *ServiceSplitterConfigEntry) GetKind() string            { return e.Kind }
 func (e *ServiceSplitterConfigEntry) GetName() string            { return e.Name }
+func (e *ServiceSplitterConfigEntry) GetPartition() string       { return e.Partition }
 func (e *ServiceSplitterConfigEntry) GetNamespace() string       { return e.Namespace }
 func (e *ServiceSplitterConfigEntry) GetMeta() map[string]string { return e.Meta }
 func (e *ServiceSplitterConfigEntry) GetCreateIndex() uint64     { return e.CreateIndex }
 func (e *ServiceSplitterConfigEntry) GetModifyIndex() uint64     { return e.ModifyIndex }
 
 type ServiceSplit struct {
-	Weight        float32
-	Service       string `json:",omitempty"`
-	ServiceSubset string `json:",omitempty" alias:"service_subset"`
-	Namespace     string `json:",omitempty"`
+	Weight          float32
+	Service         string               `json:",omitempty"`
+	ServiceSubset   string               `json:",omitempty" alias:"service_subset"`
+	Namespace       string               `json:",omitempty"`
+	Partition       string               `json:",omitempty"`
+	RequestHeaders  *HTTPHeaderModifiers `json:",omitempty" alias:"request_headers"`
+	ResponseHeaders *HTTPHeaderModifiers `json:",omitempty" alias:"response_headers"`
 }
 
 type ServiceResolverConfigEntry struct {
 	Kind      string
 	Name      string
+	Partition string `json:",omitempty"`
 	Namespace string `json:",omitempty"`
 
 	DefaultSubset  string                             `json:",omitempty" alias:"default_subset"`
@@ -143,6 +173,11 @@ type ServiceResolverConfigEntry struct {
 	Redirect       *ServiceResolverRedirect           `json:",omitempty"`
 	Failover       map[string]ServiceResolverFailover `json:",omitempty"`
 	ConnectTimeout time.Duration                      `json:",omitempty" alias:"connect_timeout"`
+	RequestTimeout time.Duration                      `json:",omitempty" alias:"request_timeout"`
+
+	// PrioritizeByLocality controls whether the locality of services within the
+	// local partition will be used to prioritize connectivity.
+	PrioritizeByLocality *ServiceResolverPrioritizeByLocality `json:",omitempty" alias:"prioritize_by_locality"`
 
 	// LoadBalancer determines the load balancing policy and configuration for services
 	// issuing requests to this upstream service.
@@ -157,13 +192,18 @@ func (e *ServiceResolverConfigEntry) MarshalJSON() ([]byte, error) {
 	type Alias ServiceResolverConfigEntry
 	exported := &struct {
 		ConnectTimeout string `json:",omitempty"`
+		RequestTimeout string `json:",omitempty"`
 		*Alias
 	}{
 		ConnectTimeout: e.ConnectTimeout.String(),
+		RequestTimeout: e.RequestTimeout.String(),
 		Alias:          (*Alias)(e),
 	}
 	if e.ConnectTimeout == 0 {
 		exported.ConnectTimeout = ""
+	}
+	if e.RequestTimeout == 0 {
+		exported.RequestTimeout = ""
 	}
 
 	return json.Marshal(exported)
@@ -173,24 +213,32 @@ func (e *ServiceResolverConfigEntry) UnmarshalJSON(data []byte) error {
 	type Alias ServiceResolverConfigEntry
 	aux := &struct {
 		ConnectTimeout string
+		RequestTimeout string
 		*Alias
 	}{
 		Alias: (*Alias)(e),
 	}
-	if err := json.Unmarshal(data, &aux); err != nil {
+	var err error
+	if err = json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	var err error
+	var merr *multierror.Error
 	if aux.ConnectTimeout != "" {
 		if e.ConnectTimeout, err = time.ParseDuration(aux.ConnectTimeout); err != nil {
-			return err
+			merr = multierror.Append(merr, err)
 		}
 	}
-	return nil
+	if aux.RequestTimeout != "" {
+		if e.RequestTimeout, err = time.ParseDuration(aux.RequestTimeout); err != nil {
+			merr = multierror.Append(merr, err)
+		}
+	}
+	return merr.ErrorOrNil()
 }
 
 func (e *ServiceResolverConfigEntry) GetKind() string            { return e.Kind }
 func (e *ServiceResolverConfigEntry) GetName() string            { return e.Name }
+func (e *ServiceResolverConfigEntry) GetPartition() string       { return e.Partition }
 func (e *ServiceResolverConfigEntry) GetNamespace() string       { return e.Namespace }
 func (e *ServiceResolverConfigEntry) GetMeta() map[string]string { return e.Meta }
 func (e *ServiceResolverConfigEntry) GetCreateIndex() uint64     { return e.CreateIndex }
@@ -205,14 +253,44 @@ type ServiceResolverRedirect struct {
 	Service       string `json:",omitempty"`
 	ServiceSubset string `json:",omitempty" alias:"service_subset"`
 	Namespace     string `json:",omitempty"`
+	Partition     string `json:",omitempty"`
 	Datacenter    string `json:",omitempty"`
+	Peer          string `json:",omitempty"`
+	SamenessGroup string `json:",omitempty" alias:"sameness_group"`
 }
 
 type ServiceResolverFailover struct {
-	Service       string   `json:",omitempty"`
-	ServiceSubset string   `json:",omitempty" alias:"service_subset"`
-	Namespace     string   `json:",omitempty"`
-	Datacenters   []string `json:",omitempty"`
+	Service       string `json:",omitempty"`
+	ServiceSubset string `json:",omitempty" alias:"service_subset"`
+	// Referencing other partitions is not supported.
+	Namespace     string                          `json:",omitempty"`
+	Datacenters   []string                        `json:",omitempty"`
+	Targets       []ServiceResolverFailoverTarget `json:",omitempty"`
+	Policy        *ServiceResolverFailoverPolicy  `json:",omitempty"`
+	SamenessGroup string                          `json:",omitempty" alias:"sameness_group"`
+}
+
+type ServiceResolverFailoverTarget struct {
+	Service       string `json:",omitempty"`
+	ServiceSubset string `json:",omitempty" alias:"service_subset"`
+	Partition     string `json:",omitempty"`
+	Namespace     string `json:",omitempty"`
+	Datacenter    string `json:",omitempty"`
+	Peer          string `json:",omitempty"`
+}
+
+type ServiceResolverFailoverPolicy struct {
+	// Mode specifies the type of failover that will be performed. Valid values are
+	// "sequential", "" (equivalent to "sequential") and "order-by-locality".
+	Mode    string   `json:",omitempty"`
+	Regions []string `json:",omitempty"`
+}
+
+type ServiceResolverPrioritizeByLocality struct {
+	// Mode specifies the type of prioritization that will be performed
+	// when selecting nodes in the local partition.
+	// Valid values are: "" (default "none"), "none", and "failover".
+	Mode string `json:",omitempty"`
 }
 
 // LoadBalancer determines the load balancing policy and configuration for services
@@ -286,4 +364,22 @@ type CookieConfig struct {
 
 	// The path to set for the cookie
 	Path string `json:",omitempty"`
+}
+
+// HTTPHeaderModifiers is a set of rules for HTTP header modification that
+// should be performed by proxies as the request passes through them. It can
+// operate on either request or response headers depending on the context in
+// which it is used.
+type HTTPHeaderModifiers struct {
+	// Add is a set of name -> value pairs that should be appended to the request
+	// or response (i.e. allowing duplicates if the same header already exists).
+	Add map[string]string `json:",omitempty"`
+
+	// Set is a set of name -> value pairs that should be added to the request or
+	// response, overwriting any existing header values of the same name.
+	Set map[string]string `json:",omitempty"`
+
+	// Remove is the set of header names that should be stripped from the request
+	// or response.
+	Remove []string `json:",omitempty"`
 }

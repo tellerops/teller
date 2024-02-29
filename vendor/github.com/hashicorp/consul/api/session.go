@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package api
 
 import (
@@ -141,7 +144,7 @@ func (s *Session) Renew(id string, q *WriteOptions) (*SessionEntry, *WriteMeta, 
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(resp)
 
 	wm := &WriteMeta{RequestTime: rtt}
 

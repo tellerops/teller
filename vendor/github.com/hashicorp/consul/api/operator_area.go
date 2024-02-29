@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package api
 
 // The /v1/operator/area endpoints are available only in Consul Enterprise and
@@ -89,11 +92,14 @@ func (op *Operator) AreaCreate(area *Area, q *WriteOptions) (string, *WriteMeta,
 	r := op.c.newRequest("POST", "/v1/operator/area")
 	r.setWriteOptions(q)
 	r.obj = area
-	rtt, resp, err := requireOK(op.c.doRequest(r))
+	rtt, resp, err := op.c.doRequest(r)
 	if err != nil {
 		return "", nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(resp)
+	if err := requireOK(resp); err != nil {
+		return "", nil, err
+	}
 
 	wm := &WriteMeta{}
 	wm.RequestTime = rtt
@@ -110,11 +116,14 @@ func (op *Operator) AreaUpdate(areaID string, area *Area, q *WriteOptions) (stri
 	r := op.c.newRequest("PUT", "/v1/operator/area/"+areaID)
 	r.setWriteOptions(q)
 	r.obj = area
-	rtt, resp, err := requireOK(op.c.doRequest(r))
+	rtt, resp, err := op.c.doRequest(r)
 	if err != nil {
 		return "", nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(resp)
+	if err := requireOK(resp); err != nil {
+		return "", nil, err
+	}
 
 	wm := &WriteMeta{}
 	wm.RequestTime = rtt
@@ -150,11 +159,14 @@ func (op *Operator) AreaList(q *QueryOptions) ([]*Area, *QueryMeta, error) {
 func (op *Operator) AreaDelete(areaID string, q *WriteOptions) (*WriteMeta, error) {
 	r := op.c.newRequest("DELETE", "/v1/operator/area/"+areaID)
 	r.setWriteOptions(q)
-	rtt, resp, err := requireOK(op.c.doRequest(r))
+	rtt, resp, err := op.c.doRequest(r)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(resp)
+	if err := requireOK(resp); err != nil {
+		return nil, err
+	}
 
 	wm := &WriteMeta{}
 	wm.RequestTime = rtt
@@ -167,11 +179,14 @@ func (op *Operator) AreaJoin(areaID string, addresses []string, q *WriteOptions)
 	r := op.c.newRequest("PUT", "/v1/operator/area/"+areaID+"/join")
 	r.setWriteOptions(q)
 	r.obj = addresses
-	rtt, resp, err := requireOK(op.c.doRequest(r))
+	rtt, resp, err := op.c.doRequest(r)
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer closeResponseBody(resp)
+	if err := requireOK(resp); err != nil {
+		return nil, nil, err
+	}
 
 	wm := &WriteMeta{}
 	wm.RequestTime = rtt
