@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package api
 
 import (
@@ -23,8 +26,11 @@ func (s *Snapshot) Save(q *QueryOptions) (io.ReadCloser, *QueryMeta, error) {
 	r := s.c.newRequest("GET", "/v1/snapshot")
 	r.setQueryOptions(q)
 
-	rtt, resp, err := requireOK(s.c.doRequest(r))
+	rtt, resp, err := s.c.doRequest(r)
 	if err != nil {
+		return nil, nil, err
+	}
+	if err := requireOK(resp); err != nil {
 		return nil, nil, err
 	}
 
@@ -38,9 +44,13 @@ func (s *Snapshot) Save(q *QueryOptions) (io.ReadCloser, *QueryMeta, error) {
 func (s *Snapshot) Restore(q *WriteOptions, in io.Reader) error {
 	r := s.c.newRequest("PUT", "/v1/snapshot")
 	r.body = in
+	r.header.Set("Content-Type", "application/octet-stream")
 	r.setWriteOptions(q)
-	_, _, err := requireOK(s.c.doRequest(r))
+	_, resp, err := s.c.doRequest(r)
 	if err != nil {
+		return err
+	}
+	if err := requireOK(resp); err != nil {
 		return err
 	}
 	return nil
