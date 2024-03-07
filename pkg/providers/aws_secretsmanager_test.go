@@ -34,6 +34,25 @@ func TestAWSSecretsManager(t *testing.T) {
 	AssertProvider(t, &s, true)
 }
 
+func TestAWSSecretsManagerPlainText(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	// Assert that Bar() is invoked.
+	defer ctrl.Finish()
+	client := mock_providers.NewMockAWSSecretsManagerClient(ctrl)
+	path := "settings/prod/billing-svc"
+	in := secretsmanager.GetSecretValueInput{SecretId: &path}
+	data := `hello-world`
+	out := secretsmanager.GetSecretValueOutput{
+		SecretString: &data,
+	}
+	client.EXPECT().GetSecretValue(gomock.Any(), gomock.Eq(&in)).Return(&out, nil).AnyTimes()
+	s := AWSSecretsManager{
+		client: client,
+		logger: GetTestLogger(),
+	}
+	AssertProviderPlainText(t, &s, data)
+}
+
 func TestAWSSecretsManagerFailures(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	// Assert that Bar() is invoked.
