@@ -13,6 +13,9 @@ const (
 	Medium Severity = "medium"
 	Low    Severity = "low"
 	None   Severity = "none"
+
+	// PlainTextKey the key used for plaintext secrets
+	PlainTextKey = "plaintext"
 )
 
 type RemapKeyPath struct {
@@ -29,6 +32,7 @@ type KeyPath struct {
 	RemapWith  *map[string]RemapKeyPath `yaml:"remap_with,omitempty"`
 	Decrypt    bool                     `yaml:"decrypt,omitempty"`
 	Optional   bool                     `yaml:"optional,omitempty"`
+	Plaintext  bool                     `yaml:"plaintext,omitempty"`
 	Severity   Severity                 `yaml:"severity,omitempty" default:"high"`
 	RedactWith string                   `yaml:"redact_with,omitempty" default:"**REDACTED**"`
 	Source     string                   `yaml:"source,omitempty"`
@@ -43,6 +47,9 @@ type WizardAnswers struct {
 }
 
 func (k *KeyPath) EffectiveKey() string {
+	if k.Plaintext {
+		return PlainTextKey
+	}
 	key := k.Env
 	if k.Field != "" {
 		key = k.Field
@@ -94,24 +101,26 @@ func (k *KeyPath) FoundWithKey(key, v string) EnvEntry {
 
 func (k *KeyPath) WithEnv(env string) KeyPath {
 	return KeyPath{
-		Env:      env,
-		Path:     k.Path,
-		Field:    k.Field,
-		Decrypt:  k.Decrypt,
-		Optional: k.Optional,
-		Source:   k.Source,
-		Sink:     k.Sink,
+		Env:       env,
+		Path:      k.Path,
+		Field:     k.Field,
+		Decrypt:   k.Decrypt,
+		Optional:  k.Optional,
+		Source:    k.Source,
+		Sink:      k.Sink,
+		Plaintext: k.Plaintext,
 	}
 }
 func (k *KeyPath) SwitchPath(path string) KeyPath {
 	return KeyPath{
-		Path:     path,
-		Field:    k.Field,
-		Env:      k.Env,
-		Decrypt:  k.Decrypt,
-		Optional: k.Optional,
-		Source:   k.Source,
-		Sink:     k.Sink,
+		Path:      path,
+		Field:     k.Field,
+		Env:       k.Env,
+		Decrypt:   k.Decrypt,
+		Optional:  k.Optional,
+		Source:    k.Source,
+		Sink:      k.Sink,
+		Plaintext: k.Plaintext,
 	}
 }
 

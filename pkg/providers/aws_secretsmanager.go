@@ -38,7 +38,7 @@ var defaultDeletionRecoveryWindowInDays int64 = 7
 
 const versionSplit = ","
 
-//nolint
+// nolint
 func init() {
 	metaInfo := core.MetaInfo{
 		Name:           "aws_secretsmanager",
@@ -234,6 +234,11 @@ func (a *AWSSecretsManager) getSecret(kp core.KeyPath) (map[string]string, error
 	case err == nil:
 		if res == nil || res.SecretString == nil {
 			return nil, fmt.Errorf("data not found at %q", kp.Path)
+		}
+		if kp.Plaintext {
+			return map[string]string{
+				core.PlainTextKey: *res.SecretString,
+			}, nil
 		}
 
 		var secret map[string]interface{}

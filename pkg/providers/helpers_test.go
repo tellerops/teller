@@ -33,6 +33,21 @@ func AssertProvider(t *testing.T, s core.Provider, sync bool) {
 	}
 }
 
+func AssertProviderPlainText(t *testing.T, s core.Provider, expected string) {
+	p := core.NewPopulate(map[string]string{"stage": "prod"})
+
+	kp := p.KeyPath(core.KeyPath{Field: "MG_KEY", Path: "settings/{{stage}}/billing-svc", Decrypt: true, Plaintext: true})
+	kpenv := p.KeyPath(core.KeyPath{Env: "MG_KEY", Path: "settings/{{stage}}/billing-svc", Decrypt: true, Plaintext: true})
+
+	ent, err := s.Get(kp)
+	assert.Nil(t, err)
+	assert.Equal(t, ent.Value, expected)
+
+	ent, err = s.Get(kpenv)
+	assert.Nil(t, err)
+	assert.Equal(t, ent.Value, expected)
+}
+
 func ConfigurableAssertProvider(t *testing.T, s core.Provider, sync bool, setField bool) {
 	p := core.NewPopulate(map[string]string{"stage": "prod"})
 

@@ -636,6 +636,7 @@ Your standard `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 - Key format
   - `env_sync` - path based
   - `env` - path based
+- Handles plain text secrets (rather than key/value pairs) via the `plaintext: true` property
 
 ### Example Config
 
@@ -647,6 +648,19 @@ aws_secretsmanager:
     MG_KEY:
       path: /prod/billing-svc/vars/mg
 ```
+
+Plain text secrets are useful for files; instead of using the usual JSON encoded key/value pairs. This example shows how to get a plaintext secret:
+
+```yaml
+aws_secretsmanager:
+  env_sync:
+    path: /prod/billing-svc
+  env:
+    MY_FILE:
+      path: /prod/billing-svc/some-file
+      plaintext: true
+```
+
 
 ## AWS Parameter store
 
