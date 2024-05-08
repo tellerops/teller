@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
-	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -40,10 +39,15 @@ type CreateTokenWithIAMInput struct {
 
 	// Supports the following OAuth grant types: Authorization Code, Refresh Token,
 	// JWT Bearer, and Token Exchange. Specify one of the following values, depending
-	// on the grant type that you want: * Authorization Code - authorization_code *
-	// Refresh Token - refresh_token * JWT Bearer -
-	// urn:ietf:params:oauth:grant-type:jwt-bearer * Token Exchange -
-	// urn:ietf:params:oauth:grant-type:token-exchange
+	// on the grant type that you want:
+	//
+	// * Authorization Code - authorization_code
+	//
+	// * Refresh Token - refresh_token
+	//
+	// * JWT Bearer - urn:ietf:params:oauth:grant-type:jwt-bearer
+	//
+	// * Token Exchange - urn:ietf:params:oauth:grant-type:token-exchange
 	//
 	// This member is required.
 	GrantType *string
@@ -67,16 +71,21 @@ type CreateTokenWithIAMInput struct {
 
 	// Used only when calling this API for the Refresh Token grant type. This token is
 	// used to refresh short-term tokens, such as the access token, that might expire.
+	//
 	// For more information about the features and limitations of the current IAM
 	// Identity Center OIDC implementation, see Considerations for Using this Guide in
-	// the IAM Identity Center OIDC API Reference (https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/Welcome.html)
-	// .
+	// the [IAM Identity Center OIDC API Reference].
+	//
+	// [IAM Identity Center OIDC API Reference]: https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/Welcome.html
 	RefreshToken *string
 
 	// Used only when calling this API for the Token Exchange grant type. This value
 	// specifies the type of token that the requester can receive. The following values
-	// are supported: * Access Token - urn:ietf:params:oauth:token-type:access_token *
-	// Refresh Token - urn:ietf:params:oauth:token-type:refresh_token
+	// are supported:
+	//
+	// * Access Token - urn:ietf:params:oauth:token-type:access_token
+	//
+	// * Refresh Token - urn:ietf:params:oauth:token-type:refresh_token
 	RequestedTokenType *string
 
 	// The list of scopes for which authorization is requested. The access token that
@@ -95,8 +104,9 @@ type CreateTokenWithIAMInput struct {
 
 	// Used only when calling this API for the Token Exchange grant type. This value
 	// specifies the type of token that is passed as the subject of the exchange. The
-	// following value is supported: * Access Token -
-	// urn:ietf:params:oauth:token-type:access_token
+	// following value is supported:
+	//
+	// * Access Token - urn:ietf:params:oauth:token-type:access_token
 	SubjectTokenType *string
 
 	noSmithyDocumentSerde
@@ -115,17 +125,21 @@ type CreateTokenWithIAMOutput struct {
 	IdToken *string
 
 	// Indicates the type of tokens that are issued by IAM Identity Center. The
-	// following values are supported: * Access Token -
-	// urn:ietf:params:oauth:token-type:access_token * Refresh Token -
-	// urn:ietf:params:oauth:token-type:refresh_token
+	// following values are supported:
+	//
+	// * Access Token - urn:ietf:params:oauth:token-type:access_token
+	//
+	// * Refresh Token - urn:ietf:params:oauth:token-type:refresh_token
 	IssuedTokenType *string
 
 	// A token that, if present, can be used to refresh a previously issued access
-	// token that might have expired. For more information about the features and
-	// limitations of the current IAM Identity Center OIDC implementation, see
-	// Considerations for Using this Guide in the IAM Identity Center OIDC API
-	// Reference (https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/Welcome.html)
-	// .
+	// token that might have expired.
+	//
+	// For more information about the features and limitations of the current IAM
+	// Identity Center OIDC implementation, see Considerations for Using this Guide in
+	// the [IAM Identity Center OIDC API Reference].
+	//
+	// [IAM Identity Center OIDC API Reference]: https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/Welcome.html
 	RefreshToken *string
 
 	// The list of scopes for which authorization is granted. The access token that is
@@ -164,25 +178,25 @@ func (c *Client) addOperationCreateTokenWithIAMMiddlewares(stack *middleware.Sta
 	if err = addSetLoggerMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddClientRequestIDMiddleware(stack); err != nil {
+	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
-	if err = smithyhttp.AddComputeContentLengthMiddleware(stack); err != nil {
+	if err = addComputeContentLength(stack); err != nil {
 		return err
 	}
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = v4.AddComputePayloadSHA256Middleware(stack); err != nil {
+	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetryMiddlewares(stack, options); err != nil {
+	if err = addRetry(stack, options); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRawResponseToMetadata(stack); err != nil {
+	if err = addRawResponseToMetadata(stack); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecordResponseTiming(stack); err != nil {
+	if err = addRecordResponseTiming(stack); err != nil {
 		return err
 	}
 	if err = addClientUserAgent(stack, options); err != nil {
@@ -203,7 +217,7 @@ func (c *Client) addOperationCreateTokenWithIAMMiddlewares(stack *middleware.Sta
 	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCreateTokenWithIAM(options.Region), middleware.Before); err != nil {
 		return err
 	}
-	if err = awsmiddleware.AddRecursionDetection(stack); err != nil {
+	if err = addRecursionDetection(stack); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
