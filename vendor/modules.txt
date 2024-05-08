@@ -130,11 +130,11 @@ github.com/alecthomas/assert
 # github.com/alecthomas/colour v0.1.0
 ## explicit
 github.com/alecthomas/colour
-# github.com/alecthomas/kong v0.2.15
-## explicit; go 1.13
+# github.com/alecthomas/kong v0.9.0
+## explicit; go 1.18
 github.com/alecthomas/kong
-# github.com/alecthomas/repr v0.0.0-20201120212035-bb82daffcca2
-## explicit; go 1.15
+# github.com/alecthomas/repr v0.4.0
+## explicit; go 1.18
 github.com/alecthomas/repr
 # github.com/alessio/shellescape v1.4.1
 ## explicit; go 1.14

@@ -15,17 +15,53 @@ linters:
     - gocognit
     - gomnd
     - goprintffuncname
+    - paralleltest
+    - nlreturn
+    - goerr113
+    - ifshort
+    - testpackage
+    - wrapcheck
+    - exhaustivestruct
+    - forbidigo
+    - gci
+    - godot
+    - gofumpt
+    - cyclop
+    - errorlint
+    - nestif
+    - golint
+    - scopelint
+    - interfacer
+    - tagliatelle
+    - thelper
+    - godox
+    - goconst
+    - varnamelen
+    - ireturn
+    - exhaustruct
+    - nonamedreturns
+    - nilnil
+    - nosnakecase # deprecated since v1.48.1
+    - structcheck # deprecated since v1.49.0
+    - deadcode    # deprecated since v1.49.0
+    - varcheck    # deprecated since v1.49.0
+    - depguard    # nothing to guard against yet
+    - tagalign    # hurts readability of kong tags
 
 linters-settings:
   govet:
     check-shadowing: true
+    # These govet checks are disabled by default, but they're useful.
+    enable:
+      - niliness
+      - sortslice
+      - unusedwrite
   dupl:
     threshold: 100
-  goconst:
-    min-len: 5
-    min-occurrences: 3
   gocyclo:
     min-complexity: 20
+  exhaustive:
+    default-signifies-exhaustive: true
 
 issues:
   max-per-linter: 0
@@ -40,3 +76,14 @@ issues:
     - 'bad syntax for struct tag key'
     - 'bad syntax for struct tag pair'
     - 'result .* \(error\) is always nil'
+
+  exclude-rules:
+    # Don't warn on unused parameters.
+    # Parameter names are useful for documentation.
+    # Replacing them with '_' hides useful information.
+    - linters: [revive]
+      text: 'unused-parameter: parameter \S+ seems to be unused, consider removing or renaming it as _'
+
+    # Duplicate words are okay in tests.
+    - linters: [dupword]
+      path: _test\.go

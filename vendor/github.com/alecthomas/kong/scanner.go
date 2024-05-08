@@ -82,7 +82,7 @@ func (t Token) InferredType() TokenType {
 		return t.Type
 	}
 	if v, ok := t.Value.(string); ok {
-		if strings.HasPrefix(v, "--") { // nolint: gocritic
+		if strings.HasPrefix(v, "--") { //nolint: gocritic
 			return FlagToken
 		} else if v == "-" {
 			return PositionalArgumentToken
@@ -109,18 +109,23 @@ func (t Token) IsValue() bool {
 //
 // For example, the token "--foo=bar" will be split into the following by the parser:
 //
-// 		[{FlagToken, "foo"}, {FlagValueToken, "bar"}]
+//	[{FlagToken, "foo"}, {FlagValueToken, "bar"}]
 type Scanner struct {
 	args []Token
 }
 
-// Scan creates a new Scanner from args with untyped tokens.
-func Scan(args ...string) *Scanner {
+// ScanAsType creates a new Scanner from args with the given type.
+func ScanAsType(ttype TokenType, args ...string) *Scanner {
 	s := &Scanner{}
 	for _, arg := range args {
-		s.args = append(s.args, Token{Value: arg})
+		s.args = append(s.args, Token{Value: arg, Type: ttype})
 	}
 	return s
+}
+
+// Scan creates a new Scanner from args with untyped tokens.
+func Scan(args ...string) *Scanner {
+	return ScanAsType(UntypedToken, args...)
 }
 
 // ScanFromTokens creates a new Scanner from a slice of tokens.

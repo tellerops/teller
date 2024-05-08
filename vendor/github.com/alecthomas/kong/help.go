@@ -16,7 +16,7 @@ const (
 // Help flag.
 type helpValue bool
 
-func (h helpValue) BeforeApply(ctx *Context) error {
+func (h helpValue) BeforeReset(ctx *Context) error {
 	options := ctx.Kong.helpOptions
 	options.Summary = false
 	err := ctx.Kong.help(options, ctx)
@@ -41,10 +41,21 @@ type HelpOptions struct {
 	// Tree writes command chains in a tree structure instead of listing them separately.
 	Tree bool
 
+	// Place the flags after the commands listing.
+	FlagsLast bool
+
 	// Indenter modulates the given prefix for the next layer in the tree view.
 	// The following exported templates can be used: kong.SpaceIndenter, kong.LineIndenter, kong.TreeIndenter
 	// The kong.SpaceIndenter will be used by default.
 	Indenter HelpIndenter
+
+	// Don't show the help associated with subcommands
+	NoExpandSubcommands bool
+
+	// Clamp the help wrap width to a value smaller than the terminal width.
+	// If this is set to a non-positive number, the terminal width is used; otherwise,
+	// the min of this value or the terminal width is used.
+	WrapUpperBound int
 }
 
 // Apply options to Kong as a configuration option.
@@ -59,6 +70,11 @@ type HelpProvider interface {
 	Help() string
 }
 
+// PlaceHolderProvider can be implemented by mappers to provide custom placeholder text.
+type PlaceHolderProvider interface {
+	PlaceHolder(flag *Flag) string
+}
+
 // HelpIndenter is used to indent new layers in the help tree.
 type HelpIndenter func(prefix string) string
 
@@ -70,10 +86,10 @@ type HelpValueFormatter func(value *Value) string
 
 // DefaultHelpValueFormatter is the default HelpValueFormatter.
 func DefaultHelpValueFormatter(value *Value) string {
-	if value.Tag.Env == "" {
+	if len(value.Tag.Envs) == 0 || HasInterpolatedVar(value.OrigHelp, "env") {
 		return value.Help
 	}
-	suffix := "($" + value.Tag.Env + ")"
+	suffix := "(" + formatEnvs(value.Tag.Envs) + ")"
 	switch {
 	case strings.HasSuffix(value.Help, "."):
 		return value.Help[:len(value.Help)-1] + " " + suffix + "."
@@ -82,6 +98,21 @@ func DefaultHelpValueFormatter(value *Value) string {
 	default:
 		return value.Help + " " + suffix
 	}
+}
+
+// DefaultShortHelpPrinter is the default HelpPrinter for short help on error.
+func DefaultShortHelpPrinter(options HelpOptions, ctx *Context) error {
+	w := newHelpWriter(ctx, options)
+	cmd := ctx.Selected()
+	app := ctx.Model
+	if cmd == nil {
+		w.Printf("Usage: %s%s", app.Name, app.Summary())
+		w.Printf(`Run "%s --help" for more information.`, app.Name)
+	} else {
+		w.Printf("Usage: %s %s", app.Name, cmd.Summary())
+		w.Printf(`Run "%s --help" for more information.`, cmd.FullPath())
+	}
+	return w.Write(ctx.Stdout)
 }
 
 // DefaultHelpPrinter is the default HelpPrinter.
@@ -143,21 +174,31 @@ func printNodeDetail(w *helpWriter, node *Node, hide bool) {
 		w.Print("Arguments:")
 		writePositionals(w.Indent(), node.Positional)
 	}
-	if flags := node.AllFlags(true); len(flags) > 0 {
-		groupedFlags := collectFlagGroups(flags)
-		for _, group := range groupedFlags {
-			w.Print("")
-			if group.Metadata.Title != "" {
-				w.Wrap(group.Metadata.Title)
-			}
-			if group.Metadata.Description != "" {
-				w.Indent().Wrap(group.Metadata.Description)
+	printFlags := func() {
+		if flags := node.AllFlags(true); len(flags) > 0 {
+			groupedFlags := collectFlagGroups(flags)
+			for _, group := range groupedFlags {
 				w.Print("")
+				if group.Metadata.Title != "" {
+					w.Wrap(group.Metadata.Title)
+				}
+				if group.Metadata.Description != "" {
+					w.Indent().Wrap(group.Metadata.Description)
+					w.Print("")
+				}
+				writeFlags(w.Indent(), group.Flags)
 			}
-			writeFlags(w.Indent(), group.Flags)
 		}
 	}
-	cmds := node.Leaves(hide)
+	if !w.FlagsLast {
+		printFlags()
+	}
+	var cmds []*Node
+	if w.NoExpandSubcommands {
+		cmds = node.Children
+	} else {
+		cmds = node.Leaves(hide)
+	}
 	if len(cmds) > 0 {
 		iw := w.Indent()
 		if w.Tree {
@@ -183,6 +224,9 @@ func printNodeDetail(w *helpWriter, node *Node, hide bool) {
 				}
 			}
 		}
+	}
+	if w.FlagsLast {
+		printFlags()
 	}
 }
 
@@ -328,9 +372,13 @@ type helpWriter struct {
 
 func newHelpWriter(ctx *Context, options HelpOptions) *helpWriter {
 	lines := []string{}
+	wrapWidth := guessWidth(ctx.Stdout)
+	if options.WrapUpperBound > 0 && wrapWidth > options.WrapUpperBound {
+		wrapWidth = options.WrapUpperBound
+	}
 	w := &helpWriter{
 		indent:        "",
-		width:         guessWidth(ctx.Stdout),
+		width:         wrapWidth,
 		lines:         &lines,
 		helpFormatter: ctx.Kong.helpFormatter,
 		HelpOptions:   options,
@@ -442,16 +490,29 @@ func formatFlag(haveShort bool, flag *Flag) string {
 	flagString := ""
 	name := flag.Name
 	isBool := flag.IsBool()
+	isCounter := flag.IsCounter()
 	if flag.Short != 0 {
-		flagString += fmt.Sprintf("-%c, --%s", flag.Short, name)
-	} else {
-		if haveShort {
-			flagString += fmt.Sprintf("    --%s", name)
+		if isBool && flag.Tag.Negatable {
+			flagString += fmt.Sprintf("-%c, --[no-]%s", flag.Short, name)
 		} else {
-			flagString += fmt.Sprintf("--%s", name)
+			flagString += fmt.Sprintf("-%c, --%s", flag.Short, name)
+		}
+	} else {
+		if isBool && flag.Tag.Negatable {
+			if haveShort {
+				flagString = fmt.Sprintf("    --[no-]%s", name)
+			} else {
+				flagString = fmt.Sprintf("--[no-]%s", name)
+			}
+		} else {
+			if haveShort {
+				flagString += fmt.Sprintf("    --%s", name)
+			} else {
+				flagString += fmt.Sprintf("--%s", name)
+			}
 		}
 	}
-	if !isBool {
+	if !isBool && !isCounter {
 		flagString += fmt.Sprintf("=%s", flag.FormatPlaceHolder())
 	}
 	return flagString
@@ -463,6 +524,9 @@ func (h *HelpOptions) CommandTree(node *Node, prefix string) (rows [][2]string) 
 	switch node.Type {
 	default:
 		nodeName += prefix + node.Name
+		if len(node.Aliases) != 0 {
+			nodeName += fmt.Sprintf(" (%s)", strings.Join(node.Aliases, ","))
+		}
 	case ArgumentNode:
 		nodeName += prefix + "<" + node.Name + ">"
 	}
@@ -476,6 +540,9 @@ func (h *HelpOptions) CommandTree(node *Node, prefix string) (rows [][2]string) 
 		rows = append(rows, [2]string{prefix + arg.Summary(), arg.Help})
 	}
 	for _, subCmd := range node.Children {
+		if subCmd.Hidden {
+			continue
+		}
 		rows = append(rows, h.CommandTree(subCmd, prefix)...)
 	}
 	return
@@ -500,4 +567,13 @@ func TreeIndenter(prefix string) string {
 		return "|- "
 	}
 	return "|" + strings.Repeat(" ", defaultIndent) + prefix
+}
+
+func formatEnvs(envs []string) string {
+	formatted := make([]string, len(envs))
+	for i := range envs {
+		formatted[i] = "$" + envs[i]
+	}
+
+	return strings.Join(formatted, ", ")
 }
