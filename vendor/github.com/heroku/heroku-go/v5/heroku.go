@@ -212,11 +212,10 @@ func String(v string) *string {
 // An account represents an individual signed up to use the Heroku
 // platform.
 type Account struct {
-	AcknowledgedMsa     bool       `json:"acknowledged_msa" url:"acknowledged_msa,key"`       // whether account has acknowledged the MSA terms of service
-	AcknowledgedMsaAt   *time.Time `json:"acknowledged_msa_at" url:"acknowledged_msa_at,key"` // when account has acknowledged the MSA terms of service
-	AllowTracking       bool       `json:"allow_tracking" url:"allow_tracking,key"`           // whether to allow third party web activity tracking
-	Beta                bool       `json:"beta" url:"beta,key"`                               // whether allowed to utilize beta Heroku features
-	CreatedAt           time.Time  `json:"created_at" url:"created_at,key"`                   // when account was created
+	AllowTracking       bool      `json:"allow_tracking" url:"allow_tracking,key"`             // whether to allow third party web activity tracking
+	Beta                bool      `json:"beta" url:"beta,key"`                                 // whether allowed to utilize beta Heroku features
+	CountryOfResidence  *string   `json:"country_of_residence" url:"country_of_residence,key"` // country where account owner resides
+	CreatedAt           time.Time `json:"created_at" url:"created_at,key"`                     // when account was created
 	DefaultOrganization *struct {
 		ID   string `json:"id" url:"id,key"`     // unique identifier of team
 		Name string `json:"name" url:"name,key"` // unique name of team
@@ -230,7 +229,8 @@ type Account struct {
 	Federated        bool       `json:"federated" url:"federated,key"`         // whether the user is federated and belongs to an Identity Provider
 	ID               string     `json:"id" url:"id,key"`                       // unique identifier of an account
 	IdentityProvider *struct {
-		ID           string `json:"id" url:"id,key"` // unique identifier of this identity provider
+		ID           string `json:"id" url:"id,key"`     // unique identifier of this identity provider
+		Name         string `json:"name" url:"name,key"` // user-friendly unique identifier for this identity provider
 		Organization struct {
 			Name string `json:"name" url:"name,key"` // unique name of team
 		} `json:"organization" url:"organization,key"`
@@ -243,10 +243,6 @@ type Account struct {
 			Name string `json:"name" url:"name,key"` // unique name of team
 		} `json:"team" url:"team,key"`
 	} `json:"identity_provider" url:"identity_provider,key"` // Identity Provider details for federated users.
-	ItalianCustomerTerms *string `json:"italian_customer_terms" url:"italian_customer_terms,key"` // whether account has acknowledged the Italian customer terms of
-	// service
-	ItalianPartnerTerms *string `json:"italian_partner_terms" url:"italian_partner_terms,key"` // whether account has acknowledged the Italian provider terms of
-	// service
 	LastLogin               *time.Time `json:"last_login" url:"last_login,key"`                               // when account last authorized with Heroku
 	Name                    *string    `json:"name" url:"name,key"`                                           // full name of the account owner
 	SmsNumber               *string    `json:"sms_number" url:"sms_number,key"`                               // SMS number of account
@@ -274,7 +270,10 @@ func (s *Service) AccountUpdate(ctx context.Context, o AccountUpdateOpts) (*Acco
 	return &account, s.Patch(ctx, &account, fmt.Sprintf("/account"), o)
 }
 
-// Delete account. Note that this action cannot be undone.
+// Delete account. Note that this action cannot be undone. Note: This
+// endpoint requires the HTTP_HEROKU_PASSWORD or
+// HTTP_HEROKU_PASSWORD_BASE64 header be set correctly for the user
+// account.
 func (s *Service) AccountDelete(ctx context.Context) (*Account, error) {
 	var account Account
 	return &account, s.Delete(ctx, &account, fmt.Sprintf("/account"))
@@ -298,7 +297,10 @@ func (s *Service) AccountUpdateByUser(ctx context.Context, accountIdentity strin
 	return &account, s.Patch(ctx, &account, fmt.Sprintf("/users/%v", accountIdentity), o)
 }
 
-// Delete account. Note that this action cannot be undone.
+// Delete account. Note that this action cannot be undone. Note: This
+// endpoint requires the HTTP_HEROKU_PASSWORD or
+// HTTP_HEROKU_PASSWORD_BASE64 header be set correctly for the user
+// account.
 func (s *Service) AccountDeleteByUser(ctx context.Context, accountIdentity string) (*Account, error) {
 	var account Account
 	return &account, s.Delete(ctx, &account, fmt.Sprintf("/users/%v", accountIdentity))
@@ -1136,9 +1138,10 @@ type App struct {
 	WebURL    string    `json:"web_url" url:"web_url,key"`       // web URL of app
 }
 type AppCreateOpts struct {
-	Name   *string `json:"name,omitempty" url:"name,omitempty,key"`     // unique name of app
-	Region *string `json:"region,omitempty" url:"region,omitempty,key"` // unique identifier of region
-	Stack  *string `json:"stack,omitempty" url:"stack,omitempty,key"`   // unique name of stack
+	FeatureFlags []*string `json:"feature_flags,omitempty" url:"feature_flags,omitempty,key"` // unique name of app feature
+	Name         *string   `json:"name,omitempty" url:"name,omitempty,key"`                   // unique name of app
+	Region       *string   `json:"region,omitempty" url:"region,omitempty,key"`               // unique identifier of region
+	Stack        *string   `json:"stack,omitempty" url:"stack,omitempty,key"`                 // unique name of stack
 }
 
 // Create a new app.
@@ -1598,14 +1601,14 @@ func (s *Service) AppWebhookEventList(ctx context.Context, appIdentity string, l
 type Archive struct {
 	Checksum  string    `json:"checksum" url:"checksum,key"`     // checksum for the archive
 	CreatedAt time.Time `json:"created_at" url:"created_at,key"` // when archive was created
-	Month     int       `json:"month" url:"month,key"`           // month of the archive
+	Month     string    `json:"month" url:"month,key"`           // month of the archive
 	Size      int       `json:"size" url:"size,key"`             // size of the archive in bytes
 	URL       string    `json:"url" url:"url,key"`               // url where to download the archive
 	Year      int       `json:"year" url:"year,key"`             // year of the archive
 }
 
 // Get archive for a single month.
-func (s *Service) ArchiveInfo(ctx context.Context, enterpriseAccountIdentity string, archiveYear int, archiveMonth int) (*Archive, error) {
+func (s *Service) ArchiveInfo(ctx context.Context, enterpriseAccountIdentity string, archiveYear int, archiveMonth string) (*Archive, error) {
 	var archive Archive
 	return &archive, s.Get(ctx, &archive, fmt.Sprintf("/enterprise-accounts/%v/archives/%v/%v", enterpriseAccountIdentity, archiveYear, archiveMonth), nil, nil)
 }
@@ -1648,7 +1651,13 @@ type AuditTrailEvent struct {
 	Type string `json:"type" url:"type,key"` // type of event
 }
 
-// List existing events.
+// List existing events. Returns all events for one day, defaulting to
+// current day. Order, actor, action, and type, and day query params can
+// be specified as query parameters. For example,
+// '/enterprise-accounts/:id/events?order=desc&actor=user@example.com&act
+// ion=create&type=app&day=2020-09-30' would return events in descending
+// order and only return app created events by the user with
+// user@example.com email address.
 func (s *Service) AuditTrailEventList(ctx context.Context, enterpriseAccountIdentity string, lr *ListRange) (*AuditTrailEvent, error) {
 	var auditTrailEvent AuditTrailEvent
 	return &auditTrailEvent, s.Get(ctx, &auditTrailEvent, fmt.Sprintf("/enterprise-accounts/%v/events", enterpriseAccountIdentity), nil, lr)
@@ -1901,20 +1910,6 @@ type Domain struct {
 	Status    string    `json:"status" url:"status,key"`         // status of this record's cname
 	UpdatedAt time.Time `json:"updated_at" url:"updated_at,key"` // when domain was updated
 }
-type DomainCreateDeprecatedOpts struct {
-	Hostname string `json:"hostname" url:"hostname,key"` // full hostname
-}
-
-// Create a new domain. Deprecated in favor of this same endpoint, but
-// with a new required attribute of `sni_endpoint`. During the
-// transitional phase sni_endpoint can be omitted entirely (current
-// behavior), can be a valid id, or can be null which will skip
-// auto-association.
-func (s *Service) DomainCreateDeprecated(ctx context.Context, appIdentity string, o DomainCreateDeprecatedOpts) (*Domain, error) {
-	var domain Domain
-	return &domain, s.Post(ctx, &domain, fmt.Sprintf("/apps/%v/domains", appIdentity), o)
-}
-
 type DomainCreateOpts struct {
 	Hostname    string  `json:"hostname" url:"hostname,key"`         // full hostname
 	SniEndpoint *string `json:"sni_endpoint" url:"sni_endpoint,key"` // null or unique identifier or name for SNI endpoint
@@ -2108,6 +2103,51 @@ func (s *Service) EnterpriseAccountUpdate(ctx context.Context, enterpriseAccount
 	return &enterpriseAccount, s.Patch(ctx, &enterpriseAccount, fmt.Sprintf("/enterprise-accounts/%v", enterpriseAccountIdentity), o)
 }
 
+// Usage for an enterprise account at a daily resolution.
+type EnterpriseAccountDailyUsage struct {
+	Addons  float64 `json:"addons" url:"addons,key"`   // total add-on credits used
+	Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
+	Date    string  `json:"date" url:"date,key"`       // date of the usage
+	Dynos   float64 `json:"dynos" url:"dynos,key"`     // dynos used
+	ID      string  `json:"id" url:"id,key"`           // enterprise account identifier
+	Name    string  `json:"name" url:"name,key"`       // name of the enterprise account
+	Partner float64 `json:"partner" url:"partner,key"` // total add-on credits used for third party add-ons
+	Space   float64 `json:"space" url:"space,key"`     // space credits used
+	Teams   []struct {
+		Addons float64 `json:"addons" url:"addons,key"` // total add-on credits used
+		Apps   []struct {
+			Addons  float64 `json:"addons" url:"addons,key"`     // total add-on credits used
+			AppName string  `json:"app_name" url:"app_name,key"` // unique name of app
+			Data    float64 `json:"data" url:"data,key"`         // total add-on credits used for first party add-ons
+			Dynos   float64 `json:"dynos" url:"dynos,key"`       // dynos used
+			Partner float64 `json:"partner" url:"partner,key"`   // total add-on credits used for third party add-ons
+		} `json:"apps" url:"apps,key"` // app usage in the team
+		Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
+		Dynos   float64 `json:"dynos" url:"dynos,key"`     // dynos used
+		ID      string  `json:"id" url:"id,key"`           // team identifier
+		Name    string  `json:"name" url:"name,key"`       // name of the team
+		Partner float64 `json:"partner" url:"partner,key"` // total add-on credits used for third party add-ons
+		Space   float64 `json:"space" url:"space,key"`     // space credits used
+	} `json:"teams" url:"teams,key"` // usage by team
+}
+type EnterpriseAccountDailyUsageInfoOpts struct {
+	End   *string `json:"end,omitempty" url:"end,omitempty,key"` // range end date
+	Start string  `json:"start" url:"start,key"`                 // range start date
+}
+type EnterpriseAccountDailyUsageInfoResult []EnterpriseAccountDailyUsage
+
+// Retrieves usage for an enterprise account for a range of days. Start
+// and end dates can be specified as query parameters using the date
+// format YYYY-MM-DD. The enterprise account identifier can be found
+// from the [enterprise account
+// list](https://devcenter.heroku.com/articles/platform-api-reference#ent
+// erprise-account-list).
+//
+func (s *Service) EnterpriseAccountDailyUsageInfo(ctx context.Context, enterpriseAccountID string, o EnterpriseAccountDailyUsageInfoOpts, lr *ListRange) (EnterpriseAccountDailyUsageInfoResult, error) {
+	var enterpriseAccountDailyUsage EnterpriseAccountDailyUsageInfoResult
+	return enterpriseAccountDailyUsage, s.Get(ctx, &enterpriseAccountDailyUsage, fmt.Sprintf("/enterprise-accounts/%v/usage/daily", enterpriseAccountID), o, lr)
+}
+
 // Enterprise account members are users with access to an enterprise
 // account.
 type EnterpriseAccountMember struct {
@@ -2173,47 +2213,8 @@ func (s *Service) EnterpriseAccountMemberDelete(ctx context.Context, enterpriseA
 	return &enterpriseAccountMember, s.Delete(ctx, &enterpriseAccountMember, fmt.Sprintf("/enterprise-accounts/%v/members/%v", enterpriseAccountIdentity, enterpriseAccountMemberUserIdentity))
 }
 
-// Usage for an enterprise account at a daily resolution.
-type EnterpriseAccountUsageDaily struct {
-	Addons  float64 `json:"addons" url:"addons,key"`   // total add-on credits used
-	Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
-	Date    string  `json:"date" url:"date,key"`       // date of the usage
-	Dynos   float64 `json:"dynos" url:"dynos,key"`     // dynos used
-	ID      string  `json:"id" url:"id,key"`           // enterprise account identifier
-	Name    string  `json:"name" url:"name,key"`       // name of the enterprise account
-	Partner float64 `json:"partner" url:"partner,key"` // total add-on credits used for third party add-ons
-	Space   float64 `json:"space" url:"space,key"`     // space credits used
-	Teams   []struct {
-		Addons float64 `json:"addons" url:"addons,key"` // total add-on credits used
-		Apps   []struct {
-			Addons  float64 `json:"addons" url:"addons,key"`     // total add-on credits used
-			AppName string  `json:"app_name" url:"app_name,key"` // unique name of app
-			Data    float64 `json:"data" url:"data,key"`         // total add-on credits used for first party add-ons
-			Dynos   float64 `json:"dynos" url:"dynos,key"`       // dynos used
-			Partner float64 `json:"partner" url:"partner,key"`   // total add-on credits used for third party add-ons
-		} `json:"apps" url:"apps,key"` // app usage in the team
-		Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
-		Dynos   float64 `json:"dynos" url:"dynos,key"`     // dynos used
-		ID      string  `json:"id" url:"id,key"`           // team identifier
-		Name    string  `json:"name" url:"name,key"`       // name of the team
-		Partner float64 `json:"partner" url:"partner,key"` // total add-on credits used for third party add-ons
-		Space   float64 `json:"space" url:"space,key"`     // space credits used
-	} `json:"teams" url:"teams,key"` // usage by team
-}
-type EnterpriseAccountUsageDailyInfoResult []EnterpriseAccountUsageDaily
-
-// Retrieves usage for an enterprise account for a range of days. Start
-// and end dates can be specified as query parameters using the date
-// format, YYYY-MM-DD format. For example,
-// '/enterprise-accounts/example-account/usage/daily?start=2019-01-01&end
-// =2019-01-31' specifies all days in January for 2019.
-func (s *Service) EnterpriseAccountUsageDailyInfo(ctx context.Context, enterpriseAccountID string, lr *ListRange) (EnterpriseAccountUsageDailyInfoResult, error) {
-	var enterpriseAccountUsageDaily EnterpriseAccountUsageDailyInfoResult
-	return enterpriseAccountUsageDaily, s.Get(ctx, &enterpriseAccountUsageDaily, fmt.Sprintf("/enterprise-accounts/%v/usage/daily", enterpriseAccountID), nil, lr)
-}
-
 // Usage for an enterprise account at a monthly resolution.
-type EnterpriseAccountUsageMonthly struct {
+type EnterpriseAccountMonthlyUsage struct {
 	Addons  float64 `json:"addons" url:"addons,key"`   // total add-on credits used
 	Connect float64 `json:"connect" url:"connect,key"` // average connect rows synced
 	Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
@@ -2241,17 +2242,23 @@ type EnterpriseAccountUsageMonthly struct {
 		Space   float64 `json:"space" url:"space,key"`     // space credits used
 	} `json:"teams" url:"teams,key"` // usage by team
 }
-type EnterpriseAccountUsageMonthlyInfoResult []EnterpriseAccountUsageMonthly
+type EnterpriseAccountMonthlyUsageInfoOpts struct {
+	End   *string `json:"end,omitempty" url:"end,omitempty,key"` // range end date
+	Start string  `json:"start" url:"start,key"`                 // range start date
+}
+type EnterpriseAccountMonthlyUsageInfoResult []EnterpriseAccountMonthlyUsage
 
 // Retrieves usage for an enterprise account for a range of months.
 // Start and end dates can be specified as query parameters using the
-// date format, YYYY-MM format. For example,
-// '/enterprise-accounts/example-account/usage/monthly?start=2019-01&end=
-// 2019-02' specifies usage in January and February for 2019. If no end
-// date is specified, one month of usage is returned.
-func (s *Service) EnterpriseAccountUsageMonthlyInfo(ctx context.Context, enterpriseAccountID string, lr *ListRange) (EnterpriseAccountUsageMonthlyInfoResult, error) {
-	var enterpriseAccountUsageMonthly EnterpriseAccountUsageMonthlyInfoResult
-	return enterpriseAccountUsageMonthly, s.Get(ctx, &enterpriseAccountUsageMonthly, fmt.Sprintf("/enterprise-accounts/%v/usage/monthly", enterpriseAccountID), nil, lr)
+// date format YYYY-MM. If no end date is specified, one month of usage
+// is returned. The enterprise account identifier can be found from the
+// [enterprise account
+// list](https://devcenter.heroku.com/articles/platform-api-reference#ent
+// erprise-account-list).
+//
+func (s *Service) EnterpriseAccountMonthlyUsageInfo(ctx context.Context, enterpriseAccountID string, o EnterpriseAccountMonthlyUsageInfoOpts, lr *ListRange) (EnterpriseAccountMonthlyUsageInfoResult, error) {
+	var enterpriseAccountMonthlyUsage EnterpriseAccountMonthlyUsageInfoResult
+	return enterpriseAccountMonthlyUsage, s.Get(ctx, &enterpriseAccountMonthlyUsage, fmt.Sprintf("/enterprise-accounts/%v/usage/monthly", enterpriseAccountID), o, lr)
 }
 
 // Filters are special endpoints to allow for API consumers to specify a
@@ -2375,7 +2382,8 @@ func (s *Service) FormationUpdate(ctx context.Context, appIdentity string, forma
 	return &formation, s.Patch(ctx, &formation, fmt.Sprintf("/apps/%v/formation/%v", appIdentity, formationIdentity), o)
 }
 
-// Identity Providers represent the SAML configuration of an Team.
+// Identity Providers represent the SAML configuration of an Enterprise
+// Account or Team.
 type IdentityProvider struct {
 	Certificate  string    `json:"certificate" url:"certificate,key"` // raw contents of the public certificate (eg: .crt or .pem file)
 	CreatedAt    time.Time `json:"created_at" url:"created_at,key"`   // when provider record was created
@@ -3086,8 +3094,9 @@ func (s *Service) PipelineUpdate(ctx context.Context, pipelineID string, o Pipel
 type PipelineListResult []Pipeline
 
 // List existing pipelines.
-func (s *Service) PipelineList(ctx context.Context, lr *ListRange) error {
-	return s.Get(ctx, nil, fmt.Sprintf("/pipelines"), nil, lr)
+func (s *Service) PipelineList(ctx context.Context, lr *ListRange) (PipelineListResult, error) {
+	var pipeline PipelineListResult
+	return pipeline, s.Get(ctx, &pipeline, fmt.Sprintf("/pipelines"), nil, lr)
 }
 
 // Information about latest builds of apps in a pipeline.
@@ -3130,9 +3139,9 @@ type PipelineBuildListResult []struct {
 }
 
 // List latest builds for each app in a pipeline
-func (s *Service) PipelineBuildList(ctx context.Context, pipelineIdentity string, lr *ListRange) (PipelineBuildListResult, error) {
+func (s *Service) PipelineBuildList(ctx context.Context, pipelineID string, lr *ListRange) (PipelineBuildListResult, error) {
 	var pipelineBuild PipelineBuildListResult
-	return pipelineBuild, s.Get(ctx, &pipelineBuild, fmt.Sprintf("/pipelines/%v/latest-builds", pipelineIdentity), nil, lr)
+	return pipelineBuild, s.Get(ctx, &pipelineBuild, fmt.Sprintf("/pipelines/%v/latest-builds", pipelineID), nil, lr)
 }
 
 // Pipeline Config Vars allow you to manage the configuration
@@ -3271,9 +3280,9 @@ type PipelineDeploymentListResult []struct {
 }
 
 // List latest slug releases for each app in a pipeline
-func (s *Service) PipelineDeploymentList(ctx context.Context, pipelineIdentity string, lr *ListRange) (PipelineDeploymentListResult, error) {
+func (s *Service) PipelineDeploymentList(ctx context.Context, pipelineID string, lr *ListRange) (PipelineDeploymentListResult, error) {
 	var pipelineDeployment PipelineDeploymentListResult
-	return pipelineDeployment, s.Get(ctx, &pipelineDeployment, fmt.Sprintf("/pipelines/%v/latest-deployments", pipelineIdentity), nil, lr)
+	return pipelineDeployment, s.Get(ctx, &pipelineDeployment, fmt.Sprintf("/pipelines/%v/latest-deployments", pipelineID), nil, lr)
 }
 
 // Promotions allow you to move code from an app in a pipeline to all
@@ -3376,9 +3385,9 @@ type PipelineReleaseListResult []struct {
 }
 
 // List latest releases for each app in a pipeline
-func (s *Service) PipelineReleaseList(ctx context.Context, pipelineIdentity string, lr *ListRange) (PipelineReleaseListResult, error) {
+func (s *Service) PipelineReleaseList(ctx context.Context, pipelineID string, lr *ListRange) (PipelineReleaseListResult, error) {
 	var pipelineRelease PipelineReleaseListResult
-	return pipelineRelease, s.Get(ctx, &pipelineRelease, fmt.Sprintf("/pipelines/%v/latest-releases", pipelineIdentity), nil, lr)
+	return pipelineRelease, s.Get(ctx, &pipelineRelease, fmt.Sprintf("/pipelines/%v/latest-releases", pipelineID), nil, lr)
 }
 
 // A pipeline's stack is determined by the apps in the pipeline. This is
@@ -3394,9 +3403,9 @@ type PipelineStack struct {
 
 // The stack for a given pipeline, used for CI and Review Apps that have
 // no stack defined in app.json.
-func (s *Service) PipelineStackDefaultStack(ctx context.Context, pipelineIdentity string) (*PipelineStack, error) {
+func (s *Service) PipelineStackDefaultStack(ctx context.Context, pipelineID string) (*PipelineStack, error) {
 	var pipelineStack PipelineStack
-	return &pipelineStack, s.Get(ctx, &pipelineStack, fmt.Sprintf("/pipelines/%v/pipeline-stack", pipelineIdentity), nil, nil)
+	return &pipelineStack, s.Get(ctx, &pipelineStack, fmt.Sprintf("/pipelines/%v/pipeline-stack", pipelineID), nil, nil)
 }
 
 // A pipeline transfer is the process of changing pipeline ownership
@@ -3802,12 +3811,26 @@ func (s *Service) SmsNumberConfirm(ctx context.Context, accountIdentity string) 
 // SNI Endpoint is a public address serving a custom SSL cert for HTTPS
 // traffic, using the SNI TLS extension, to a Heroku app.
 type SniEndpoint struct {
-	CertificateChain string `json:"certificate_chain" url:"certificate_chain,key"` // raw contents of the public certificate chain (eg: .crt or .pem file)
-	CName            string `json:"cname" url:"cname,key"`                         // deprecated; refer to GET /apps/:id/domains for valid CNAMEs for this
-	// app
-	CreatedAt time.Time `json:"created_at" url:"created_at,key"` // when endpoint was created
-	ID        string    `json:"id" url:"id,key"`                 // unique identifier of this SNI endpoint
-	Name      string    `json:"name" url:"name,key"`             // unique name for SNI endpoint
+	App struct {
+		ID   string `json:"id" url:"id,key"`     // unique identifier of app
+		Name string `json:"name" url:"name,key"` // unique name of app
+	} `json:"app" url:"app,key"` // application that this SSL certificate is on
+	CertificateChain string    `json:"certificate_chain" url:"certificate_chain,key"` // raw contents of the public certificate chain (eg: .crt or .pem file)
+	CreatedAt        time.Time `json:"created_at" url:"created_at,key"`               // when endpoint was created
+	DisplayName      *string   `json:"display_name" url:"display_name,key"`           // unique name for SSL certificate
+	Domains          []string  `json:"domains" url:"domains,key"`                     // domains associated with this SSL certificate
+	ID               string    `json:"id" url:"id,key"`                               // unique identifier of this SNI endpoint
+	Name             string    `json:"name" url:"name,key"`                           // unique name for SNI endpoint
+	SSLCert          struct {
+		IsCaSigned   bool          `json:"ca_signed?" url:"ca_signed?,key"`
+		CertDomains  []interface{} `json:"cert_domains" url:"cert_domains,key"`
+		ExpiresAt    time.Time     `json:"expires_at" url:"expires_at,key"`
+		ID           string        `json:"id" url:"id,key"` // unique identifier of this SSL certificate
+		Issuer       string        `json:"issuer" url:"issuer,key"`
+		IsSelfSigned bool          `json:"self_signed?" url:"self_signed?,key"`
+		StartsAt     time.Time     `json:"starts_at" url:"starts_at,key"`
+		Subject      string        `json:"subject" url:"subject,key"`
+	} `json:"ssl_cert" url:"ssl_cert,key"` // certificate provided by this endpoint
 	UpdatedAt time.Time `json:"updated_at" url:"updated_at,key"` // when SNI endpoint was updated
 }
 type SniEndpointCreateOpts struct {
@@ -3875,7 +3898,7 @@ func (s *Service) SourceCreateDeprecated(ctx context.Context, appIdentity string
 }
 
 // A space is an isolated, highly available, secure app execution
-// environments, running in the modern VPC substrate.
+// environment.
 type Space struct {
 	CIDR string `json:"cidr" url:"cidr,key"` // The RFC-1918 CIDR the Private Space will use. It must be a /16 in
 	// 10.0.0.0/8, 172.16.0.0/12 or 192.168.0.0/16
@@ -3936,6 +3959,8 @@ type SpaceCreateOpts struct {
 	DataCIDR *string `json:"data_cidr,omitempty" url:"data_cidr,omitempty,key"` // The RFC-1918 CIDR that the Private Space will use for the
 	// Heroku-managed peering connection that's automatically created when
 	// using Heroku Data add-ons. It must be between a /16 and a /20
+	LogDrainURL *string `json:"log_drain_url,omitempty" url:"log_drain_url,omitempty,key"` // URL to which all apps will drain logs. Only settable during space
+	// creation and enables direct logging. Must use HTTPS.
 	Name   string  `json:"name" url:"name,key"`                         // unique name of space
 	Region *string `json:"region,omitempty" url:"region,omitempty,key"` // unique identifier of region
 	Shield *bool   `json:"shield,omitempty" url:"shield,omitempty,key"` // true if this space has shield enabled
@@ -4073,82 +4098,6 @@ func (s *Service) SpaceTransferTransfer(ctx context.Context, spaceIdentity strin
 	return &spaceTransfer, s.Post(ctx, &spaceTransfer, fmt.Sprintf("/spaces/%v/transfer", spaceIdentity), o)
 }
 
-// [SSL Endpoint](https://devcenter.heroku.com/articles/ssl-endpoint) is
-// a public address serving custom SSL cert for HTTPS traffic to a
-// Heroku app. Note that an app must have the `ssl:endpoint` add-on
-// installed before it can provision an SSL Endpoint using these APIs.
-type SSLEndpoint struct {
-	App struct {
-		ID   string `json:"id" url:"id,key"`     // unique identifier of app
-		Name string `json:"name" url:"name,key"` // unique name of app
-	} `json:"app" url:"app,key"` // application associated with this ssl-endpoint
-	CertificateChain string    `json:"certificate_chain" url:"certificate_chain,key"` // raw contents of the public certificate chain (eg: .crt or .pem file)
-	CName            string    `json:"cname" url:"cname,key"`                         // canonical name record, the address to point a domain at
-	CreatedAt        time.Time `json:"created_at" url:"created_at,key"`               // when endpoint was created
-	DisplayName      string    `json:"display_name" url:"display_name,key"`           // unique name for SSL endpoint
-	Domains          []string  `json:"domains" url:"domains,key"`                     // domains associated with this endpoint
-	ID               string    `json:"id" url:"id,key"`                               // unique identifier of this SSL endpoint
-	Name             string    `json:"name" url:"name,key"`                           // unique name for SSL endpoint
-	SSLCert          struct {
-		IsCaSigned   bool          `json:"ca_signed?" url:"ca_signed?,key"`
-		CertDomains  []interface{} `json:"cert_domains" url:"cert_domains,key"`
-		ExpiresAt    time.Time     `json:"expires_at" url:"expires_at,key"`
-		ID           string        `json:"id" url:"id,key"` // unique identifier of this SSL certificate
-		Issuer       string        `json:"issuer" url:"issuer,key"`
-		IsSelfSigned bool          `json:"self_signed?" url:"self_signed?,key"`
-		StartsAt     time.Time     `json:"starts_at" url:"starts_at,key"`
-		Subject      string        `json:"subject" url:"subject,key"`
-	} `json:"ssl_cert" url:"ssl_cert,key"` // certificate provided by this endpoint
-	UpdatedAt time.Time `json:"updated_at" url:"updated_at,key"` // when endpoint was updated
-}
-type SSLEndpointCreateOpts struct {
-	CertificateChain string `json:"certificate_chain" url:"certificate_chain,key"`       // raw contents of the public certificate chain (eg: .crt or .pem file)
-	Preprocess       *bool  `json:"preprocess,omitempty" url:"preprocess,omitempty,key"` // allow Heroku to modify an uploaded public certificate chain if deemed
-	// advantageous by adding missing intermediaries, stripping unnecessary
-	// ones, etc.
-	PrivateKey string `json:"private_key" url:"private_key,key"` // contents of the private key (eg .key file)
-}
-
-// Create a new SSL endpoint.
-func (s *Service) SSLEndpointCreate(ctx context.Context, appIdentity string, o SSLEndpointCreateOpts) (*SSLEndpoint, error) {
-	var sslEndpoint SSLEndpoint
-	return &sslEndpoint, s.Post(ctx, &sslEndpoint, fmt.Sprintf("/apps/%v/ssl-endpoints", appIdentity), o)
-}
-
-// Delete existing SSL endpoint.
-func (s *Service) SSLEndpointDelete(ctx context.Context, appIdentity string, sslEndpointIdentity string) (*SSLEndpoint, error) {
-	var sslEndpoint SSLEndpoint
-	return &sslEndpoint, s.Delete(ctx, &sslEndpoint, fmt.Sprintf("/apps/%v/ssl-endpoints/%v", appIdentity, sslEndpointIdentity))
-}
-
-// Info for existing SSL endpoint.
-func (s *Service) SSLEndpointInfo(ctx context.Context, appIdentity string, sslEndpointIdentity string) (*SSLEndpoint, error) {
-	var sslEndpoint SSLEndpoint
-	return &sslEndpoint, s.Get(ctx, &sslEndpoint, fmt.Sprintf("/apps/%v/ssl-endpoints/%v", appIdentity, sslEndpointIdentity), nil, nil)
-}
-
-type SSLEndpointListResult []SSLEndpoint
-
-// List existing SSL endpoints.
-func (s *Service) SSLEndpointList(ctx context.Context, appIdentity string, lr *ListRange) (SSLEndpointListResult, error) {
-	var sslEndpoint SSLEndpointListResult
-	return sslEndpoint, s.Get(ctx, &sslEndpoint, fmt.Sprintf("/apps/%v/ssl-endpoints", appIdentity), nil, lr)
-}
-
-type SSLEndpointUpdateOpts struct {
-	CertificateChain *string `json:"certificate_chain,omitempty" url:"certificate_chain,omitempty,key"` // raw contents of the public certificate chain (eg: .crt or .pem file)
-	Preprocess       *bool   `json:"preprocess,omitempty" url:"preprocess,omitempty,key"`               // allow Heroku to modify an uploaded public certificate chain if deemed
-	// advantageous by adding missing intermediaries, stripping unnecessary
-	// ones, etc.
-	PrivateKey *string `json:"private_key,omitempty" url:"private_key,omitempty,key"` // contents of the private key (eg .key file)
-}
-
-// Update an existing SSL endpoint.
-func (s *Service) SSLEndpointUpdate(ctx context.Context, appIdentity string, sslEndpointIdentity string, o SSLEndpointUpdateOpts) (*SSLEndpoint, error) {
-	var sslEndpoint SSLEndpoint
-	return &sslEndpoint, s.Patch(ctx, &sslEndpoint, fmt.Sprintf("/apps/%v/ssl-endpoints/%v", appIdentity, sslEndpointIdentity), o)
-}
-
 // Stacks are the different application execution environments available
 // in the Heroku platform.
 type Stack struct {
@@ -4186,8 +4135,13 @@ type Team struct {
 	} `json:"enterprise_account" url:"enterprise_account,key"`
 	ID               string `json:"id" url:"id,key"` // unique identifier of team
 	IdentityProvider *struct {
-		ID   string `json:"id" url:"id,key"`     // unique identifier of this identity provider
-		Slug string `json:"slug" url:"slug,key"` // user-friendly unique identifier for this identity provider
+		ID    string `json:"id" url:"id,key"`     // unique identifier of this identity provider
+		Name  string `json:"name" url:"name,key"` // user-friendly unique identifier for this identity provider
+		Owner struct {
+			ID   string `json:"id" url:"id,key"`     // unique identifier of the owner
+			Name string `json:"name" url:"name,key"` // name of the owner
+			Type string `json:"type" url:"type,key"` // type of the owner
+		} `json:"owner" url:"owner,key"` // entity that owns this identity provider
 	} `json:"identity_provider" url:"identity_provider,key"` // Identity Provider associated with the Team
 	MembershipLimit     *float64  `json:"membership_limit" url:"membership_limit,key"`         // upper limit of members allowed in a team.
 	Name                string    `json:"name" url:"name,key"`                                 // unique name of team
@@ -4498,6 +4452,41 @@ func (s *Service) TeamAppPermissionList(ctx context.Context, lr *ListRange) (Tea
 	return teamAppPermission, s.Get(ctx, &teamAppPermission, fmt.Sprintf("/teams/permissions"), nil, lr)
 }
 
+// Usage for an enterprise team at a daily resolution.
+type TeamDailyUsage struct {
+	Addons float64 `json:"addons" url:"addons,key"` // total add-on credits used
+	Apps   []struct {
+		Addons  float64 `json:"addons" url:"addons,key"`     // total add-on credits used
+		AppName string  `json:"app_name" url:"app_name,key"` // unique name of app
+		Data    float64 `json:"data" url:"data,key"`         // total add-on credits used for first party add-ons
+		Dynos   float64 `json:"dynos" url:"dynos,key"`       // dynos used
+		Partner float64 `json:"partner" url:"partner,key"`   // total add-on credits used for third party add-ons
+	} `json:"apps" url:"apps,key"` // app usage in the team
+	Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
+	Date    string  `json:"date" url:"date,key"`       // date of the usage
+	Dynos   float64 `json:"dynos" url:"dynos,key"`     // dynos used
+	ID      string  `json:"id" url:"id,key"`           // team identifier
+	Name    string  `json:"name" url:"name,key"`       // name of the team
+	Partner float64 `json:"partner" url:"partner,key"` // total add-on credits used for third party add-ons
+	Space   float64 `json:"space" url:"space,key"`     // space credits used
+}
+type TeamDailyUsageInfoOpts struct {
+	End   *string `json:"end,omitempty" url:"end,omitempty,key"` // range end date
+	Start string  `json:"start" url:"start,key"`                 // range start date
+}
+type TeamDailyUsageInfoResult []TeamDailyUsage
+
+// Retrieves usage for an enterprise team for a range of days. Start and
+// end dates can be specified as query parameters using the date format
+// YYYY-MM-DD. The team identifier can be found from the [team list
+// endpoint](https://devcenter.heroku.com/articles/platform-api-reference
+// #team-list).
+//
+func (s *Service) TeamDailyUsageInfo(ctx context.Context, teamID string, o TeamDailyUsageInfoOpts, lr *ListRange) (TeamDailyUsageInfoResult, error) {
+	var teamDailyUsage TeamDailyUsageInfoResult
+	return teamDailyUsage, s.Get(ctx, &teamDailyUsage, fmt.Sprintf("/teams/%v/usage/daily", teamID), o, lr)
+}
+
 // A team feature represents a feature enabled on a team account.
 type TeamFeature struct {
 	CreatedAt     time.Time `json:"created_at" url:"created_at,key"`         // when team feature was created
@@ -4768,12 +4757,48 @@ func (s *Service) TeamMemberListByMember(ctx context.Context, teamIdentity strin
 	return teamMember, s.Get(ctx, &teamMember, fmt.Sprintf("/teams/%v/members/%v/apps", teamIdentity, teamMemberIdentity), nil, lr)
 }
 
+// Usage for an enterprise team at a monthly resolution.
+type TeamMonthlyUsage struct {
+	Addons float64 `json:"addons" url:"addons,key"` // total add-on credits used
+	Apps   []struct {
+		Addons  float64 `json:"addons" url:"addons,key"`     // total add-on credits used
+		AppName string  `json:"app_name" url:"app_name,key"` // unique name of app
+		Data    float64 `json:"data" url:"data,key"`         // total add-on credits used for first party add-ons
+		Dynos   float64 `json:"dynos" url:"dynos,key"`       // dynos used
+		Partner float64 `json:"partner" url:"partner,key"`   // total add-on credits used for third party add-ons
+	} `json:"apps" url:"apps,key"` // app usage in the team
+	Connect float64 `json:"connect" url:"connect,key"` // average connect rows synced
+	Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
+	Dynos   float64 `json:"dynos" url:"dynos,key"`     // dynos used
+	ID      string  `json:"id" url:"id,key"`           // team identifier
+	Month   string  `json:"month" url:"month,key"`     // year and month of the usage
+	Name    string  `json:"name" url:"name,key"`       // name of the team
+	Partner float64 `json:"partner" url:"partner,key"` // total add-on credits used for third party add-ons
+	Space   float64 `json:"space" url:"space,key"`     // space credits used
+}
+type TeamMonthlyUsageInfoOpts struct {
+	End   *string `json:"end,omitempty" url:"end,omitempty,key"` // range end date
+	Start string  `json:"start" url:"start,key"`                 // range start date
+}
+type TeamMonthlyUsageInfoResult []TeamMonthlyUsage
+
+// Retrieves usage for an enterprise team for a range of months. Start
+// and end dates can be specified as query parameters using the date,
+// YYYY-MM. If no end date is specified, one month of usage is returned.
+// The team identifier can be found from the [team list
+// endpoint](https://devcenter.heroku.com/articles/platform-api-reference
+// #team-list).
+//
+func (s *Service) TeamMonthlyUsageInfo(ctx context.Context, teamID string, o TeamMonthlyUsageInfoOpts, lr *ListRange) (TeamMonthlyUsageInfoResult, error) {
+	var teamMonthlyUsage TeamMonthlyUsageInfoResult
+	return teamMonthlyUsage, s.Get(ctx, &teamMonthlyUsage, fmt.Sprintf("/teams/%v/usage/monthly", teamID), o, lr)
+}
+
 // Tracks a Team's Preferences
 type TeamPreferences struct {
 	AddonsControls *bool `json:"addons-controls" url:"addons-controls,key"` // Whether add-on service rules should be applied to add-on
 	// installations
-	DefaultPermission   *string `json:"default-permission" url:"default-permission,key"`     // The default permission used when adding new members to the team
-	WhitelistingEnabled *bool   `json:"whitelisting-enabled" url:"whitelisting-enabled,key"` // Whether whitelisting rules should be applied to add-on installations
+	DefaultPermission *string `json:"default-permission" url:"default-permission,key"` // The default permission used when adding new members to the team
 }
 
 // Retrieve Team Preferences
@@ -4785,7 +4810,6 @@ func (s *Service) TeamPreferencesList(ctx context.Context, teamPreferencesIdenti
 type TeamPreferencesUpdateOpts struct {
 	AddonsControls *bool `json:"addons-controls,omitempty" url:"addons-controls,omitempty,key"` // Whether add-on service rules should be applied to add-on
 	// installations
-	WhitelistingEnabled *bool `json:"whitelisting-enabled,omitempty" url:"whitelisting-enabled,omitempty,key"` // Whether whitelisting rules should be applied to add-on installations
 }
 
 // Update Team Preferences
@@ -4795,7 +4819,7 @@ func (s *Service) TeamPreferencesUpdate(ctx context.Context, teamPreferencesIden
 }
 
 // A space is an isolated, highly available, secure app execution
-// environments, running in the modern VPC substrate.
+// environment.
 type TeamSpace struct{}
 type TeamSpaceListResult []struct {
 	CIDR string `json:"cidr" url:"cidr,key"` // The RFC-1918 CIDR the Private Space will use. It must be a /16 in
@@ -4826,68 +4850,6 @@ type TeamSpaceListResult []struct {
 func (s *Service) TeamSpaceList(ctx context.Context, teamIdentity string, lr *ListRange) (TeamSpaceListResult, error) {
 	var teamSpace TeamSpaceListResult
 	return teamSpace, s.Get(ctx, &teamSpace, fmt.Sprintf("/teams/%v/spaces", teamIdentity), nil, lr)
-}
-
-// Usage for an enterprise team at a daily resolution.
-type TeamUsageDaily struct {
-	Addons float64 `json:"addons" url:"addons,key"` // total add-on credits used
-	Apps   []struct {
-		Addons  float64 `json:"addons" url:"addons,key"`     // total add-on credits used
-		AppName string  `json:"app_name" url:"app_name,key"` // unique name of app
-		Data    float64 `json:"data" url:"data,key"`         // total add-on credits used for first party add-ons
-		Dynos   float64 `json:"dynos" url:"dynos,key"`       // dynos used
-		Partner float64 `json:"partner" url:"partner,key"`   // total add-on credits used for third party add-ons
-	} `json:"apps" url:"apps,key"` // app usage in the team
-	Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
-	Date    string  `json:"date" url:"date,key"`       // date of the usage
-	Dynos   float64 `json:"dynos" url:"dynos,key"`     // dynos used
-	ID      string  `json:"id" url:"id,key"`           // team identifier
-	Name    string  `json:"name" url:"name,key"`       // name of the team
-	Partner float64 `json:"partner" url:"partner,key"` // total add-on credits used for third party add-ons
-	Space   float64 `json:"space" url:"space,key"`     // space credits used
-}
-type TeamUsageDailyInfoResult []TeamUsageDaily
-
-// Retrieves usage for an enterprise team for a range of days. Start and
-// end dates can be specified as query parameters using the date format,
-// YYYY-MM-DD format. For example,
-// '/teams/example-team/usage?start=2019-01-01&end=2019-01-31' specifies
-// all days in January for 2019.
-func (s *Service) TeamUsageDailyInfo(ctx context.Context, teamID string, lr *ListRange) (TeamUsageDailyInfoResult, error) {
-	var teamUsageDaily TeamUsageDailyInfoResult
-	return teamUsageDaily, s.Get(ctx, &teamUsageDaily, fmt.Sprintf("/teams/%v/usage/daily", teamID), nil, lr)
-}
-
-// Usage for an enterprise team at a monthly resolution.
-type TeamUsageMonthly struct {
-	Addons float64 `json:"addons" url:"addons,key"` // total add-on credits used
-	Apps   []struct {
-		Addons  float64 `json:"addons" url:"addons,key"`     // total add-on credits used
-		AppName string  `json:"app_name" url:"app_name,key"` // unique name of app
-		Data    float64 `json:"data" url:"data,key"`         // total add-on credits used for first party add-ons
-		Dynos   float64 `json:"dynos" url:"dynos,key"`       // dynos used
-		Partner float64 `json:"partner" url:"partner,key"`   // total add-on credits used for third party add-ons
-	} `json:"apps" url:"apps,key"` // app usage in the team
-	Connect float64 `json:"connect" url:"connect,key"` // average connect rows synced
-	Data    float64 `json:"data" url:"data,key"`       // total add-on credits used for first party add-ons
-	Dynos   float64 `json:"dynos" url:"dynos,key"`     // dynos used
-	ID      string  `json:"id" url:"id,key"`           // team identifier
-	Month   string  `json:"month" url:"month,key"`     // year and month of the usage
-	Name    string  `json:"name" url:"name,key"`       // name of the team
-	Partner float64 `json:"partner" url:"partner,key"` // total add-on credits used for third party add-ons
-	Space   float64 `json:"space" url:"space,key"`     // space credits used
-}
-type TeamUsageMonthlyInfoResult []TeamUsageMonthly
-
-// Retrieves usage for an enterprise team for a range of months. Start
-// and end dates can be specified as query parameters using the date
-// format, YYYY-MM format. For example,
-// '/teams/example-team/usage?start=2019-01&end=2019-02' specifies usage
-// in January and February for 2019. If no end date is specified, one
-// month of usage is returned.
-func (s *Service) TeamUsageMonthlyInfo(ctx context.Context, teamID string, lr *ListRange) (TeamUsageMonthlyInfoResult, error) {
-	var teamUsageMonthly TeamUsageMonthlyInfoResult
-	return teamUsageMonthly, s.Get(ctx, &teamUsageMonthly, fmt.Sprintf("/teams/%v/usage/monthly", teamID), nil, lr)
 }
 
 // A single test case belonging to a test run
@@ -4970,11 +4932,10 @@ type TestRun struct {
 	Status        string    `json:"status" url:"status,key"`                   // current state of the test run
 	UpdatedAt     time.Time `json:"updated_at" url:"updated_at,key"`           // when test-run was updated
 	User          struct {
-		AcknowledgedMsa     bool       `json:"acknowledged_msa" url:"acknowledged_msa,key"`       // whether account has acknowledged the MSA terms of service
-		AcknowledgedMsaAt   *time.Time `json:"acknowledged_msa_at" url:"acknowledged_msa_at,key"` // when account has acknowledged the MSA terms of service
-		AllowTracking       bool       `json:"allow_tracking" url:"allow_tracking,key"`           // whether to allow third party web activity tracking
-		Beta                bool       `json:"beta" url:"beta,key"`                               // whether allowed to utilize beta Heroku features
-		CreatedAt           time.Time  `json:"created_at" url:"created_at,key"`                   // when account was created
+		AllowTracking       bool      `json:"allow_tracking" url:"allow_tracking,key"`             // whether to allow third party web activity tracking
+		Beta                bool      `json:"beta" url:"beta,key"`                                 // whether allowed to utilize beta Heroku features
+		CountryOfResidence  *string   `json:"country_of_residence" url:"country_of_residence,key"` // country where account owner resides
+		CreatedAt           time.Time `json:"created_at" url:"created_at,key"`                     // when account was created
 		DefaultOrganization *struct {
 			ID   string `json:"id" url:"id,key"`     // unique identifier of team
 			Name string `json:"name" url:"name,key"` // unique name of team
@@ -4988,7 +4949,8 @@ type TestRun struct {
 		Federated        bool       `json:"federated" url:"federated,key"`         // whether the user is federated and belongs to an Identity Provider
 		ID               string     `json:"id" url:"id,key"`                       // unique identifier of an account
 		IdentityProvider *struct {
-			ID           string `json:"id" url:"id,key"` // unique identifier of this identity provider
+			ID           string `json:"id" url:"id,key"`     // unique identifier of this identity provider
+			Name         string `json:"name" url:"name,key"` // user-friendly unique identifier for this identity provider
 			Organization struct {
 				Name string `json:"name" url:"name,key"` // unique name of team
 			} `json:"organization" url:"organization,key"`
@@ -5001,10 +4963,6 @@ type TestRun struct {
 				Name string `json:"name" url:"name,key"` // unique name of team
 			} `json:"team" url:"team,key"`
 		} `json:"identity_provider" url:"identity_provider,key"` // Identity Provider details for federated users.
-		ItalianCustomerTerms *string `json:"italian_customer_terms" url:"italian_customer_terms,key"` // whether account has acknowledged the Italian customer terms of
-		// service
-		ItalianPartnerTerms *string `json:"italian_partner_terms" url:"italian_partner_terms,key"` // whether account has acknowledged the Italian provider terms of
-		// service
 		LastLogin               *time.Time `json:"last_login" url:"last_login,key"`                               // when account last authorized with Heroku
 		Name                    *string    `json:"name" url:"name,key"`                                           // full name of the account owner
 		SmsNumber               *string    `json:"sms_number" url:"sms_number,key"`                               // SMS number of account
@@ -5158,41 +5116,12 @@ func (s *Service) VPNConnectionInfo(ctx context.Context, spaceIdentity string, v
 	return &vpnConnection, s.Get(ctx, &vpnConnection, fmt.Sprintf("/spaces/%v/vpn-connections/%v", spaceIdentity, vpnConnectionIdentity), nil, nil)
 }
 
-// Entities that have been whitelisted to be used by an Team
-type WhitelistedAddOnService struct {
-	AddedAt time.Time `json:"added_at" url:"added_at,key"` // when the add-on service was whitelisted
-	AddedBy struct {
-		Email string `json:"email" url:"email,key"` // unique email address of account
-		ID    string `json:"id" url:"id,key"`       // unique identifier of an account
-	} `json:"added_by" url:"added_by,key"` // the user which whitelisted the Add-on Service
-	AddonService struct {
-		HumanName string `json:"human_name" url:"human_name,key"` // human-readable name of the add-on service provider
-		ID        string `json:"id" url:"id,key"`                 // unique identifier of this add-on-service
-		Name      string `json:"name" url:"name,key"`             // unique name of this add-on-service
-	} `json:"addon_service" url:"addon_service,key"` // the Add-on Service whitelisted for use
-	ID string `json:"id" url:"id,key"` // unique identifier for this whitelisting entity
-}
-type WhitelistedAddOnServiceListByTeamResult []WhitelistedAddOnService
-
-// List all whitelisted Add-on Services for an Team
-func (s *Service) WhitelistedAddOnServiceListByTeam(ctx context.Context, teamIdentity string, lr *ListRange) (WhitelistedAddOnServiceListByTeamResult, error) {
-	var whitelistedAddOnService WhitelistedAddOnServiceListByTeamResult
-	return whitelistedAddOnService, s.Get(ctx, &whitelistedAddOnService, fmt.Sprintf("/teams/%v/whitelisted-addon-services", teamIdentity), nil, lr)
+type VPNConnectionUpdateOpts struct {
+	RoutableCidrs []string `json:"routable_cidrs" url:"routable_cidrs,key"` // Routable CIDRs of VPN
 }
 
-type WhitelistedAddOnServiceCreateByTeamOpts struct {
-	AddonService *string `json:"addon_service,omitempty" url:"addon_service,omitempty,key"` // name of the Add-on to whitelist
-}
-type WhitelistedAddOnServiceCreateByTeamResult []WhitelistedAddOnService
-
-// Whitelist an Add-on Service
-func (s *Service) WhitelistedAddOnServiceCreateByTeam(ctx context.Context, teamIdentity string, o WhitelistedAddOnServiceCreateByTeamOpts) (WhitelistedAddOnServiceCreateByTeamResult, error) {
-	var whitelistedAddOnService WhitelistedAddOnServiceCreateByTeamResult
-	return whitelistedAddOnService, s.Post(ctx, &whitelistedAddOnService, fmt.Sprintf("/teams/%v/whitelisted-addon-services", teamIdentity), o)
-}
-
-// Remove a whitelisted entity
-func (s *Service) WhitelistedAddOnServiceDeleteByTeam(ctx context.Context, teamIdentity string, whitelistedAddOnServiceIdentity string) (*WhitelistedAddOnService, error) {
-	var whitelistedAddOnService WhitelistedAddOnService
-	return &whitelistedAddOnService, s.Delete(ctx, &whitelistedAddOnService, fmt.Sprintf("/teams/%v/whitelisted-addon-services/%v", teamIdentity, whitelistedAddOnServiceIdentity))
+// Update a VPN connection in a private space.
+func (s *Service) VPNConnectionUpdate(ctx context.Context, spaceIdentity string, vpnConnectionIdentity string, o VPNConnectionUpdateOpts) (*VPNConnection, error) {
+	var vpnConnection VPNConnection
+	return &vpnConnection, s.Patch(ctx, &vpnConnection, fmt.Sprintf("/spaces/%v/vpn-connections/%v", spaceIdentity, vpnConnectionIdentity), o)
 }

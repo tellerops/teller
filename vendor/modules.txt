@@ -510,7 +510,7 @@ github.com/hashicorp/vault/sdk/helper/hclutil
 github.com/hashicorp/vault/sdk/helper/jsonutil
 github.com/hashicorp/vault/sdk/helper/parseutil
 github.com/hashicorp/vault/sdk/helper/strutil
-# github.com/heroku/heroku-go/v5 v5.2.1
+# github.com/heroku/heroku-go/v5 v5.5.0
 ## explicit; go 1.12
 github.com/heroku/heroku-go/v5
 # github.com/inconshreveable/mousetrap v1.0.0

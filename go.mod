@@ -25,7 +25,7 @@ require (
 	github.com/gopasspw/gopass v1.15.4
 	github.com/hashicorp/consul/api v1.8.1
 	github.com/hashicorp/vault/api v1.0.4
-	github.com/heroku/heroku-go/v5 v5.2.1
+	github.com/heroku/heroku-go/v5 v5.5.0
 	github.com/jftuga/ellipsis v1.0.0
 	github.com/joho/godotenv v1.3.0
 	github.com/karrick/godirwalk v1.16.1
