@@ -7,7 +7,7 @@ require (
 	github.com/1Password/connect-sdk-go v1.2.0
 	github.com/AlecAivazis/survey/v2 v2.2.8
 	github.com/Azure/azure-sdk-for-go v52.5.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.18
+	github.com/Azure/go-autorest/autorest v0.11.29
 	github.com/DopplerHQ/cli v0.0.0-20210309042056-414bede8a50e
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38
 	github.com/alecthomas/kong v0.2.15
@@ -48,13 +48,16 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4 // indirect
+require (
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
+)
 
 require (
 	filippo.io/age v1.1.1 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.13 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.22 // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.7 // indirect
 	github.com/Azure/go-autorest/autorest/azure/cli v0.4.2 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
@@ -101,7 +104,6 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect

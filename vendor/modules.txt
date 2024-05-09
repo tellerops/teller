@@ -32,12 +32,12 @@ github.com/Azure/azure-sdk-for-go/version
 # github.com/Azure/go-autorest v14.2.0+incompatible
 ## explicit
 github.com/Azure/go-autorest
-# github.com/Azure/go-autorest/autorest v0.11.18
-## explicit; go 1.12
+# github.com/Azure/go-autorest/autorest v0.11.29
+## explicit; go 1.15
 github.com/Azure/go-autorest/autorest
 github.com/Azure/go-autorest/autorest/azure
-# github.com/Azure/go-autorest/autorest/adal v0.9.13
-## explicit; go 1.12
+# github.com/Azure/go-autorest/autorest/adal v0.9.22
+## explicit; go 1.15
 github.com/Azure/go-autorest/autorest/adal
 # github.com/Azure/go-autorest/autorest/azure/auth v0.5.7
 ## explicit; go 1.12
@@ -365,9 +365,6 @@ github.com/dustin/go-humanize
 # github.com/fatih/color v1.14.1
 ## explicit; go 1.17
 github.com/fatih/color
-# github.com/form3tech-oss/jwt-go v3.2.2+incompatible
-## explicit
-github.com/form3tech-oss/jwt-go
 # github.com/godbus/dbus/v5 v5.1.0
 ## explicit; go 1.12
 github.com/godbus/dbus/v5
@@ -376,6 +373,9 @@ github.com/godbus/dbus/v5
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
+# github.com/golang-jwt/jwt/v4 v4.5.0
+## explicit; go 1.16
+github.com/golang-jwt/jwt/v4
 # github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 ## explicit
 github.com/golang/groupcache/lru
