@@ -102,6 +102,10 @@ var (
 
 //nolint
 func main() {
+	//print help if no command given
+	if len(os.Args) < 2 {
+		os.Args = append(os.Args, "--help")
+	}
 	ctx := kong.Parse(&CLI)
 
 	logger := logging.GetRoot()
