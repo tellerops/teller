@@ -17,6 +17,7 @@
 use std::env;
 
 use async_trait::async_trait;
+use base64::Engine;
 use consulrs::{
     api::kv::requests::{
         DeleteKeyRequestBuilder, ReadKeyRequestBuilder, ReadKeysRequestBuilder,
@@ -26,6 +27,7 @@ use consulrs::{
     error::ClientError,
     kv as ConsulKV,
 };
+use rs_consul::{Consul, ConsulError};
 use serde_derive::{Deserialize, Serialize};
 
 use super::ProviderKind;
@@ -77,7 +79,20 @@ fn xerr(pm: &PathMap, e: ClientError) -> Error {
     }
 }
 
+fn to_err(pm: &PathMap, e: ConsulError) -> Error {
+    match e {
+        ConsulError::UnexpectedResponseCode(hyper::http::StatusCode::NOT_FOUND, _) => {
+            Error::NotFound {
+                path: pm.path.clone(),
+                msg: "not found".to_string(),
+            }
+        }
+        _ => Error::Any(Box::from(e)),
+    }
+}
+
 pub struct HashiCorpConsul {
+    pub consul: Consul,
     pub client: ConsulClient,
     opts: HashiCorpConsulOptions,
     pub name: String,
@@ -86,7 +101,13 @@ pub struct HashiCorpConsul {
 impl HashiCorpConsul {
     #[must_use]
     pub fn with_client(name: &str, client: ConsulClient) -> Self {
+        let config = HashiCorpConsulOptions::default();
         Self {
+            consul: Consul::new(rs_consul::Config {
+                address: config.address.unwrap_or_default(),
+                token: config.token,
+                hyper_builder: Default::default(),
+            }),
             client,
             opts: HashiCorpConsulOptions::default(),
             name: name.to_string(),
@@ -120,14 +141,19 @@ impl HashiCorpConsul {
             .unwrap_or_default();
 
         let settings = ConsulClientSettingsBuilder::default()
-            .address(address)
-            .token(token)
+            .address(address.clone())
+            .token(token.clone())
             .build()
             .map_err(Box::from)?;
 
         let client = ConsulClient::new(settings).map_err(Box::from)?;
 
         Ok(Self {
+            consul: Consul::new(rs_consul::Config {
+                address,
+                token: Some(token),
+                hyper_builder: Default::default(),
+            }),
             client,
             opts,
             name: name.to_string(),
@@ -181,25 +207,38 @@ impl Provider for HashiCorpConsul {
     }
 
     async fn get(&self, pm: &PathMap) -> Result<Vec<KV>> {
-        let res = ConsulKV::read(
-            &self.client,
-            &pm.path,
-            Some(&mut self.prepare_get_builder_request()),
-        )
-        .await
-        .map_err(|e| xerr(pm, e))?;
+        let res = self
+            .consul
+            .read_key(rs_consul::ReadKeyRequest {
+                key: &pm.path,
+                datacenter: &self.opts.dc.clone().unwrap_or_default(),
+                recurse: false,
+                ..Default::default()
+            })
+            .await
+            .map_err(|e| to_err(pm, e))?;
 
         let mut results = vec![];
-        for kv_pair in res.response {
+        for kv_pair in res {
             let kv_value = kv_pair.value.ok_or_else(|| Error::NotFound {
                 path: pm.path.to_string(),
                 msg: "value not found".to_string(),
             })?;
 
-            let val: String = kv_value.try_into().map_err(|e| Error::GetError {
-                path: pm.path.to_string(),
-                msg: format!("could not decode Base64 value. err: {e:?}"),
-            })?;
+            let val = base64::engine::general_purpose::STANDARD
+                .decode(kv_value)
+                .map_err(|e| Error::GetError {
+                    path: pm.path.to_string(),
+                    msg: format!("could not decode Base64 value. err: {e:?}"),
+                })
+                .and_then(|bs| {
+                    std::str::from_utf8(&bs)
+                        .map_err(|e| Error::GetError {
+                            path: pm.path.to_string(),
+                            msg: format!("could not decode Base64 value. err: {e:?}"),
+                        })
+                        .map(std::string::ToString::to_string)
+                })?;
 
             let (_, key) = kv_pair.key.rsplit_once('/').unwrap_or(("", &kv_pair.key));
 
