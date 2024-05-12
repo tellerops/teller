@@ -285,6 +285,8 @@ mod tests {
     #[test]
     #[cfg(not(windows))]
     fn sanity_test() {
+        use std::time::Duration;
+
         if env::var("RUNNER_OS").unwrap_or_default() == "macOS" {
             return;
         }
@@ -303,6 +305,9 @@ mod tests {
             let data = serde_json::json!({
                 "address": server.external_url(),
             });
+
+            // banner is not enough, we have to wait for the image to stabilize
+            tokio::time::sleep(Duration::from_secs(2)).await;
 
             let p = Box::new(
                 super::HashiCorpConsul::new(
