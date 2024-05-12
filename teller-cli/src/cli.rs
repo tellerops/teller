@@ -12,7 +12,7 @@ use crate::{
 
 #[derive(Debug, Clone, Parser)] // requires `derive` feature
 #[command(name = "teller")]
-#[command(about = "A multi provider secret management tool", long_about = None)]
+#[command(about = "A multi provider secret management tool", version, long_about = None)]
 pub struct Cli {
     /// Path to your teller.yml config
     #[arg(short, long)]
