@@ -316,7 +316,7 @@ Example format:
 
 # Providers
 
-You can get a list of the providers and their described configuration values [in the documentation](https://docs.rs/teller).
+You can get a list of the providers and their described configuration values [in the documentation](https://docs.rs/teller-providers/latest/teller_providers/providers/index.html).
 
 ### Testing check list:
 
