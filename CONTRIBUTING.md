@@ -1,6 +1,6 @@
 # Contributing to the teller
 
-Teller is open source and we love to receive contributions from our community — you! 
+Teller is open source and we love to receive contributions from our community — you!
 
 There are many ways to contribute,
 from writing tutorials or blog posts,
@@ -23,7 +23,6 @@ or that there are particular issues that you should know about before implementi
 Generally, we require that you test any code you are adding or modifying.
 Once your changes are ready , submit for review and we will make sure will review it , your effort is much appreciated!
 
-
 ### Workflow
 
 All feature development and most bug fixes hit the master branch first.
@@ -31,4 +30,3 @@ Pull requests should be reviewed by someone with commit access.
 Once approved, the author of the pull request,
 or reviewer if the author does not have commit access,
 should "Squash and merge".
-

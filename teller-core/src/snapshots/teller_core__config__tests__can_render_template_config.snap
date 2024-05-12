@@ -1,0 +1,5 @@
+---
+source: teller-core/src/config.rs
+expression: config
+---
+"providers:\n  dotenv_1:\n    kind: dotenv\n    maps:\n    - id: ''\n      path: example/dev\n  inmem_1:\n    kind: inmem\n    maps:\n    - id: ''\n      path: example/dev\n"

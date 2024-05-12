@@ -1,0 +1,27 @@
+[package]
+name = "teller-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+serde_derive = { workspace = true }
+serde_variant = { workspace = true }
+lazy_static = { workspace = true }
+strum = { workspace = true }
+shell-words = "1"
+duct = "0.13.6"
+thiserror = { workspace = true }
+fs-err = "2.9.0"
+ignore = "*"
+unicode-width = "*"
+aho-corasick = { workspace = true }
+tera = { workspace = true }
+csv = "1.2.1"
+teller-providers = { version = "*", path = "../teller-providers" }
+
+[dev-dependencies]
+insta = { workspace = true }
+stringreader = "*"

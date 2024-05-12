@@ -1,0 +1,59 @@
+[package]
+name = "teller-providers"
+version = "0.1.0"
+edition = "2021"
+
+# [lib]
+# name = "teller-providers"
+
+[features]
+default = [
+    "hashicorp_vault",
+    "dotenv",
+    "ssm",
+    "aws_secretsmanager",
+    "google_secretmanager",
+    "hashicorp_consul",
+]
+
+ssm = ["aws", "dep:aws-sdk-ssm"]
+aws_secretsmanager = ["aws", "dep:aws-sdk-secretsmanager"]
+google_secretmanager = ["dep:google-secretmanager1", "dep:crc32c"]
+hashicorp_vault = ["dep:vaultrs", "dep:rustify"]
+dotenv = ["dep:dotenvy"]
+hashicorp_consul = ["dep:consulrs"]
+aws = ["dep:aws-config"]
+
+[dependencies]
+async-trait = { workspace = true }
+lazy_static = { workspace = true }
+serde_variant = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+serde_derive = { workspace = true }
+strum = { workspace = true }
+thiserror = { workspace = true }
+fs-err = "2.9.0"
+home = "0.5.5"
+# gcp
+google-secretmanager1 = { version = "5.0.2", optional = true }
+crc32c = { version = "0.6", optional = true }
+# aws
+aws-config = { version = "1.2.0", optional = true }
+# aws-ssm
+aws-sdk-ssm = { version = "1.22.0", optional = true }
+# aws-secretsmanager
+aws-sdk-secretsmanager = { version = "1.22.0", optional = true }
+# dotenv
+dotenvy = { version = "0.15.7", optional = true }
+# hashivault
+vaultrs = { version = "0.7.2", optional = true }
+rustify = { version = "0.5.3", optional = true }
+# HashiCorp Consul 
+consulrs = { git = "https://github.com/jmgilman/consulrs", optional = true, rev = "a14fddbdf3695e2e338145134c4b42f823e03370" }
+
+[dev-dependencies]
+insta = { workspace = true }
+dockertest-server = { version = "0.1.7", features = ["hashi", "cloud"] }
+tokio = { workspace = true }

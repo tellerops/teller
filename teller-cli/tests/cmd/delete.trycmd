@@ -1,0 +1,20 @@
+```console
+$ teller show
+[new (dotenv)]: DELETE_ME = tr***
+[new (dotenv)]: EMPTY = tr***
+
+$ teller delete --providers new --map-id one DELETE_ME
+
+$ teller show
+[new (dotenv)]: EMPTY = tr***
+
+$ teller delete --providers new --map-id one
+
+$ teller show
+? 1
+Error: NOT FOUND "new.env": file is empty
+
+Location:
+    [..]
+
+```

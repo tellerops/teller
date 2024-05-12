@@ -1,0 +1,33 @@
+# replace everything that starts with __V_
+
+targets:
+  - platform: win32
+    arch: x64
+    url_template: https://github.com/tellerops/teller/releases/download/v__VERSION__/teller-x86_64-windows.zip
+    archive: dist/releases/teller-x86_64-windows.zip
+  - platform: linux
+    arch: x64
+    url_template: https://github.com/tellerops/teller/releases/download/v__VERSION__/teller-x86_64-linux.tar.xz
+    archive: dist/releases/teller-x86_64-linux.tar.xz
+  - platform: darwin
+    arch: arm64
+    url_template: https://github.com/tellerops/teller/releases/download/v__VERSION__/teller-aarch64-macos.tar.xz
+    archive: dist/releases/teller-aarch64-macos.tar.xz
+
+brew:
+  name: teller
+  publish: false
+s/homebrew-tap
+  recipe_fname: teller.rb
+  recipe_template: |
+    class Teller < Formula
+      desc "desc"
+      homepage "http://github.com/tellerops/teller"
+      url "__URL__[arm64]"
+      version "__VERSION__"
+      sha256 "__SHA__[arm64]"
+
+      def install
+        bin.install "teller"
+      end
+    end

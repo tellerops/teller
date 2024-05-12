@@ -1,0 +1,9 @@
+```console
+$ teller -c teller.yml run --reset --shell -- node index.js
+hello from nodejs
+linus
+happy
+foo
+baz
+
+```

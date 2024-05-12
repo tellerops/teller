@@ -1,0 +1,41 @@
+```console
+$ teller -c teller.yml export yaml
+FOO_BAR: foo
+FOO_BAZ: baz
+PRINT_MOOD: happy
+PRINT_NAME: linus
+
+
+$ teller -c teller.yml export csv
+FOO_BAR,foo
+PRINT_NAME,linus
+FOO_BAZ,baz
+PRINT_MOOD,happy
+
+
+$ teller -c teller.yml export json
+{"FOO_BAR":"foo","FOO_BAZ":"baz","PRINT_MOOD":"happy","PRINT_NAME":"linus"}
+
+$ teller -c teller.yml export env
+FOO_BAR=foo
+PRINT_NAME=linus
+FOO_BAZ=baz
+PRINT_MOOD=happy
+
+
+$ teller -c teller.yml sh
+#!/bin/sh
+export FOO_BAR='foo'
+export PRINT_NAME='linus'
+export FOO_BAZ='baz'
+export PRINT_MOOD='happy'
+
+
+$ teller -c teller.yml env
+FOO_BAR=foo
+PRINT_NAME=linus
+FOO_BAZ=baz
+PRINT_MOOD=happy
+
+
+```

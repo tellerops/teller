@@ -1,0 +1,6 @@
+providers:
+  new:
+    kind: dotenv
+    maps:
+      - id: one
+        path: new.env

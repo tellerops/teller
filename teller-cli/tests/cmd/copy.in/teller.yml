@@ -1,0 +1,11 @@
+providers:
+  source:
+    kind: dotenv
+    maps:
+      - id: dev
+        path: source.env
+  target:
+    kind: dotenv
+    maps:
+      - id: prod
+        path: target.env

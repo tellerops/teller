@@ -1,0 +1,18 @@
+---
+source: teller-core/src/config.rs
+expression: config
+---
+providers:
+  dot_1:
+    kind: dotenv
+    maps:
+      - id: stg
+        path: VAR_development
+  hashi_1:
+    kind: hashicorp
+    maps:
+      - id: test-load
+        path: /DEV/users/user1
+        keys:
+          GITHUB_TOKEN: GITHUB_TOKEN
+          mg: FOO_BAR

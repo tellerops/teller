@@ -1,0 +1,18 @@
+providers:
+  hashi_1:
+    kind: hashicorp # name is = kind if empty
+    maps:
+      - id: test
+        path: /{{ get_env(name="TEST_LOAD_1", default="test") }}/users/user1
+        # if empty, map everything
+        # == means map to same key name
+        # otherwise key on left becomes right
+        # in the future: key_transform: camelize, snake_case for automapping the keys
+        keys:
+          GITHUB_TOKEN: ==
+          mg: FOO_BAR
+  dot_1:
+    kind: dotenv # name is = kind if empty
+    maps:
+      - id: test
+        path: VAR_{{ get_env(name="STAGE", default="development") }}

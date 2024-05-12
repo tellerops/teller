@@ -1,0 +1,5 @@
+---
+source: src/exec.rs
+expression: s
+---
+"shazam\n"

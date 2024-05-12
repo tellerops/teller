@@ -1,11 +1,8 @@
-autobrew
-dist/
-teller
-.vscode/
-node_modules/
+git-hidden-file
+git-ignored-file
 todo.txt
-.teller.writecase.yml
-coverage.out
-fixtures/sync/target.env
+/target
+notes/
+tmp/
 dist/
-.idea
+.DS_Store

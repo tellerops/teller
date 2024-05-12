@@ -1,0 +1,39 @@
+providers:
+  hashi_1:
+    kind: hashicorp
+    options:
+      address: {{ address }}
+      token: {{ token }}
+    maps:
+      - id: pg-dev
+        path: secret/dev/postgres
+        protocol: kv2
+  sm_1:
+    kind: aws_secretsmanager
+    options:
+      region: us-east-1
+      access_key_id: stub
+      secret_access_key: stub
+      provider_name: faked
+      endpoint_url: {{ endpoint_url }}
+    maps:
+      - id: pg-dev
+        path: /dev/postgres
+  ssm_1:
+    kind: ssm
+    options:
+      region: us-east-1
+      access_key_id: stub
+      secret_access_key: stub
+      provider_name: faked
+      endpoint_url: {{ endpoint_url }}
+    maps:
+      - id: pg-dev
+        path: /dev/postgres
+        keys:
+          USER: USER_NAME
+  dot_1:
+    kind: dotenv
+    maps:
+      - id: tvars
+        path: fixtures/flow_test_vars.env

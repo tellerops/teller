@@ -1,0 +1,11 @@
+```console
+$ teller show
+[new (dotenv)]: EMPTY = tr***
+
+$ teller put --providers new --map-id one NEW_VAR=s33kret
+
+$ teller show
+[new (dotenv)]: EMPTY = tr***
+[new (dotenv)]: NEW_VAR = s3***
+
+```
