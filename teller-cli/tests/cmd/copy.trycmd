@@ -1,0 +1,24 @@
+```console
+$ teller show
+[source (dotenv)]: DEV_DB = ma***
+[source (dotenv)]: EMPTY = tr***
+[target (dotenv)]: TARGET_ONLY = tr***
+
+$ teller copy --from source/dev --to target/prod
+
+$ teller show
+[source (dotenv)]: DEV_DB = ma***
+[source (dotenv)]: EMPTY = tr***
+[target (dotenv)]: DEV_DB = ma***
+[target (dotenv)]: EMPTY = tr***
+[target (dotenv)]: TARGET_ONLY = tr***
+
+$ teller copy --from source/dev --to target/prod --replace
+
+$ teller show
+[source (dotenv)]: DEV_DB = ma***
+[source (dotenv)]: EMPTY = tr***
+[target (dotenv)]: DEV_DB = ma***
+[target (dotenv)]: EMPTY = tr***
+
+```

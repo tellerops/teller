@@ -1,0 +1,12 @@
+providers:
+  gsm1:
+    kind: google_secretmanager
+    maps:
+      - id: test
+        path: projects/{{ get_env(name="TEST_PROVIDER_GSM_PROJECT", default="test") }}
+        # if empty, map everything
+        # == means map to same key name
+        # otherwise key on left becomes right
+        # in the future: key_transform: camelize, snake_case for automapping the keys
+        keys:
+          TLR_TEST_SKRT: ==

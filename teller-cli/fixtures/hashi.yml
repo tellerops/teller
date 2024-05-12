@@ -1,0 +1,14 @@
+providers:
+  hashi_1:
+    kind: hashicorp # name is = kind if empty
+    maps:
+      - id: test
+        path: data1/mysecret
+        protocol: kv1
+        # if empty, map everything
+        # == means map to same key name
+        # otherwise key on left becomes right
+        # in the future: key_transform: camelize, snake_case for automapping the keys
+        keys:
+          GITHUB_TOKEN: ==
+          a: ==

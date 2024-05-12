@@ -1,0 +1,19 @@
+```console
+$ teller new --providers inmem,dotenv --force --filename tmp/.test.teller.yml
+Configuration saved in: "tmp/.test.teller.yml"
+
+$ teller new --providers inmem,dotenv --std
+providers:
+  dotenv_1:
+    kind: dotenv
+    maps:
+    - id: ''
+      path: example/dev
+  inmem_1:
+    kind: inmem
+    maps:
+    - id: ''
+      path: example/dev
+
+
+```

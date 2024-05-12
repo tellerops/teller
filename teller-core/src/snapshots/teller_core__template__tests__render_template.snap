@@ -1,0 +1,7 @@
+---
+source: teller-core/src/template.rs
+expression: "render(\"hello {{ key(name='k') }}\", kvs)"
+---
+Ok(
+    "hello foobaz",
+)

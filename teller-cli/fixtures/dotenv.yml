@@ -1,0 +1,6 @@
+providers:
+  dot_1:
+    kind: dotenv
+    maps:
+      - id: test
+        path: fixtures/vars.env

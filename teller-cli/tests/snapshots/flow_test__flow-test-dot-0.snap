@@ -1,0 +1,33 @@
+---
+source: teller-cli/tests/flow_test.rs
+expression: res
+---
+Ok(
+    [
+        KV {
+            value: "linus",
+            key: "USER_NAME",
+            from_key: "USER_NAME",
+            path: Some(
+                PathInfo {
+                    id: "tvars",
+                    path: "fixtures/flow_test_vars.env",
+                },
+            ),
+            provider: Some(
+                ProviderInfo {
+                    kind: Dotenv,
+                    name: "dot_1",
+                },
+            ),
+            meta: Some(
+                MetaInfo {
+                    sensitivity: None,
+                    redact_with: None,
+                    source: None,
+                    sink: None,
+                },
+            ),
+        },
+    ],
+)
