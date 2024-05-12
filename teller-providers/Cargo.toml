@@ -27,7 +27,7 @@ aws_secretsmanager = ["aws", "dep:aws-sdk-secretsmanager"]
 google_secretmanager = ["dep:google-secretmanager1", "dep:crc32c"]
 hashicorp_vault = ["dep:vaultrs", "dep:rustify"]
 dotenv = ["dep:dotenvy"]
-hashicorp_consul = ["dep:consulrs", "dep:rs-consul"]
+hashicorp_consul = ["dep:rs-consul"]
 aws = ["dep:aws-config"]
 
 [dependencies]
