@@ -2,7 +2,7 @@ use std::process::exit;
 
 use clap::Parser;
 use eyre::Result;
-use teller_cli::{cli, tracing};
+use teller::{cli, tracing};
 
 #[tokio::main]
 async fn main() -> Result<()> {

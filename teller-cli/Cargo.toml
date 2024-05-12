@@ -2,6 +2,13 @@
 name = "teller"
 version = "2.0.0"
 edition = "2021"
+description = "A developer-first multi provider secret manager"
+authors = ["Dotan Nahum <dotan@rng0.io>", "Elad Kaplan <kaplan.elad@gmail.com>"]
+documentation = "https://docs.rs/teller/"
+repository = "https://github.com/tellerops/teller"
+keywords = ["vault", "secret", "devtool"]
+license = "Apache-2.0"
+readme = "../README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -21,8 +28,8 @@ strum = { workspace = true }
 proc-macro2 = "1.0.63"                                                  # Remove once https://github.com/rust-lang/rust/issues/113152 is fixed.
 clap = { version = "4.3.0", features = ["cargo", "derive"] }
 exitcode = { version = "^1.1.2" }
-console = { version = "*" }
-comfy-table = { version = "*" }
+console = { version = "0.15.8" }
+comfy-table = { version = "7.1.1" }
 dialoguer = { version = "0.11.0" }
 teller-providers = { version = "*", path = "../teller-providers" }
 teller-core = { version = "*", path = "../teller-core" }

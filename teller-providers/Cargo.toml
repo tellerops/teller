@@ -3,8 +3,14 @@ name = "teller-providers"
 version = "2.0.0"
 edition = "2021"
 
-# [lib]
-# name = "teller-providers"
+description = "A developer-first multi provider secret manager"
+authors = ["Dotan Nahum <dotan@rng0.io>", "Elad Kaplan <kaplan.elad@gmail.com>"]
+documentation = "https://docs.rs/teller/"
+repository = "https://github.com/tellerops/teller"
+keywords = ["vault", "secret", "devtool"]
+license = "Apache-2.0"
+readme = "../README.md"
+
 
 [features]
 default = [
