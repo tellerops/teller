@@ -6,3 +6,4 @@ notes/
 tmp/
 dist/
 .DS_Store
+*.profraw
