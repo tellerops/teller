@@ -17,8 +17,8 @@ readme = "./README.md"
 
 [workspace.dependencies]
 
-teller-providers = { version = "2.0.2", path = "./teller-providers" }
-teller-core = { version = "2.0.2", path = "./teller-core" }
+teller-providers = { version = "2.0.3", path = "./teller-providers" }
+teller-core = { version = "2.0.3", path = "./teller-core" }
 
 serde = "1"
 serde_json = "1"
