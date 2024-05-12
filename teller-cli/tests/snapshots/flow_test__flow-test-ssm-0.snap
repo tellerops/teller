@@ -1,0 +1,33 @@
+---
+source: teller-cli/tests/flow_test.rs
+expression: res
+---
+Ok(
+    [
+        KV {
+            value: "linus",
+            key: "USER_NAME",
+            from_key: "USER",
+            path: Some(
+                PathInfo {
+                    id: "pg-dev",
+                    path: "/dev/postgres",
+                },
+            ),
+            provider: Some(
+                ProviderInfo {
+                    kind: SSM,
+                    name: "ssm_1",
+                },
+            ),
+            meta: Some(
+                MetaInfo {
+                    sensitivity: None,
+                    redact_with: None,
+                    source: None,
+                    sink: None,
+                },
+            ),
+        },
+    ],
+)

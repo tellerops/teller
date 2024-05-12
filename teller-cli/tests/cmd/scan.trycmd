@@ -1,0 +1,28 @@
+```console
+$ teller -c teller.yml scan
+scanning for 4 item(s) in .
+ 2:9   ./one.env  fo***  dotenv  one.env 
+ 2:9   ./two.env  ba***  dotenv  two.env 
+ 1:12  ./two.env  ha***  dotenv  two.env 
+ 1:12  ./one.env  li***  dotenv  one.env 
+found 4 result(s)
+
+$ teller -c teller.yml scan -a
+scanning for 4 item(s) in .
+ 2:9   ./one.env          fo***  dotenv  one.env 
+ 2:9   ./two.env          ba***  dotenv  two.env 
+ 1:1   ./git-hidden-file  ha***  dotenv  two.env 
+ 1:12  ./two.env          ha***  dotenv  two.env 
+ 1:12  ./one.env          li***  dotenv  one.env 
+found 5 result(s)
+
+$ teller -c teller.yml scan -b
+scanning for 4 item(s) in .
+ 2:9   ./one.env      fo***  dotenv  one.env 
+ 2:9   ./two.env      ba***  dotenv  two.env 
+ 2:1   ./content.bin  ha***  dotenv  two.env 
+ 1:12  ./two.env      ha***  dotenv  two.env 
+ 1:12  ./one.env      li***  dotenv  one.env 
+found 5 result(s)
+
+```

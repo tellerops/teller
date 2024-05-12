@@ -1,0 +1,58 @@
+---
+source: teller-cli/tests/flow_test.rs
+expression: res
+---
+Ok(
+    [
+        KV {
+            value: "torvalds123",
+            key: "PASSWORD",
+            from_key: "PASSWORD",
+            path: Some(
+                PathInfo {
+                    id: "pg-dev",
+                    path: "secret/dev/postgres",
+                },
+            ),
+            provider: Some(
+                ProviderInfo {
+                    kind: Hashicorp,
+                    name: "hashi_1",
+                },
+            ),
+            meta: Some(
+                MetaInfo {
+                    sensitivity: None,
+                    redact_with: None,
+                    source: None,
+                    sink: None,
+                },
+            ),
+        },
+        KV {
+            value: "linus",
+            key: "USER",
+            from_key: "USER",
+            path: Some(
+                PathInfo {
+                    id: "pg-dev",
+                    path: "secret/dev/postgres",
+                },
+            ),
+            provider: Some(
+                ProviderInfo {
+                    kind: Hashicorp,
+                    name: "hashi_1",
+                },
+            ),
+            meta: Some(
+                MetaInfo {
+                    sensitivity: None,
+                    redact_with: None,
+                    source: None,
+                    sink: None,
+                },
+            ),
+        },
+    ],
+)

@@ -1,0 +1,22 @@
+providers:
+  ssm_1:
+    kind: ssm
+    maps:
+      - id: ssm-prod
+        path: /ssm/prod
+        keys:
+          GITHUB_TOKEN: ==
+          mg: FOO_BAR
+  hashi_1:
+    kind: hashicorp
+    maps:
+      - id: hashi-stg
+        path: /hashi/staging
+        keys:
+          GITHUB_TOKEN: ==
+          mg: FOO_BAR
+  dot_1:
+    kind: dotenv # name is = kind if empty
+    maps:
+      - id: dotvars
+        path: fixtures/vars.env
