@@ -46,7 +46,7 @@ fn build_providers() -> Test {
 #[test]
 #[cfg(not(windows))]
 fn providers_smoke_test() {
-    use std::env;
+    use std::{env, time::Duration};
 
     if env::var("RUNNER_OS").unwrap_or_default() == "macOS" {
         return;
@@ -58,6 +58,9 @@ fn providers_smoke_test() {
         let user = "linus";
         let password = "torvalds123";
         let vault_server: VaultServer = instance.server();
+        // banner is not enough for vault, we have to wait for the image to stabilize
+        tokio::time::sleep(Duration::from_secs(2)).await;
+
         let localstack_server: LocalStackServer = instance.server();
 
         fs::write(

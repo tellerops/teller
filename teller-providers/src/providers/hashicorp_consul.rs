@@ -17,15 +17,7 @@
 use std::env;
 
 use async_trait::async_trait;
-use consulrs::{
-    api::kv::requests::{
-        DeleteKeyRequestBuilder, ReadKeyRequestBuilder, ReadKeysRequestBuilder,
-        SetKeyRequestBuilder,
-    },
-    client::{ConsulClient, ConsulClientSettingsBuilder},
-    error::ClientError,
-    kv as ConsulKV,
-};
+use rs_consul::{Consul, ConsulError};
 use serde_derive::{Deserialize, Serialize};
 
 use super::ProviderKind;
@@ -44,50 +36,29 @@ pub struct HashiCorpConsulOptions {
     pub dc: Option<String>,
 }
 
-fn xerr(pm: &PathMap, e: ClientError) -> Error {
+fn to_err(pm: &PathMap, e: ConsulError) -> Error {
     match e {
-        ClientError::RestClientError { source } => match source {
-            rustify::errors::ClientError::ServerResponseError { code, content } => {
-                match (code, content.clone()) {
-                    (404, Some(content))
-                        if content.contains("Invalid path for a versioned K/V secrets") =>
-                    {
-                        Error::PathError(
-                            pm.path.clone(),
-                            "missing or incompatible protocol version".to_string(),
-                        )
-                    }
-                    (404, _) => Error::NotFound {
-                        path: pm.path.clone(),
-                        msg: "not found".to_string(),
-                    },
-                    _ => Error::Message(format!("code: {code}, {content:?}")),
-                }
+        ConsulError::UnexpectedResponseCode(hyper::http::StatusCode::NOT_FOUND, _) => {
+            Error::NotFound {
+                path: pm.path.clone(),
+                msg: "not found".to_string(),
             }
-            _ => Error::Any(Box::from(source)),
-        },
-        ClientError::APIError {
-            code: 404,
-            message: _,
-        } => Error::NotFound {
-            path: pm.path.clone(),
-            msg: "not found".to_string(),
-        },
+        }
         _ => Error::Any(Box::from(e)),
     }
 }
 
 pub struct HashiCorpConsul {
-    pub client: ConsulClient,
+    pub consul: Consul,
     opts: HashiCorpConsulOptions,
     pub name: String,
 }
 
 impl HashiCorpConsul {
     #[must_use]
-    pub fn with_client(name: &str, client: ConsulClient) -> Self {
+    pub fn with_client(name: &str, client: Consul) -> Self {
         Self {
-            client,
+            consul: client,
             opts: HashiCorpConsulOptions::default(),
             name: name.to_string(),
         }
@@ -119,58 +90,19 @@ impl HashiCorpConsul {
             )
             .unwrap_or_default();
 
-        let settings = ConsulClientSettingsBuilder::default()
-            .address(address)
-            .token(token)
-            .build()
-            .map_err(Box::from)?;
-
-        let client = ConsulClient::new(settings).map_err(Box::from)?;
-
         Ok(Self {
-            client,
+            consul: Consul::new(rs_consul::Config {
+                address,
+                token: Some(token),
+                #[allow(clippy::default_trait_access)]
+                hyper_builder: Default::default(),
+            }),
             opts,
             name: name.to_string(),
         })
     }
 }
 
-impl HashiCorpConsul {
-    fn prepare_get_builder_request(&self) -> ReadKeyRequestBuilder {
-        let mut opts: ReadKeyRequestBuilder = ReadKeyRequestBuilder::default();
-        if let Some(dc) = self.opts.dc.as_ref() {
-            opts.dc(dc.to_string());
-        }
-        opts.recurse(true);
-        opts
-    }
-
-    fn prepare_put_builder_request(&self) -> SetKeyRequestBuilder {
-        let mut opts: SetKeyRequestBuilder = SetKeyRequestBuilder::default();
-        if let Some(dc) = self.opts.dc.as_ref() {
-            opts.dc(dc.to_string());
-        }
-        opts
-    }
-
-    fn prepare_delete_builder_request(&self) -> DeleteKeyRequestBuilder {
-        let mut opts: DeleteKeyRequestBuilder = DeleteKeyRequestBuilder::default();
-        if let Some(dc) = self.opts.dc.as_ref() {
-            opts.dc(dc.to_string());
-        }
-        opts.recurse(false);
-        opts
-    }
-
-    fn prepare_keys_builder_request(&self) -> ReadKeysRequestBuilder {
-        let mut opts: ReadKeysRequestBuilder = ReadKeysRequestBuilder::default();
-        if let Some(dc) = self.opts.dc.as_ref() {
-            opts.dc(dc.to_string());
-        }
-        opts.recurse(false);
-        opts
-    }
-}
 #[async_trait]
 impl Provider for HashiCorpConsul {
     fn kind(&self) -> ProviderInfo {
@@ -181,24 +113,22 @@ impl Provider for HashiCorpConsul {
     }
 
     async fn get(&self, pm: &PathMap) -> Result<Vec<KV>> {
-        let res = ConsulKV::read(
-            &self.client,
-            &pm.path,
-            Some(&mut self.prepare_get_builder_request()),
-        )
-        .await
-        .map_err(|e| xerr(pm, e))?;
+        let res = self
+            .consul
+            .read_key(rs_consul::ReadKeyRequest {
+                key: &pm.path,
+                datacenter: &self.opts.dc.clone().unwrap_or_default(),
+                recurse: false,
+                ..Default::default()
+            })
+            .await
+            .map_err(|e| to_err(pm, e))?;
 
         let mut results = vec![];
-        for kv_pair in res.response {
-            let kv_value = kv_pair.value.ok_or_else(|| Error::NotFound {
+        for kv_pair in res {
+            let val = kv_pair.value.ok_or_else(|| Error::NotFound {
                 path: pm.path.to_string(),
                 msg: "value not found".to_string(),
-            })?;
-
-            let val: String = kv_value.try_into().map_err(|e| Error::GetError {
-                path: pm.path.to_string(),
-                msg: format!("could not decode Base64 value. err: {e:?}"),
             })?;
 
             let (_, key) = kv_pair.key.rsplit_once('/').unwrap_or(("", &kv_pair.key));
@@ -211,42 +141,35 @@ impl Provider for HashiCorpConsul {
 
     async fn put(&self, pm: &PathMap, kvs: &[KV]) -> Result<()> {
         for kv in kvs {
-            ConsulKV::set(
-                &self.client,
-                &format!("{}/{}", pm.path, kv.key),
-                kv.value.as_bytes(),
-                Some(&mut self.prepare_put_builder_request()),
-            )
-            .await
-            .map_err(|e| Error::PutError {
-                path: pm.path.to_string(),
-                msg: format!(
-                    "could not put value in key {}. err: {:?}",
-                    kv.key.as_str(),
-                    e
-                ),
-            })?;
+            self.consul
+                .create_or_update_key(
+                    rs_consul::CreateOrUpdateKeyRequest {
+                        key: &format!("{}/{}", pm.path, kv.key),
+                        datacenter: &self.opts.dc.clone().unwrap_or_default(),
+                        ..Default::default()
+                    },
+                    kv.value.as_bytes().to_vec(),
+                )
+                .await
+                .map_err(|e| to_err(pm, e))?;
         }
         Ok(())
     }
 
     async fn del(&self, pm: &PathMap) -> Result<()> {
         let keys = if pm.keys.is_empty() {
-            ConsulKV::keys(
-                &self.client,
-                pm.path.as_str(),
-                Some(&mut self.prepare_keys_builder_request()),
-            )
-            .await
-            .map_err(|e| Error::DeleteError {
-                path: pm.path.to_string(),
-                msg: format!(
-                    "could not get keys in path: {}. err: {:?}",
-                    pm.path.as_str(),
-                    e
-                ),
-            })?
-            .response
+            self.consul
+                .read_key(rs_consul::ReadKeyRequest {
+                    key: &pm.path,
+                    datacenter: &self.opts.dc.clone().unwrap_or_default(),
+                    recurse: true,
+                    ..Default::default()
+                })
+                .await
+                .map_err(|e| to_err(pm, e))?
+                .iter()
+                .map(|resp| resp.key.clone())
+                .collect::<Vec<_>>()
         } else {
             pm.keys
                 .keys()
@@ -255,16 +178,14 @@ impl Provider for HashiCorpConsul {
         };
 
         for key in keys {
-            ConsulKV::delete(
-                &self.client,
-                key.as_str(),
-                Some(&mut self.prepare_delete_builder_request()),
-            )
-            .await
-            .map_err(|e| Error::DeleteError {
-                path: pm.path.to_string(),
-                msg: format!("could not delete key: {}. err: {:?}", pm.path.as_str(), e),
-            })?;
+            self.consul
+                .delete_key(rs_consul::DeleteKeyRequest {
+                    key: &key,
+                    datacenter: &self.opts.dc.clone().unwrap_or_default(),
+                    ..Default::default()
+                })
+                .await
+                .map_err(|e| to_err(pm, e))?;
         }
 
         Ok(())
@@ -285,6 +206,8 @@ mod tests {
     #[test]
     #[cfg(not(windows))]
     fn sanity_test() {
+        use std::time::Duration;
+
         if env::var("RUNNER_OS").unwrap_or_default() == "macOS" {
             return;
         }
@@ -303,6 +226,9 @@ mod tests {
             let data = serde_json::json!({
                 "address": server.external_url(),
             });
+
+            // banner is not enough, we have to wait for the image to stabilize
+            tokio::time::sleep(Duration::from_secs(2)).await;
 
             let p = Box::new(
                 super::HashiCorpConsul::new(

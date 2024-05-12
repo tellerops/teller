@@ -149,6 +149,7 @@ impl ProviderTest {
         for (root_path, keys) in path_tree {
             let path_map = PathMap::from_path(&self.get_key_path(root_path));
             let res = self.provider.as_ref().put(&path_map, keys).await;
+            println!("validate_put: {res:?}");
             assert!(res.is_ok());
             assert_debug_snapshot!(format!("[put-{}]", root_path.replace('/', "_"),), res);
         }
@@ -166,6 +167,8 @@ impl ProviderTest {
                 .as_ref()
                 .get(&PathMap::from_path(&self.get_key_path(root_path)))
                 .await;
+
+            println!("validate_get: {res:?}");
             assert!(res.is_ok());
 
             let mut res = res.unwrap();
@@ -289,7 +292,7 @@ impl ProviderTest {
         ]);
 
         let delete_keys_res = self.provider.as_ref().del(&path_path).await;
-        println!("{delete_keys_res:#?}");
+        println!("validate_delete_keys: {delete_keys_res:#?}");
         assert!(delete_keys_res.is_ok());
         assert_debug_snapshot!(
             format!("[del-keys-{}]", ROOT_PATH_A.replace('/', "_")),
