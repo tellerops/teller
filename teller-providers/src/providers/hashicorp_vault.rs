@@ -98,7 +98,6 @@ fn parse_path(pm: &PathMap) -> Result<(&str, &str, &str)> {
 }
 
 fn xerr(pm: &PathMap, e: ClientError) -> Error {
-    println!("{e:?}");
     match e {
         ClientError::RestClientError { source } => match source {
             rustify::errors::ClientError::ServerResponseError { code, content } => {
