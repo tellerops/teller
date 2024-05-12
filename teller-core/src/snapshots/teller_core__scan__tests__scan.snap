@@ -1,36 +1,34 @@
 ---
 source: teller-core/src/scan.rs
-expression: res
+expression: normalize_matches(res.unwrap())
 ---
-Ok(
-    [
-        Match {
-            path: "fixtures/config.yml",
-            position: Some(
-                (
-                    3,
-                    11,
-                ),
+[
+    Match {
+        path: "fixtures/config.yml",
+        position: Some(
+            (
+                3,
+                11,
             ),
-            offset: 32,
-            query: KV {
-                value: "hashicorp",
-                key: "key1",
-                from_key: "key1",
-                path: Some(
-                    PathInfo {
-                        id: "/some/path",
-                        path: "/some/path",
-                    },
-                ),
-                provider: Some(
-                    ProviderInfo {
-                        kind: Inmem,
-                        name: "test",
-                    },
-                ),
-                meta: None,
-            },
+        ),
+        offset: 32,
+        query: KV {
+            value: "hashicorp",
+            key: "key1",
+            from_key: "key1",
+            path: Some(
+                PathInfo {
+                    id: "/some/path",
+                    path: "/some/path",
+                },
+            ),
+            provider: Some(
+                ProviderInfo {
+                    kind: Inmem,
+                    name: "test",
+                },
+            ),
+            meta: None,
         },
-    ],
-)
+    },
+]
