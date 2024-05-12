@@ -149,6 +149,7 @@ impl ProviderTest {
         for (root_path, keys) in path_tree {
             let path_map = PathMap::from_path(&self.get_key_path(root_path));
             let res = self.provider.as_ref().put(&path_map, keys).await;
+            println!("{res:?}");
             assert!(res.is_ok());
             assert_debug_snapshot!(format!("[put-{}]", root_path.replace('/', "_"),), res);
         }

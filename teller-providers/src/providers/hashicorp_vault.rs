@@ -98,6 +98,7 @@ fn parse_path(pm: &PathMap) -> Result<(&str, &str, &str)> {
 }
 
 fn xerr(pm: &PathMap, e: ClientError) -> Error {
+    println!("{e:?}");
     match e {
         ClientError::RestClientError { source } => match source {
             rustify::errors::ClientError::ServerResponseError { code, content } => {
@@ -275,17 +276,16 @@ mod tests {
     use super::*;
     use crate::providers::test_utils;
 
-    const PORT: u32 = 9200;
-
     #[test]
     #[cfg(not(windows))]
     fn sanity_test() {
+        use std::time::Duration;
+
         if env::var("RUNNER_OS").unwrap_or_default() == "macOS" {
             return;
         }
 
         let config = VaultServerConfig::builder()
-            .port(PORT)
             .version("1.8.2".into())
             .build()
             .unwrap();
@@ -299,6 +299,9 @@ mod tests {
                 "address": server.external_url(),
                 "token": server.token
             });
+
+            // banner is not enough, we have to wait for the image to stabilize
+            tokio::time::sleep(Duration::from_secs(2)).await;
 
             let p = Box::new(
                 super::Hashivault::new(
