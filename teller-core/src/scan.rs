@@ -85,7 +85,10 @@ pub fn scan_root(root: &str, kvs: &[KV], opts: &Opts) -> Result<Vec<Match>> {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{
+        fs,
+        path::{Path, PathBuf},
+    };
 
     use insta::assert_debug_snapshot;
     use teller_providers::{
@@ -95,6 +98,19 @@ mod tests {
 
     use super::*;
     use crate::scan;
+
+    fn normalize_path_separators(path: &Path) -> PathBuf {
+        let path_str = path.to_string_lossy().replace('\\', "/");
+        PathBuf::from(path_str)
+    }
+    fn normalize_matches(ms: &[Match]) -> Vec<Match> {
+        ms.iter()
+            .map(|m| Match {
+                path: normalize_path_separators(&m.path),
+                ..m.clone()
+            })
+            .collect::<Vec<_>>()
+    }
 
     #[test]
     fn test_position() {
@@ -139,7 +155,7 @@ mod tests {
         ];
 
         let res = scan_root("fixtures", &kvs[..], &scan::Opts::default());
-        assert_debug_snapshot!(res);
+        assert_debug_snapshot!(normalize_matches(&res.unwrap()));
 
         let res = scan_root(
             "fixtures",
@@ -149,7 +165,7 @@ mod tests {
                 include_all: false,
             },
         );
-        assert_debug_snapshot!(res);
+        assert_debug_snapshot!(normalize_matches(&res.unwrap()));
 
         fs::write("fixtures/git-ignored-file", "trooper123").expect("cannot write file");
 
@@ -161,6 +177,6 @@ mod tests {
                 include_all: true,
             },
         );
-        assert_debug_snapshot!(res);
+        assert_debug_snapshot!(normalize_matches(&res.unwrap()));
     }
 }
