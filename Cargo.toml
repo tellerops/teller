@@ -4,8 +4,22 @@ resolver = "2"
 members = ["teller-cli", "teller-core", "teller-providers", "xtask"]
 default-members = ["teller-cli"]
 
+[workspace.package]
+
+description = "A developer-first multi provider secret manager"
+authors = ["Dotan Nahum <dotan@rng0.io>", "Elad Kaplan <kaplan.elad@gmail.com>"]
+documentation = "https://docs.rs/teller/"
+repository = "https://github.com/tellerops/teller"
+keywords = ["vault", "secret", "devtool"]
+license = "Apache-2.0"
+readme = "./README.md"
+
 
 [workspace.dependencies]
+
+teller-providers = { version = "2.0.2", path = "./teller-providers" }
+teller-core = { version = "2.0.2", path = "./teller-core" }
+
 serde = "1"
 serde_json = "1"
 serde_yaml = "0.9"

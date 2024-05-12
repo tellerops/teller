@@ -2,13 +2,14 @@
 name = "teller"
 version = "2.0.2"
 edition = "2021"
-description = "A developer-first multi provider secret manager"
-authors = ["Dotan Nahum <dotan@rng0.io>", "Elad Kaplan <kaplan.elad@gmail.com>"]
+
+description.workspace = true
+authors.workspace = true
 documentation = "https://docs.rs/teller/"
-repository = "https://github.com/tellerops/teller"
-keywords = ["vault", "secret", "devtool"]
-license = "Apache-2.0"
-readme = "../README.md"
+repository.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -31,8 +32,8 @@ exitcode = { version = "^1.1.2" }
 console = { version = "0.15.8" }
 comfy-table = { version = "7.1.1" }
 dialoguer = { version = "0.11.0" }
-teller-providers = { version = "*", path = "../teller-providers" }
-teller-core = { version = "*", path = "../teller-core" }
+teller-providers = { workspace = true }
+teller-core = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
