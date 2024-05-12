@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-<img src="https://github.com/tellerops/teller/actions/workflows/ci.yml/badge.svg"/>
+<img src="https://github.com/tellerops/teller/actions/workflows/build.yml/badge.svg"/>
 
 </p>
 
