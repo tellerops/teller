@@ -1,5 +1,5 @@
 ```console
-$ teller -c teller.yml scan
+$ teller scan
 scanning for 4 item(s) in .
  2:9   ./one.env  fo***  dotenv  one.env 
  2:9   ./two.env  ba***  dotenv  two.env 
@@ -7,7 +7,7 @@ scanning for 4 item(s) in .
  1:12  ./one.env  li***  dotenv  one.env 
 found 4 result(s)
 
-$ teller -c teller.yml scan -a
+$ teller scan -a
 scanning for 4 item(s) in .
  2:9   ./one.env          fo***  dotenv  one.env 
  2:9   ./two.env          ba***  dotenv  two.env 
@@ -16,7 +16,7 @@ scanning for 4 item(s) in .
  1:12  ./one.env          li***  dotenv  one.env 
 found 5 result(s)
 
-$ teller -c teller.yml scan -b
+$ teller scan -b
 scanning for 4 item(s) in .
  2:9   ./one.env      fo***  dotenv  one.env 
  2:9   ./two.env      ba***  dotenv  two.env 

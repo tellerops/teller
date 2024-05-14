@@ -1,29 +1,29 @@
 ```console
-$ teller -c teller.yml export yaml
+$ teller export yaml
 FOO_BAR: foo
 FOO_BAZ: baz
 PRINT_MOOD: happy
 PRINT_NAME: linus
 
 
-$ teller -c teller.yml export csv
+$ teller export csv
 FOO_BAR,foo
 PRINT_NAME,linus
 FOO_BAZ,baz
 PRINT_MOOD,happy
 
 
-$ teller -c teller.yml export json
+$ teller export json
 {"FOO_BAR":"foo","FOO_BAZ":"baz","PRINT_MOOD":"happy","PRINT_NAME":"linus"}
 
-$ teller -c teller.yml export env
+$ teller export env
 FOO_BAR=foo
 PRINT_NAME=linus
 FOO_BAZ=baz
 PRINT_MOOD=happy
 
 
-$ teller -c teller.yml sh
+$ teller sh
 #!/bin/sh
 export FOO_BAR='foo'
 export PRINT_NAME='linus'
@@ -31,7 +31,7 @@ export FOO_BAZ='baz'
 export PRINT_MOOD='happy'
 
 
-$ teller -c teller.yml env
+$ teller env
 FOO_BAR=foo
 PRINT_NAME=linus
 FOO_BAZ=baz
