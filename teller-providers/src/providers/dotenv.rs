@@ -110,7 +110,7 @@ fn save(path: &Path, data: &BTreeMap<String, String>) -> Result<String> {
         };
 
         let value = json_value.unwrap_or_else(|| v.to_string());
-        if value.contains([' ', '\t']) {
+        if value.chars().any(char::is_whitespace) {
             out.push_str(&format!("{k}=\"{value}\"\n"));
         } else {
             out.push_str(&format!("{k}={value}\n"));
