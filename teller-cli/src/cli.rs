@@ -183,7 +183,7 @@ pub struct NewArgs {
 }
 
 async fn load_teller(config: Option<String>) -> eyre::Result<Teller> {
-    let config_arg = config.unwrap_or_else(|| "teller.yml".to_string());
+    let config_arg = config.unwrap_or_else(|| DEFAULT_FILE_PATH.to_string());
     let config_path = Path::new(&config_arg);
     let teller = Teller::from_yaml(config_path).await?;
     Ok(teller)
