@@ -1,4 +1,6 @@
 ```console
 $ teller redact --in text.txt
+hello [REDACTED],
+I just read that you made linux.
 
 ```
