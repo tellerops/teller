@@ -110,7 +110,11 @@ fn save(path: &Path, data: &BTreeMap<String, String>) -> Result<String> {
         };
 
         let value = json_value.unwrap_or_else(|| v.to_string());
-        out.push_str(&format!("{k}={value}\n"));
+        if value.chars().any(char::is_whitespace) && !value.starts_with(['"', '\'']) {
+            out.push_str(&format!("{k}=\"{value}\"\n"));
+        } else {
+            out.push_str(&format!("{k}={value}\n"));
+        }
     }
 
     fs::write(path, &out)?;
