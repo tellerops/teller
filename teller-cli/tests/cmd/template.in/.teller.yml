@@ -1,0 +1,11 @@
+providers:
+  dot1:
+    kind: dotenv
+    maps:
+      - id: one
+        path: one.env
+  dot2:
+    kind: dotenv
+    maps:
+      - id: two
+        path: two.env
