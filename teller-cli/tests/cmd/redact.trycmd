@@ -1,0 +1,4 @@
+```console
+$ teller redact --in text.txt
+
+```

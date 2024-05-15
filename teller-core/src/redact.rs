@@ -39,13 +39,16 @@ impl Redactor {
         if self.has_match(message, kvs) {
             let mut redacted = message.to_string();
             for kv in kvs {
-                redacted = redacted.replace(
-                    &kv.value,
-                    kv.meta
-                        .as_ref()
-                        .and_then(|m| m.redact_with.as_ref())
-                        .map_or("[REDACTED]", |s| s.as_str()),
-                );
+                // only replace values with at least 2 chars
+                if kv.value.len() >= 2 {
+                    redacted = redacted.replace(
+                        &kv.value,
+                        kv.meta
+                            .as_ref()
+                            .and_then(|m| m.redact_with.as_ref())
+                            .map_or("[REDACTED]", |s| s.as_str()),
+                    );
+                }
             }
             Cow::Owned(redacted)
         } else {
