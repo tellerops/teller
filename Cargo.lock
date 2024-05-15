@@ -3200,7 +3200,7 @@ dependencies = [
 
 [[package]]
 name = "teller"
-version = "2.0.4"
+version = "2.0.5"
 dependencies = [
  "clap 4.5.4",
  "comfy-table",
@@ -3229,7 +3229,7 @@ dependencies = [
 
 [[package]]
 name = "teller-core"
-version = "2.0.4"
+version = "2.0.5"
 dependencies = [
  "aho-corasick",
  "csv",
@@ -3254,7 +3254,7 @@ dependencies = [
 
 [[package]]
 name = "teller-providers"
-version = "2.0.4"
+version = "2.0.5"
 dependencies = [
  "async-trait",
  "aws-config",
