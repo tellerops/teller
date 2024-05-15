@@ -1,5 +1,5 @@
 ```console
-$ teller -c teller.yml template --in config-templ.t
+$ teller template --in config-templ.t
 production_var: linus
 production_mood: happy
 
