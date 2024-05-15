@@ -8,4 +8,11 @@ $ teller show
 [new (dotenv)]: EMPTY = tr***
 [new (dotenv)]: NEW_VAR = s3***
 
+$ teller put --providers new --map-id one TRICKYVAR="-A"
+
+$ teller show
+[new (dotenv)]: EMPTY = tr***
+[new (dotenv)]: NEW_VAR = s3***
+[new (dotenv)]: TRICKYVAR = -A***
+
 ```
