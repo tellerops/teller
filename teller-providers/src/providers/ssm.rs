@@ -126,47 +126,56 @@ impl Provider for SSM {
     async fn get(&self, pm: &PathMap) -> Result<Vec<KV>> {
         let mut out = Vec::new();
         if pm.keys.is_empty() {
-            // get parameters by path
+            // get parameters by path, auto paginate, sends multiple requests
             let resp = self
                 .client
                 .get_parameters_by_path()
                 .path(&pm.path)
                 .with_decryption(pm.decrypt)
+                .into_paginator()
                 .send()
+                .collect::<std::result::Result<Vec<_>, _>>()
                 .await
                 .map_err(|e| Error::GetError {
                     msg: e.to_string(),
                     path: pm.path.clone(),
                 })?;
 
-            let params = resp.parameters();
-            if params.is_empty() {
+            // sematics: total pages empty or *first page* empty is a 404
+            if resp.is_empty()
+                || resp
+                    .first()
+                    .and_then(|params| params.parameters.as_ref())
+                    .is_some_and(Vec::is_empty)
+            {
                 return Err(Error::NotFound {
                     msg: "not found".to_string(),
                     path: pm.path.clone(),
                 });
             }
-            for p in params {
-                let ssm_key = p.name().unwrap_or_default();
-                if !ssm_key.starts_with(&pm.path) {
-                    return Err(Error::GetError {
-                        path: pm.path.clone(),
-                        msg: format!("{ssm_key} is not contained in root path"),
-                    });
+
+            for params in resp {
+                for p in params.parameters.unwrap_or_default() {
+                    let ssm_key = p.name().unwrap_or_default();
+                    if !ssm_key.starts_with(&pm.path) {
+                        return Err(Error::GetError {
+                            path: pm.path.clone(),
+                            msg: format!("{ssm_key} is not contained in root path"),
+                        });
+                    }
+
+                    let relative_key = ssm_key
+                        .strip_prefix(&pm.path)
+                        .map_or(ssm_key, |k| k.trim_start_matches('/'));
+
+                    out.push(KV::from_value(
+                        p.value().unwrap_or_default(),
+                        relative_key,
+                        relative_key,
+                        pm,
+                        self.kind(),
+                    ));
                 }
-
-                let relative_key = ssm_key
-                    .strip_prefix(&pm.path)
-                    .map(|k| k.trim_start_matches('/'))
-                    .unwrap_or_default();
-
-                out.push(KV::from_value(
-                    p.value().unwrap_or_default(),
-                    relative_key,
-                    relative_key,
-                    pm,
-                    self.kind(),
-                ));
             }
         } else {
             for (k, v) in &pm.keys {

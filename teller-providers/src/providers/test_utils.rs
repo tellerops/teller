@@ -8,6 +8,7 @@ use crate::{Error, Provider};
 pub const ROOT_PATH_A: &str = "secret/development";
 pub const ROOT_PATH_B: &str = "secret/multiple/app-1";
 pub const ROOT_PATH_C: &str = "secret/multiple/app-2";
+pub const ROOT_PATH_PAGING: &str = "secret/multiple/lotsakeys";
 const PATH_A_KEY_1: &str = "db";
 const PATH_A_KEY_2: &str = "log_level";
 const PATH_A_KEY_3: &str = "app";
@@ -67,6 +68,7 @@ impl ProviderTest {
         self.validate_get_unexisting_key().await;
         self.validate_put(&path_tree).await;
         self.validate_get(&path_tree).await;
+        self.validate_get_selective(&path_tree).await;
         self.validate_update().await;
         self.validate_delete().await;
         self.validate_delete_keys().await;
@@ -120,6 +122,19 @@ impl ProviderTest {
                     self.provider.as_ref().kind(),
                 )],
             ),
+            (
+                ROOT_PATH_PAGING,
+                (0..100)
+                    .map(|idx| {
+                        KV::from_literal(
+                            "",
+                            &format!("{PATH_C_KEY_1}_{idx}"),
+                            PATH_C_VALUE_1,
+                            self.provider.as_ref().kind(),
+                        )
+                    })
+                    .collect::<Vec<_>>(),
+            ),
         ])
     }
 
@@ -141,6 +156,7 @@ impl ProviderTest {
             .as_ref()
             .get(&PathMap::from_path(&format!("{ROOT_PATH_A}/invalid-path")))
             .await;
+        println!("validate_get_unexisting_key: {res:?}");
         assert!(res.is_err());
     }
 
@@ -173,6 +189,7 @@ impl ProviderTest {
 
             let mut res = res.unwrap();
             res.sort_by(|a: &KV, b| a.value.cmp(&b.value));
+            res.sort_by(|a: &KV, b| a.key.cmp(&b.key));
 
             with_settings!({filters => vec![
                 (format!("{:?}", self.provider.as_ref().kind().kind).as_str(), "PROVIDER_KIND"),
@@ -180,6 +197,7 @@ impl ProviderTest {
                 (format!("\".*{ROOT_PATH_A}").as_str(), format!("\"{ROOT_PATH_A}").as_str()),
                 (format!("\".*{ROOT_PATH_B}").as_str(), format!("\"{ROOT_PATH_B}").as_str()),
                 (format!("\".*{ROOT_PATH_C}").as_str(), format!("\"{ROOT_PATH_C}").as_str()),
+                (format!("\".*{ROOT_PATH_PAGING}").as_str(), format!("\"{ROOT_PATH_PAGING}").as_str()),
             ]}, {
                 assert_debug_snapshot!(
                 format!("[get-{}]", root_path.replace('/', "_"),),
@@ -187,6 +205,32 @@ impl ProviderTest {
             );
             });
         }
+    }
+
+    async fn validate_get_selective(&self, path_tree: &HashMap<&str, Vec<KV>>) {
+        let mut selective_pm = PathMap::from_path(&self.get_key_path(ROOT_PATH_A));
+        selective_pm
+            .keys
+            .insert(PATH_A_KEY_1.to_string(), PATH_A_KEY_1.to_string());
+
+        let res = self.provider.as_ref().get(&selective_pm).await;
+
+        println!("validate_get_selective: {res:?}");
+        assert!(res.is_ok());
+
+        with_settings!({filters => vec![
+                    (format!("{:?}", self.provider.as_ref().kind().kind).as_str(), "PROVIDER_KIND"),
+                    (format!("{:?}", self.provider.as_ref().kind().name).as_str(), "PROVIDER_NAME"),
+                    (format!("\".*{ROOT_PATH_A}").as_str(), format!("\"{ROOT_PATH_A}").as_str()),
+                    (format!("\".*{ROOT_PATH_B}").as_str(), format!("\"{ROOT_PATH_B}").as_str()),
+                    (format!("\".*{ROOT_PATH_C}").as_str(), format!("\"{ROOT_PATH_C}").as_str()),
+                    (format!("\".*{ROOT_PATH_PAGING}").as_str(), format!("\"{ROOT_PATH_PAGING}").as_str()),
+                ]}, {
+                    assert_debug_snapshot!(
+                    format!("[get-selective-{}]", PATH_A_KEY_1.replace('/', "_"),),
+                    res
+                );
+        });
     }
 
     /// Validates the update operation on a Teller provider after inserting a tree structure.

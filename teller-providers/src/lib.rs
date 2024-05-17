@@ -65,6 +65,9 @@ pub enum Error {
 
     #[error("LIST {path}: {msg}")]
     ListError { path: String, msg: String },
+
+    #[error("{0}")]
+    CreateProviderError(String),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
