@@ -1,0 +1,33 @@
+---
+source: teller-providers/src/providers/test_utils.rs
+expression: res
+---
+Ok(
+    [
+        KV {
+            value: "{\"DB_PASS\": \"1234\",\"DB_NAME\": \"FOO\"}",
+            key: "db",
+            from_key: "db",
+            path: Some(
+                PathInfo {
+                    id: "",
+                    path: "secret/development",
+                },
+            ),
+            provider: Some(
+                ProviderInfo {
+                    kind: PROVIDER_KIND,
+                    name: PROVIDER_NAME,
+                },
+            ),
+            meta: Some(
+                MetaInfo {
+                    sensitivity: None,
+                    redact_with: None,
+                    source: None,
+                    sink: None,
+                },
+            ),
+        },
+    ],
+)

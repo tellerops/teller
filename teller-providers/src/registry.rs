@@ -78,6 +78,7 @@ impl Registry {
                             .transpose()?,
                     )?)
                 }
+                ProviderKind::Etcd => todo!(),
             };
             loaded_providers.insert(k.clone(), provider);
         }

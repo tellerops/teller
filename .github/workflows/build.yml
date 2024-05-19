@@ -31,6 +31,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
@@ -54,6 +57,9 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
           components: llvm-tools-preview
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
 
       - uses: Swatinem/rust-cache@v2
 
@@ -90,6 +96,9 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt, clippy
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
 
       - uses: Swatinem/rust-cache@v2
 

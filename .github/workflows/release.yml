@@ -38,6 +38,9 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+
       - uses: Swatinem/rust-cache@v2
 
       - name: Run cargo test
@@ -97,6 +100,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
 
       - name: Install ${{ matrix.rust }} toolchain
         uses: actions-rs/toolchain@v1

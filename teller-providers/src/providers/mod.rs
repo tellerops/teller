@@ -27,6 +27,9 @@ pub mod google_secretmanager;
 #[cfg(feature = "hashicorp_consul")]
 pub mod hashicorp_consul;
 
+#[cfg(feature = "etcd")]
+pub mod etcd;
+
 lazy_static! {
     pub static ref PROVIDER_KINDS: String = {
         let providers: Vec<String> = ProviderKind::iter()
@@ -66,6 +69,10 @@ pub enum ProviderKind {
     #[cfg(feature = "google_secretmanager")]
     #[serde(rename = "google_secretmanager")]
     GoogleSecretManager,
+
+    #[cfg(feature = "etcd")]
+    #[serde(rename = "etcd")]
+    Etcd,
 }
 
 impl std::fmt::Display for ProviderKind {

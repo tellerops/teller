@@ -133,7 +133,10 @@ impl Provider for HashiCorpConsul {
 
             let (_, key) = kv_pair.key.rsplit_once('/').unwrap_or(("", &kv_pair.key));
 
-            results.push(KV::from_value(&val, key, key, pm, self.kind()));
+            // take all or slice the requested keys
+            if pm.keys.is_empty() || pm.keys.contains_key(key) {
+                results.push(KV::from_value(&val, key, key, pm, self.kind()));
+            }
         }
 
         Ok(results)
