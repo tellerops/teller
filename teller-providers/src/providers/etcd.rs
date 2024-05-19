@@ -1,12 +1,12 @@
-//! Hashicorp Consul
+//! etcd
 //!
 //!
 //! ## Example configuration
 //!
 //! ```yaml
 //! providers:
-//!  consul1:
-//!    kind: hashicorp_consul
+//!  etcd1:
+//!    kind: etcd
 //!    # options: ...
 //! ```
 //! ## Options
@@ -15,7 +15,7 @@
 //!
 
 use async_trait::async_trait;
-use etcd_client::{Client, DeleteOptions, GetOptions, KvClient};
+use etcd_client::{Client, ConnectOptions, DeleteOptions, GetOptions};
 use serde_derive::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
@@ -25,11 +25,20 @@ use crate::{
     Error, Provider, Result,
 };
 
+/// Etcd Options
+///
 #[allow(clippy::module_name_repetitions)]
 #[derive(Default, Serialize, Deserialize, Debug, Clone)]
 pub struct EtcdOptions {
     /// Etcd address.
     pub address: Option<String>,
+
+    /// An optional 'user' field, which includes a user name and password separated by `:`.
+    ///
+    /// Example: `joe:rootpass`
+    ///
+    /// see more: [on this github thread](https://github.com/etcd-io/etcd/issues/10338#issuecomment-448280528)
+    pub user: Option<String>,
 }
 
 pub struct Etcd {
@@ -40,14 +49,9 @@ pub struct Etcd {
 fn to_err(_pm: &PathMap, err: etcd_client::Error) -> Error {
     Error::Any(Box::new(err))
 }
-async fn create_client() -> Result<Client> {
-    Ok(Client::connect(["127.0.0.1:2379"], None)
-        .await
-        .map_err(|err| Error::CreateProviderError(err.to_string()))?)
-}
 
 impl Etcd {
-    /// Create a new hashicorp Consul
+    /// Create a new etcd provider
     ///
     /// # Errors
     ///
@@ -60,9 +64,26 @@ impl Etcd {
             .as_ref()
             .ok_or_else(|| Error::Message("address not present.".to_string()))?;
 
+        let user = opts
+            .user
+            .or_else(|| std::env::var("ETCDCTL_USER").ok())
+            .map(|user| {
+                user.split_once(':')
+                    .ok_or_else(|| {
+                        Error::Message("user field should be in `user:pwd` format".to_string())
+                    })
+                    .map(|(user, pwd)| (user.to_string(), pwd.to_string()))
+            })
+            .transpose()?;
+
+        let mut connect_opts = ConnectOptions::new();
+        if let Some(user) = user {
+            connect_opts = connect_opts.with_user(user.0, user.1);
+        }
+
         Ok(Self {
             client: Mutex::new(
-                Client::connect([address], None)
+                Client::connect([address], Some(connect_opts))
                     .await
                     .map_err(|err| Error::CreateProviderError(err.to_string()))?,
             ),
@@ -81,7 +102,7 @@ impl Provider for Etcd {
     }
 
     async fn get(&self, pm: &PathMap) -> Result<Vec<KV>> {
-        let mut client = create_client().await?;
+        let mut client = self.client.lock().await.kv_client();
 
         let res = if pm.keys.is_empty() {
             client
@@ -131,7 +152,7 @@ impl Provider for Etcd {
     }
 
     async fn put(&self, pm: &PathMap, kvs: &[KV]) -> Result<()> {
-        let mut client = create_client().await?;
+        let mut client = self.client.lock().await.kv_client();
         for kv in kvs {
             client
                 .put(
@@ -148,7 +169,7 @@ impl Provider for Etcd {
     }
 
     async fn del(&self, pm: &PathMap) -> Result<()> {
-        let mut client = create_client().await?;
+        let mut client = self.client.lock().await.kv_client();
         if pm.keys.is_empty() {
             client
                 .delete(
@@ -182,7 +203,7 @@ mod tests {
     #[test_log::test]
     #[cfg(not(windows))]
     fn sanity_test() {
-        use std::{collections::HashMap, env, time::Duration};
+        use std::{collections::HashMap, env};
 
         use dockertest::{waitfor, Composition, DockerTest, Image};
 
@@ -229,6 +250,7 @@ mod tests {
                     "etcd",
                     Some(EtcdOptions {
                         address: Some(address),
+                        user: None,
                     }),
                 )
                 .await
