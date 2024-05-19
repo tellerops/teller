@@ -1,7 +1,10 @@
-use std::path::{Path, PathBuf};
+use std::{
+    env::{self, current_dir},
+    path::{Path, PathBuf},
+};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use eyre::eyre;
+use eyre::{eyre, OptionExt};
 use teller_core::{exec, export, teller::Teller};
 use teller_providers::{config::KV, providers::ProviderKind};
 
@@ -182,8 +185,35 @@ pub struct NewArgs {
     pub providers: Vec<ProviderKind>,
 }
 
+fn find_file_upwards(start_dir: &Path, config_filename: &str) -> eyre::Result<Option<PathBuf>> {
+    let mut current_dir = start_dir;
+
+    loop {
+        let config_path = current_dir.join(config_filename);
+
+        // Check if the configuration file exists at the current path
+        if config_path.exists() {
+            return Ok(Some(config_path));
+        }
+
+        // Move to the parent directory
+        match current_dir.parent() {
+            Some(parent) => current_dir = parent,
+            None => return Ok(None), // No parent means we've reached the root
+        }
+    }
+}
+
 async fn load_teller(config: Option<String>) -> eyre::Result<Teller> {
-    let config_arg = config.unwrap_or_else(|| DEFAULT_FILE_PATH.to_string());
+    let config_arg = if let Some(config) = config {
+        config
+    } else {
+        find_file_upwards(env::current_dir()?.as_path(), DEFAULT_FILE_PATH)?
+            .ok_or_eyre("cannot find configuration from current folder and up to root")?
+            .to_string_lossy()
+            .to_string()
+    };
+
     let config_path = Path::new(&config_arg);
     let teller = Teller::from_yaml(config_path).await?;
     Ok(teller)
