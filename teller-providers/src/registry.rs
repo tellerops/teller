@@ -90,6 +90,17 @@ impl Registry {
                     )
                     .await?,
                 ),
+                #[cfg(feature = "external")]
+                ProviderKind::External => Box::new(
+                    crate::providers::external::External::new(
+                        k,
+                        provider
+                            .options
+                            .clone()
+                            .map(serde_json::from_value)
+                            .transpose()?,
+                    )?,
+                ),
             };
             loaded_providers.insert(k.clone(), provider);
         }
