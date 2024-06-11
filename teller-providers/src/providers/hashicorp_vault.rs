@@ -44,6 +44,8 @@ pub struct HashivaultOptions {
     pub address: Option<String>,
     /// Vault token
     pub token: Option<String>,
+    /// Vault namespace
+    pub namespace: Option<String>,
 }
 
 pub struct Hashivault {
@@ -69,11 +71,16 @@ impl Hashivault {
                 settings.token(token);
             }
 
+            if let Some(namespace) = opts.namespace {
+                settings.set_namespace(namespace);
+            }
+
             settings.build().map_err(Box::from)?
         } else {
             VaultClientSettingsBuilder::default()
                 .address(env::var("VAULT_ADDR")?)
                 .token(env::var("VAULT_TOKEN")?)
+                .namespace(env::var("VAULT_NAMESPACE").ok())
                 .build()
                 .map_err(Box::from)?
         };
