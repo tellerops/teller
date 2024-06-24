@@ -90,7 +90,7 @@ impl Hashivault {
 fn parse_path(pm: &PathMap) -> Result<(&str, &str, &str)> {
     let (engine, full_path) = (pm.protocol.as_deref().unwrap_or("kv2"), pm.path.as_str());
     let (mount, path) = full_path
-        .split_once("//")
+        .split_once("//:")
         .or_else(|| full_path.split_once('/'))
         .ok_or_else(|| {
             Error::Message(
