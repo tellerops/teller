@@ -40,6 +40,8 @@ jobs:
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: Swatinem/rust-cache@v2
 
@@ -58,7 +60,7 @@ jobs:
         build: [x86_64-linux, aarch64-macos, x86_64-macos, x86_64-windows] #, x86_64-win-gnu, win32-msvc aarch64-linux,
         include:
           - build: x86_64-linux
-            os: ubuntu-20.04
+            os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-gnu
             cross: false
@@ -103,6 +105,8 @@ jobs:
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install ${{ matrix.rust }} toolchain
         uses: actions-rs/toolchain@v1
