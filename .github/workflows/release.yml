@@ -58,7 +58,7 @@ jobs:
         build: [x86_64-linux, aarch64-macos, x86_64-macos, x86_64-windows] #, x86_64-win-gnu, win32-msvc aarch64-linux,
         include:
           - build: x86_64-linux
-            os: ubuntu-20.04
+            os: ubuntu-latest
             rust: stable
             target: x86_64-unknown-linux-gnu
             cross: false
@@ -151,68 +151,3 @@ jobs:
         with:
           name: bins-${{ matrix.build }}
           path: dist
-
-  publish:
-    name: Publish
-    needs: [dist]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-        with:
-          submodules: false
-
-      - uses: actions/download-artifact@v2
-        # with:
-        #   path: dist
-      # - run: ls -al ./dist
-      - run: ls -al bins-*
-
-      - name: Calculate tag name
-        run: |
-          name=dev
-          if [[ $GITHUB_REF == refs/tags/v* ]]; then
-            name=${GITHUB_REF:10}
-          fi
-          echo ::set-output name=val::$name
-          echo TAG=$name >> $GITHUB_ENV
-        id: tagname
-
-      - name: Build archive
-        shell: bash
-        run: |
-          set -ex
-
-          rm -rf tmp
-          mkdir tmp
-          rm -rf dist
-          mkdir dist
-
-          for dir in bins-* ; do
-              platform=${dir#"bins-"}
-              if [[ $platform =~ "windows" ]]; then
-                  exe=".exe"
-              fi
-              pkgname=$PROJECT_NAME-$platform
-              mkdir tmp/$pkgname
-              # cp LICENSE README.md tmp/$pkgname
-              mv bins-$platform/$BIN_NAME$exe tmp/$pkgname
-              chmod +x tmp/$pkgname/$BIN_NAME$exe
-
-              if [ "$exe" = "" ]; then
-                  tar cJf dist/$pkgname.tar.xz -C tmp $pkgname
-              else
-                  (cd tmp && 7z a -r ../dist/$pkgname.zip $pkgname)
-              fi
-          done
-
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/*
-          file_glob: true
-          tag: ${{ steps.tagname.outputs.val }}
-          overwrite: true
-
-      # homebrew: see rustwrap.yaml
