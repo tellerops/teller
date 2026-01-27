@@ -318,6 +318,94 @@ Example format:
 
 You can get a list of the providers and their described configuration values [in the documentation](https://docs.rs/teller-providers/latest/teller_providers/providers/index.html).
 
+### Azure Key Vault
+
+Uses Azure Key Vault as a secrets engine.
+
+```yaml
+providers:
+  azurekv:
+    kind: azure_keyvault
+    options:
+      vault_name: "your-vault-name"
+```
+
+**Authentication:** Uses [`DefaultAzureCredential`](https://docs.rs/azure_identity/latest/azure_identity/struct.DefaultAzureCredential.html) which supports various methods like environment variables, managed identity, Azure CLI, etc.
+
+**Options:**
+
+*   `vault_name` (required): The name of your Azure Key Vault instance (e.g., `my-vault`). The URL will be constructed as `https://<vault_name>.vault.azure.net/`.
+
+### Dotenv
+
+Uses `.env` files as a secrets engine.
+
+```yaml
+providers:
+  dotenv:
+    kind: dotenv
+    maps:
+      - id: development
+        path: .env
+```
+
+### Google Secret Manager
+
+Uses Google Secret Manager as a secrets engine.
+
+```yaml
+providers:
+  google:
+    kind: google_secretmanager
+    project_id: "your-gcp-project-id"
+```
+
+### HashiCorp Consul
+
+Uses HashiCorp Consul as a secrets engine.
+
+```yaml
+providers:
+  consul:
+    kind: hashicorp_consul
+    address: "127.0.0.1:8500" # Address of your Consul agent
+    scheme: "http" # or "https" if using HTTPS
+```
+
+### HashiCorp Vault
+
+Uses HashiCorp Vault as a secrets engine.
+
+```yaml
+providers:
+  vault:
+    kind: hashicorp
+    address: "http://127.0.0.1:8200" # Address of your Vault server
+    token: "your-vault-token" # Optional, if not using agent or other auth methods
+```
+
+### AWS Secrets Manager
+
+Uses AWS Secrets Manager as a secrets engine.
+
+```yaml
+providers:
+  aws:
+    kind: aws_secretsmanager
+    region: "us-west-2" # Your AWS region
+```
+
+### SSM Parameter Store
+
+Uses AWS SSM Parameter Store as a secrets engine.
+
+```yaml
+providers:
+  ssm:
+    kind: ssm
+    region: "us-west-2" # Your AWS region
+```
+
 ### Testing check list:
 
 * [ ] **docker on windows**: if you have a container based test that uses Docker, make sure to exclude it on Windows using `#[cfg(not(windows))]`

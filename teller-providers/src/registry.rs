@@ -90,6 +90,19 @@ impl Registry {
                     )
                     .await?,
                 ),
+
+                #[cfg(feature = "azure_keyvault")]
+                ProviderKind::AzureKeyVault => Box::new(
+                    crate::providers::etcd::Etcd::new(
+                        k,
+                        provider
+                            .options
+                            .clone()
+                            .map(serde_json::from_value)
+                            .transpose()?,
+                    )
+                    .await?,
+                ),
             };
             loaded_providers.insert(k.clone(), provider);
         }

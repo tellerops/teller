@@ -30,6 +30,9 @@ pub mod hashicorp_consul;
 #[cfg(feature = "etcd")]
 pub mod etcd;
 
+#[cfg(feature = "azure_keyvault")]
+pub mod azure_keyvault;
+
 lazy_static! {
     pub static ref PROVIDER_KINDS: String = {
         let providers: Vec<String> = ProviderKind::iter()
@@ -73,6 +76,10 @@ pub enum ProviderKind {
     #[cfg(feature = "etcd")]
     #[serde(rename = "etcd")]
     Etcd,
+
+    #[cfg(feature = "azure_keyvault")]
+    #[serde(rename = "azure_keyvault")]
+    AzureKeyVault,
 }
 
 impl std::fmt::Display for ProviderKind {
