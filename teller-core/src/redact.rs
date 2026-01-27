@@ -28,14 +28,14 @@ impl Redactor {
         for line in reader.lines().map_while(Result::ok) {
             let redacted = self.redact_string(line.as_str(), kvs);
             writer.write_all(redacted.as_bytes())?;
-            writer.write_all(&[b'\n'])?; // TODO: support crlf for windows
+            writer.write_all(b"\n")?; // TODO: support crlf for windows
             writer.flush()?;
         }
         Ok(())
     }
 
     #[must_use]
-    pub fn redact_string<'a>(&'a self, message: &'a str, kvs: &[KV]) -> Cow<'_, str> {
+    pub fn redact_string<'a>(&'a self, message: &'a str, kvs: &[KV]) -> Cow<'a, str> {
         if self.has_match(message, kvs) {
             let mut redacted = message.to_string();
             for kv in kvs {

@@ -207,6 +207,7 @@ impl ProviderTest {
         }
     }
 
+    #[allow(unused_variables)]
     async fn validate_get_selective(&self, path_tree: &HashMap<&str, Vec<KV>>) {
         let mut selective_pm = PathMap::from_path(&self.get_key_path(ROOT_PATH_A));
         selective_pm
@@ -325,8 +326,8 @@ impl ProviderTest {
     /// This function tests the behavior of a Teller provider by performing the following steps:
     ///
     /// 1. Delete specifics keys from a path by using adding keys list.
-    /// 2. Verifies that the deletion operation is successful by run `get` again on the same path and expecting that
-    /// not see the deletion keys
+    /// 2. Verifies that the deletion operation is successful by run `get`
+    ///    again on the same path and expecting that not see the deletion keys
     async fn validate_delete_keys(&self) {
         let mut path_path = PathMap::from_path(&self.get_key_path(ROOT_PATH_A));
 

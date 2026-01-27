@@ -125,7 +125,7 @@ impl AWSSecretsManager {
     /// This function will return an error if cannot create a provider
     pub async fn new(name: &str, opts: Option<AWSSecretsManagerOptions>) -> Result<Self> {
         let client = if let Some(opts) = opts {
-            let mut config = aws_config::defaults(BehaviorVersion::v2023_11_09());
+            let mut config = aws_config::defaults(BehaviorVersion::v2025_01_17());
             if let (Some(key), Some(secret)) = (opts.access_key_id, opts.secret_access_key) {
                 config = config
                     .credentials_provider(Credentials::new(key, secret, None, None, "teller"));
@@ -139,7 +139,7 @@ impl AWSSecretsManager {
             let ssmconf = secretsmanager::config::Builder::from(&config.load().await).build();
             secretsmanager::Client::from_conf(ssmconf)
         } else {
-            let config = aws_config::load_defaults(BehaviorVersion::v2023_11_09()).await;
+            let config = aws_config::load_defaults(BehaviorVersion::v2025_01_17()).await;
             let ssmconf = secretsmanager::config::Builder::from(&config).build();
             secretsmanager::Client::from_conf(ssmconf)
         };

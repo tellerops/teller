@@ -172,7 +172,7 @@ impl Teller {
     /// # Errors
     ///
     /// This function will return an error if export fails
-    pub async fn export<'a>(&self, format: &export::Format) -> Result<String> {
+    pub async fn export(&self, format: &export::Format) -> Result<String> {
         let kvs = self.collect().await?;
         format.export(&kvs)
     }

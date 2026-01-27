@@ -6,4 +6,5 @@ notes/
 tmp/
 dist/
 .DS_Store
+.idea/
 *.profraw
