@@ -25,7 +25,7 @@ default = [
 
 ssm = ["aws", "dep:aws-sdk-ssm"]
 aws_secretsmanager = ["aws", "dep:aws-sdk-secretsmanager"]
-google_secretmanager = ["dep:google-secretmanager1", "dep:crc32c"]
+google_secretmanager = ["dep:google-cloud-secretmanager-v1", "dep:google-cloud-gax"]
 hashicorp_vault = ["dep:vaultrs", "dep:rustify"]
 dotenv = ["dep:dotenvy"]
 hashicorp_consul = ["dep:rs-consul"]
@@ -50,8 +50,8 @@ home = "0.5"
 hyper = "1.8.1"
 tokio = "1"
 # gcp
-google-secretmanager1 = { version = "5.0", optional = true }
-crc32c = { version = "0.6", optional = true }
+google-cloud-secretmanager-v1 = { version = "1.10.0", optional = true }
+google-cloud-gax = { version = "1.11.0", optional = true }
 # aws
 aws-config = { version = "1.6.3", optional = true }
 # aws-ssm
