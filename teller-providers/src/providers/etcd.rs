@@ -179,7 +179,7 @@ impl Provider for Etcd {
                 .await
                 .map_err(|err| to_err(pm, err))?;
         } else {
-            for key in pm.keys.keys().map(|kv| format!("{}/{kv}", &pm.path)) {
+            for key in pm.keys.keys().map(|kv| format!("{}/{kv}", pm.path)) {
                 client
                     .delete(key, None)
                     .await
@@ -229,8 +229,7 @@ mod tests {
         #[cfg(not(target_arch = "aarch64"))]
         let image_name = "bitnami/etcd";
 
-        let image = Image::with_repository(image_name)
-            .pull_policy(dockertest::PullPolicy::Always);
+        let image = Image::with_repository(image_name).pull_policy(dockertest::PullPolicy::Always);
         let mut etcd_container = Composition::with_image(image)
             .with_container_name("etcd-server")
             .with_env(env)

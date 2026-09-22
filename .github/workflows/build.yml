@@ -23,11 +23,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
-          override: true
 
       - uses: Swatinem/rust-cache@v2
 
@@ -37,10 +35,7 @@ jobs:
           tool: protoc
 
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all-features --all
+        run: cargo test --all-features --all
 
   coverage:
     name: Coverage
@@ -54,10 +49,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          override: true
           components: llvm-tools-preview
 
       - uses: Swatinem/rust-cache@v2
@@ -74,10 +68,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Run xtask coverage
-        uses: actions-rs/cargo@v1
-        with:
-          command: xtask
-          args: coverage
+        run: cargo xtask coverage
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v3
@@ -94,11 +85,9 @@ jobs:
           submodules: true
 
       - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
           toolchain: stable
-          override: true
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
@@ -109,13 +98,7 @@ jobs:
           tool: protoc
 
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery -W rust-2018-idioms
+        run: cargo clippy --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery -W rust-2018-idioms

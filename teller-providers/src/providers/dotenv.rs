@@ -105,7 +105,7 @@ fn save(path: &Path, data: &BTreeMap<String, String>) -> Result<String> {
             serde_json::from_str(v);
 
         let json_value = if maybe_json.is_ok() {
-            serde_json::to_string(&v).map(Some).unwrap_or_default()
+            serde_json::to_string(&v).ok()
         } else {
             None
         };

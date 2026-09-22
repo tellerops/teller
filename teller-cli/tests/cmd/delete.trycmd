@@ -12,7 +12,7 @@ $ teller delete --providers new --map-id one
 
 $ teller show
 ? 1
-Error: NOT FOUND "new.env": file is empty
+Error: NOT FOUND new.env: file is empty
 
 Location:
     [..]

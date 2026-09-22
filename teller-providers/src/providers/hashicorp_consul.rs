@@ -87,10 +87,7 @@ impl HashiCorpConsul {
         let token = opts
             .token
             .as_ref()
-            .map_or_else(
-                || env::var("CONSUL_HTTP_TOKEN"),
-                |token| Ok(token.clone()),
-            )
+            .map_or_else(|| env::var("CONSUL_HTTP_TOKEN"), |token| Ok(token.clone()))
             .unwrap_or_default();
 
         Ok(Self {
@@ -181,7 +178,7 @@ impl Provider for HashiCorpConsul {
         } else {
             pm.keys
                 .keys()
-                .map(|kv| format!("{}/{kv}", &pm.path))
+                .map(|kv| format!("{}/{kv}", pm.path))
                 .collect::<Vec<_>>()
         };
 

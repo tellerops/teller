@@ -61,8 +61,8 @@ aws-sdk-secretsmanager = { version = "1.74.0", optional = true }
 # dotenv
 dotenvy = { version = "0.15.7", optional = true }
 # hashivault
-vaultrs = { version = "0.7.4", optional = true }
-rustify = { version = "0.6.1", optional = true }
+vaultrs = { version = "0.7.4", optional = true, default-features = false, features = ["rustls"] }
+rustify = { version = "0.6.1", optional = true, default-features = false, features = ["rustls-tls"] }
 # HashiCorp Consul
 rs-consul = { version = "0.13.0", optional = true }
 
